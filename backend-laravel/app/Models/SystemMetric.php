@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class SystemMetric extends Model { protected $fillable=['key','value','meta']; protected $casts=['meta'=>'array']; }

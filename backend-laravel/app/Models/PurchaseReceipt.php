@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class PurchaseReceipt extends Model { protected $fillable=['user_id','provider','package_key','receipt_token','status','payload']; protected $casts=['payload'=>'array']; }

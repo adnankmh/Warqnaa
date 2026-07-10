@@ -1,0 +1,112 @@
+name: Build Android App Without Android Studio
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_url:
+        description: 'Public HTTPS URL of the Laravel site, for example https://warqna.com'
+        required: false
+        type: string
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'public/**'
+      - 'resources/**'
+      - 'routes/**'
+      - 'app/**'
+      - 'config/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.json'
+      - 'tools/**'
+      - '.github/workflows/build-android-no-studio.yml'
+
+jobs:
+  android-cloud-build:
+    name: Android cloud build
+    runs-on: ubuntu-latest
+    env:
+      WARQNA_APP_URL: ${{ inputs.app_url || vars.WARQNA_APP_URL || secrets.WARQNA_APP_URL }}
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Validate public HTTPS app URL
+        run: |
+          if [ -z "$WARQNA_APP_URL" ]; then
+            echo "Set WARQNA_APP_URL as a GitHub Repository Variable/Secret or pass app_url when running the workflow."
+            echo "The Android app must load Laravel from a public HTTPS domain."
+            exit 1
+          fi
+          case "$WARQNA_APP_URL" in
+            https://*) echo "Using $WARQNA_APP_URL" ;;
+            *) echo "WARQNA_APP_URL must start with https://"; exit 1 ;;
+          esac
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci || npm install
+
+      - name: Prepare Capacitor config
+        run: npm run android:config
+
+      - name: Check PWA/mobile readiness
+        run: npm run mobile:check
+
+      - name: Add Android platform if missing
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+
+      - name: Sync Android project
+        run: npx cap sync android
+
+      - name: Make Gradle executable
+        run: chmod +x android/gradlew
+
+      - name: Build Debug APK
+        run: |
+          cd android
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Try building unsigned Release AAB
+        continue-on-error: true
+        run: |
+          cd android
+          ./gradlew bundleRelease --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: warqna-zone-debug-apk-no-android-studio
+          path: android/app/build/outputs/apk/debug/*.apk
+
+      - name: Upload AAB if generated
+        uses: actions/upload-artifact@v4
+        with:
+          name: warqna-zone-release-aab-unsigned
+          path: android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: ignore
+
+      - name: Upload Android reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warqna-android-cloud-build-reports
+          path: |
+            android/app/build/outputs/**
+            android/build/reports/**
+          if-no-files-found: ignore

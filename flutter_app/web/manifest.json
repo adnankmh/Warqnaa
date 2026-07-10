@@ -1,0 +1,25 @@
+{
+  "name": "Warqna — ورقنا",
+  "short_name": "ورقنا",
+  "description": "منصة ألعاب ورقية اجتماعية فاخرة مع بطولات وتحديات ومتجر وأندية.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#05111f",
+  "theme_color": "#071b2f",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["games", "entertainment", "social"],
+  "icons": [
+    {"src":"icons/Icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"icons/Icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
+    {"src":"icons/Icon-maskable-192.png","sizes":"192x192","type":"image/png","purpose":"maskable"},
+    {"src":"icons/Icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+  ],
+  "shortcuts": [
+    {"name":"الألعاب","short_name":"الألعاب","url":"./","icons":[{"src":"icons/Icon-192.png","sizes":"192x192"}]},
+    {"name":"المتجر","short_name":"المتجر","url":"./","icons":[{"src":"icons/Icon-192.png","sizes":"192x192"}]}
+  ]
+}

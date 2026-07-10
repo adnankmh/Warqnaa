@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class Game extends Model { protected $casts=['name'=>'array','rules'=>'array','partnership'=>'bool']; protected $fillable=['key','name','min_players','max_players','partnership','rules','active']; }

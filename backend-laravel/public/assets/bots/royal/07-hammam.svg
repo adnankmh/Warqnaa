@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<defs>
+<radialGradient id="g" cx="50%" cy="38%" r="72%"><stop offset="0" stop-color="#fbbf24"/><stop offset=".42" stop-color="#713f12"/><stop offset="1" stop-color="#020617"/></radialGradient>
+<linearGradient id="gold" x1="0" x2="1"><stop offset="0" stop-color="#8a5a12"/><stop offset=".2" stop-color="#fef3c7"/><stop offset=".5" stop-color="#facc15"/><stop offset=".8" stop-color="#b45309"/><stop offset="1" stop-color="#fff7ed"/></linearGradient>
+<filter id="s" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000" flood-opacity=".55"/></filter>
+</defs>
+<rect width="256" height="256" rx="42" fill="#020617"/>
+<circle cx="128" cy="125" r="105" fill="url(#g)" stroke="url(#gold)" stroke-width="10" filter="url(#s)"/>
+<path d="M68 72 C92 30,164 30,188 72 L177 92 C150 75,106 75,79 92 Z" fill="url(#gold)" stroke="#4a2500" stroke-width="3"/>
+<circle cx="94" cy="62" r="7" fill="#ef4444"/><circle cx="128" cy="54" r="9" fill="#2563eb"/><circle cx="162" cy="62" r="7" fill="#ef4444"/>
+<circle cx="128" cy="112" r="43" fill="#f2c49b" stroke="#7c2d12" stroke-width="4"/>
+<path d="M75 202 C84 160,105 145,128 145 C151 145,172 160,181 202 Z" fill="#111827" stroke="url(#gold)" stroke-width="5"/>
+<text x="128" y="133" text-anchor="middle" font-size="54" font-family="Arial, Tahoma, sans-serif" font-weight="900" fill="#111827">ه</text>
+<path d="M42 185 C75 208,181 208,214 185 L202 225 C164 243,92 243,54 225 Z" fill="url(#gold)" stroke="#6b3f16" stroke-width="3"/>
+<text x="128" y="219" text-anchor="middle" direction="rtl" font-size="25" font-family="Tahoma, Arial, sans-serif" font-weight="900" fill="#3b2500">همام</text>
+</svg>

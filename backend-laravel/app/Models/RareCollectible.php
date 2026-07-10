@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class RareCollectible extends Model { protected $fillable=['key','name','rarity','supply','claimed','payload','active']; protected $casts=['name'=>'array','payload'=>'array','active'=>'boolean']; }

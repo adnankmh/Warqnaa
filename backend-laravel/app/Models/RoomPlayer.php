@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class RoomPlayer extends Model { protected $fillable=['room_id','user_id','bot_key','seat','is_bot','connected','missed_turns']; public function user(){return $this->belongsTo(User::class);} }

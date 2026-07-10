@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class InventoryItem extends Model { protected $casts=['active'=>'bool','activated_at'=>'datetime','expires_at'=>'datetime']; protected $fillable=['user_id','store_item_id','active','activated_at','expires_at']; public function storeItem(){return $this->belongsTo(StoreItem::class);} }

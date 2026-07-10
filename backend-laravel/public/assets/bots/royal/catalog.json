@@ -1,0 +1,52 @@
+[
+  {
+    "name": "معتصم",
+    "avatar": "/assets/bots/royal/01-mutasim.svg",
+    "slug": "mutasim"
+  },
+  {
+    "name": "يمان",
+    "avatar": "/assets/bots/royal/02-yaman.svg",
+    "slug": "yaman"
+  },
+  {
+    "name": "عدنان",
+    "avatar": "/assets/bots/royal/03-adnan.svg",
+    "slug": "adnan"
+  },
+  {
+    "name": "عاصم",
+    "avatar": "/assets/bots/royal/04-asim.svg",
+    "slug": "asim"
+  },
+  {
+    "name": "كنان",
+    "avatar": "/assets/bots/royal/05-kinan.svg",
+    "slug": "kinan"
+  },
+  {
+    "name": "جميل",
+    "avatar": "/assets/bots/royal/06-jamil.svg",
+    "slug": "jamil"
+  },
+  {
+    "name": "همام",
+    "avatar": "/assets/bots/royal/07-hammam.svg",
+    "slug": "hammam"
+  },
+  {
+    "name": "معاذ",
+    "avatar": "/assets/bots/royal/08-muath.svg",
+    "slug": "muath"
+  },
+  {
+    "name": "مصطفى",
+    "avatar": "/assets/bots/royal/09-mustafa.svg",
+    "slug": "mustafa"
+  },
+  {
+    "name": "مهند",
+    "avatar": "/assets/bots/royal/10-muhannad.svg",
+    "slug": "muhannad"
+  }
+]

@@ -1,0 +1,1 @@
+@extends('layouts.app') @section('content')<section class="hero clean"><h1>منصة ورقنا زون</h1><p>منصة ألعاب ورق عربية متعددة اللاعبين بهوية أصلية، غرف فورية، مسابقات، نوادٍ، متجر، ونظام مستويات.</p><div class="hero-actions"><a class="btn primary" href="{{route('register')}}">حساب جديد</a><a class="btn" href="{{route('login')}}">تسجيل الدخول</a></div></section>@endsection

@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class ClubWar extends Model { protected $fillable=['key','club_a_id','club_b_id','starts_at','ends_at','status','score','rewards']; protected $casts=['score'=>'array','rewards'=>'array','starts_at'=>'datetime','ends_at'=>'datetime']; }

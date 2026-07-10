@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class DailyRewardClaim extends Model { protected $fillable=['user_id','claim_date','streak','coins','payload']; protected $casts=['payload'=>'array','claim_date'=>'date']; }

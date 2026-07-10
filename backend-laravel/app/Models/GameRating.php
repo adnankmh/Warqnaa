@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class GameRating extends Model { protected $fillable=['user_id','game_key','elo','wins','losses']; public function user(){return $this->belongsTo(User::class);} }

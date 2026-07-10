@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class PresenceSession extends Model { protected $fillable=['user_id','scope','room_code','last_seen_at','meta']; protected $casts=['meta'=>'array','last_seen_at'=>'datetime']; public function user(){return $this->belongsTo(User::class);} }

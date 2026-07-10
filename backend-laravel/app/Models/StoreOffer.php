@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class StoreOffer extends Model { protected $fillable=['key','title','description','discount_percent','starts_at','ends_at','active','item_keys']; protected $casts=['title'=>'array','description'=>'array','item_keys'=>'array','active'=>'boolean','starts_at'=>'datetime','ends_at'=>'datetime']; }

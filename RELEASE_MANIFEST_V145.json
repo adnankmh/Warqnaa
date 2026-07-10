@@ -1,0 +1,45 @@
+{
+  "release": "Warqna v145",
+  "version": "1.45.0+145",
+  "release_date": "2026-07-10",
+  "curated_games": [
+    "tarneeb",
+    "trix",
+    "hand",
+    "banakil",
+    "baloot",
+    "basra",
+    "tarneeb_400",
+    "syrian_tarneeb",
+    "trix_complex",
+    "saudi_hand",
+    "hand_partner",
+    "trix_partner"
+  ],
+  "removed_from_catalog": [
+    "domino",
+    "jackaroo",
+    "chess",
+    "competitive_solitaire",
+    "pinochle",
+    "backgammon"
+  ],
+  "store_counts": {
+    "pasha": 6,
+    "themes": 5,
+    "tables": 50,
+    "card_backs": 40,
+    "emoji_packs": 7,
+    "xp_boosters": 6,
+    "name_identity": 11,
+    "badges": 3,
+    "effects": 3,
+    "total": 131
+  },
+  "modes": {
+    "github_pages": "local engines and local persistence",
+    "laravel_connected": "server-authoritative rooms, accounts and social persistence"
+  },
+  "pwa": true,
+  "github_actions": ["web", "android", "ios"]
+}

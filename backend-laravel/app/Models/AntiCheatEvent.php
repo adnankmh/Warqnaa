@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class AntiCheatEvent extends Model { protected $casts=['meta'=>'array']; protected $fillable=['room_id','user_id','event','severity','meta','ip']; public function user(){return $this->belongsTo(User::class);} public function room(){return $this->belongsTo(Room::class);} }

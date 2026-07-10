@@ -1,0 +1,101 @@
+{
+  "name": "Warqna Zone | ورقنا زون",
+  "short_name": "Warqna",
+  "description": "تطبيق Warqna Zone لألعاب الورق الاجتماعية، جاهز PWA و Android Cloud Build بدون Android Studio.",
+  "start_url": "/games?source=mobile_app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "dir": "rtl",
+  "lang": "ar",
+  "theme_color": "#0B3F1D",
+  "background_color": "#020617",
+  "id": "/warqna-zone-mobile-app",
+  "icons": [
+    {
+      "src": "/assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "games",
+    "entertainment",
+    "social"
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "الألعاب",
+      "short_name": "Games",
+      "url": "/games?source=shortcut",
+      "icons": [
+        {
+          "src": "/assets/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "المتجر",
+      "short_name": "Store",
+      "url": "/store?source=shortcut",
+      "icons": [
+        {
+          "src": "/assets/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "الدردشة",
+      "short_name": "Chat",
+      "url": "/friends?source=shortcut",
+      "icons": [
+        {
+          "src": "/assets/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "المنافسات",
+      "short_name": "Tours",
+      "url": "/tournaments?source=shortcut",
+      "icons": [
+        {
+          "src": "/assets/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "fullscreen"
+  ]
+}

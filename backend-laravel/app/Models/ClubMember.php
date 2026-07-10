@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class ClubMember extends Model { protected $casts=['permissions'=>'array']; protected $fillable=['club_id','user_id','role','permissions','weekly_points']; public function user(){return $this->belongsTo(User::class);} }

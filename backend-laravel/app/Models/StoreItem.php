@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class StoreItem extends Model { protected $casts=['name'=>'array','payload'=>'array']; protected $fillable=['key','name','category','price','duration_days','payload','active']; }

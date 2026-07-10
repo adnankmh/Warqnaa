@@ -1,0 +1,28 @@
+<?php
+return [
+ 'store'=>[
+  'pasha_year_price'=>320000,
+  'pasha_year_days'=>365,
+  'xp_boosters'=>[
+   ['key'=>'xp_v105_bronze_2x','multiplier'=>2,'price'=>4000,'valid_days'=>10,'duration_days'=>1,'tier'=>'bronze'],
+   ['key'=>'xp_v105_silver_2x','multiplier'=>2,'price'=>10000,'valid_days'=>10,'duration_days'=>1,'tier'=>'silver'],
+   ['key'=>'xp_v105_gold_3x','multiplier'=>3,'price'=>12000,'valid_days'=>10,'duration_days'=>1,'tier'=>'gold'],
+   ['key'=>'xp_v105_diamond_3x','multiplier'=>3,'price'=>40000,'valid_days'=>10,'duration_days'=>1,'tier'=>'diamond'],
+   ['key'=>'xp_v105_royal_4x','multiplier'=>4,'price'=>80000,'valid_days'=>10,'duration_days'=>1,'tier'=>'royal'],
+   ['key'=>'xp_v105_legend_5x','multiplier'=>5,'price'=>150000,'valid_days'=>10,'duration_days'=>1,'tier'=>'legendary'],
+  ],
+  'table_tiers'=>['all','beginner','medium','featured','pro','legendary','animated'],
+  'emoji_tiers'=>['all','free','laugh','happy','angry','sad','vip','animated'],
+ ],
+ 'tournaments'=>[
+  'max_stages'=>4,
+  'house_cut_percent'=>10,
+  'prize_distribution'=>['first'=>60,'second'=>30,'semifinal'=>10],
+  'leaderboard_points'=>['first'=>1000,'second'=>600,'semifinal'=>350,'quarterfinal'=>150,'early'=>50],
+ ],
+ 'clubs'=>[
+  'leagues'=>['bronze'=>'برونزي','silver'=>'فضي','gold'=>'ذهبي','platinum'=>'بلاتيني','diamond'=>'ماسي','legendary'=>'أسطوري'],
+  'capacity_by_level'=>[1=>20,2=>30,3=>40,4=>50,5=>70,6=>100],
+  'team_bonus_multiplier'=>2,
+ ],
+];

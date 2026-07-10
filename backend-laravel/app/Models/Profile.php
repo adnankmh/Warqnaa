@@ -1,0 +1,2 @@
+<?php
+namespace App\Models; use Illuminate\Database\Eloquent\Model; class Profile extends Model { protected $fillable=['user_id','display_name','avatar','country_code','country_name','name_color','text_color','badge','pasha_days','level','xp','games_played','wins','chat_color','active_table_skin','xp_boost_multiplier','sound_enabled','active_card_back','active_name_frame','active_effect','active_site_theme','daily_streak','last_daily_reward_at','favorite_game_key']; public function user(){return $this->belongsTo(User::class);} }

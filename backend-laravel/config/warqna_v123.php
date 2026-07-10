@@ -1,0 +1,34 @@
+<?php
+return [
+ 'version'=>'v123',
+ 'visual_level'=>'world_class_luxury',
+ 'design_principles'=>[
+  'no_horizontal_overflow'=>true,
+  'compact_games_library'=>true,
+  'jawaker_like_social_depth_without_copying'=>true,
+  'server_authoritative_engines'=>true,
+ ],
+ 'lobby'=>[
+  'dense_cards'=>true,
+  'max_card_height'=>132,
+  'families'=>['tarneeb','trick','meld','trix','gulf','capture','board','casual','training'],
+ ],
+ 'game_room'=>[
+  'compact_table'=>true,
+  'stable_chat_from_v115'=>true,
+  'safe_action_panel'=>true,
+  'clear_error_messages'=>true,
+ ],
+ 'store'=>[
+  'luxury_preview_modal'=>true,
+  'category_filters'=>true,
+  'inventory_preview'=>true,
+  'no_reload_purchase_ux'=>true,
+ ],
+ 'engines'=>[
+  'tarneeb_strict_follow_suit'=>true,
+  'multi_format_card_ids'=>true,
+  'fallback_engine_for_all_games'=>true,
+  'engine_tests_required'=>true,
+ ],
+];

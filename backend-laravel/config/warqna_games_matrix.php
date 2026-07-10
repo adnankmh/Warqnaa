@@ -1,0 +1,31 @@
+<?php
+return [
+ 'families'=>[
+  'trick_taking'=>['ar'=>'ألعاب اللمّات','games'=>['tarneeb','tarneeb_61','syrian_tarneeb','baloot','estimation','spades','hearts']],
+  'melding'=>['ar'=>'ألعاب التجميع والنزول','games'=>['hand','saudi_hand','banakil','rummy','konkan']],
+  'contracts'=>['ar'=>'ألعاب العقود والممالك','games'=>['trix','trix_complex','trix_partner']],
+  'board'=>['ar'=>'ألعاب الرقعة والنرد','games'=>['domino','ludo','jackaroo','backgammon','chess']],
+ ],
+ 'supported'=>[
+  'tarneeb'=>['ar'=>'طرنيب 41','players'=>4,'engine'=>'tarneeb','difficulty'=>'advanced'],
+  'tarneeb_61'=>['ar'=>'طرنيب 61','players'=>4,'engine'=>'trick_taking','difficulty'=>'advanced'],
+  'syrian_tarneeb'=>['ar'=>'طرنيب سوري','players'=>4,'engine'=>'trick_taking','difficulty'=>'advanced'],
+  'hand'=>['ar'=>'هاند','players'=>4,'engine'=>'hand','difficulty'=>'advanced'],
+  'saudi_hand'=>['ar'=>'هاند سعودي','players'=>4,'engine'=>'hand','difficulty'=>'advanced'],
+  'banakil'=>['ar'=>'بناكل','players'=>4,'engine'=>'hand','difficulty'=>'advanced'],
+  'rummy'=>['ar'=>'رومي','players'=>4,'engine'=>'melding','difficulty'=>'medium'],
+  'konkan'=>['ar'=>'كونكان','players'=>4,'engine'=>'melding','difficulty'=>'medium'],
+  'trix'=>['ar'=>'تريكس','players'=>4,'engine'=>'contract','difficulty'=>'advanced'],
+  'trix_complex'=>['ar'=>'تريكس كمبلكس','players'=>4,'engine'=>'contract','difficulty'=>'advanced'],
+  'trix_partner'=>['ar'=>'تريكس شراكة','players'=>4,'engine'=>'contract','difficulty'=>'advanced'],
+  'baloot'=>['ar'=>'بلوت','players'=>4,'engine'=>'trick_taking','difficulty'=>'expert'],
+  'estimation'=>['ar'=>'استيميشن','players'=>4,'engine'=>'trick_taking','difficulty'=>'expert'],
+  'spades'=>['ar'=>'سبيدي / Spades','players'=>4,'engine'=>'trick_taking','difficulty'=>'medium'],
+  'hearts'=>['ar'=>'هارتس','players'=>4,'engine'=>'trick_taking','difficulty'=>'medium'],
+  'domino'=>['ar'=>'دومينو','players'=>4,'engine'=>'domino','difficulty'=>'medium'],
+  'ludo'=>['ar'=>'لودو','players'=>4,'engine'=>'board','difficulty'=>'medium'],
+  'jackaroo'=>['ar'=>'جاكارو','players'=>4,'engine'=>'board','difficulty'=>'expert'],
+  'backgammon'=>['ar'=>'طاولة','players'=>2,'engine'=>'board','difficulty'=>'medium'],
+  'chess'=>['ar'=>'شطرنج','players'=>2,'engine'=>'board','difficulty'=>'expert'],
+ ],
+];
