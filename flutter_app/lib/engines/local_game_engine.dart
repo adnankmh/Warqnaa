@@ -816,7 +816,7 @@ class LocalGameSession {
     _scores[winner] = _scores.values.map((e) => e.abs()).fold<int>(0, (a, b) => a + b);
     if (_isHandPartner) {
       final partner = (winner + 2) % 4;
-      _scores[partner] = _scores[winner];
+      _scores[partner] = _scores[winner] ?? 0;
       winnerKey = winner.isEven ? 'user:0' : 'bot:1';
       _messages.add('فريق ${_seatName(winner)} أنهى اليد وفاز بالجولة.');
     } else {
