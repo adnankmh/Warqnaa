@@ -69,6 +69,9 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> purchase(String key) =>
       post('/store/purchase', {'key': key, 'confirmed': true});
   Future<Map<String, dynamic>> claimDaily() => post('/rewards/daily', const {});
+  Future<Map<String, dynamic>> claimRewardedAd(String verificationId) => post('/rewards/rewarded-ad', {'verification_id': verificationId, 'network': 'admob', 'reward_type': 'standard'});
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> payload) => patch('/profile', payload);
+  Future<Map<String, dynamic>> deleteAccount(String password) => deleteWithBody('/account', {'password': password, 'confirmation': true});
   Future<Map<String, dynamic>> gameCatalog() => get('/games/catalog', authenticated: false);
   Future<Map<String, dynamic>> gameRules(String key) => get('/games/$key/rules', authenticated: false);
   Future<Map<String, dynamic>> createGame({
@@ -121,6 +124,16 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> delete(String path) async {
     _assertToken();
     final response = await http.delete(Uri.parse('$baseUrl$path'), headers: _headers).timeout(const Duration(seconds: 20));
+    return _decode(response);
+  }
+
+  Future<Map<String, dynamic>> deleteWithBody(String path, Map<String, dynamic> body) async {
+    _assertToken();
+    final request = http.Request('DELETE', Uri.parse('$baseUrl$path'))
+      ..headers.addAll(_headers)
+      ..body = jsonEncode(body);
+    final streamed = await request.send().timeout(const Duration(seconds: 25));
+    final response = await http.Response.fromStream(streamed);
     return _decode(response);
   }
 

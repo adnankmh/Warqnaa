@@ -17,16 +17,25 @@ jobs:
           if [ -f test/widget_test.dart ] && grep -q "MyApp" test/widget_test.dart; then rm test/widget_test.dart; fi
       - run: flutter pub get
         working-directory: flutter_app
+      - name: Configure AdMob iOS application ID
+        working-directory: flutter_app
+        run: |
+          APP_ID="${{ vars.ADMOB_IOS_APP_ID }}"
+          if [ -z "$APP_ID" ]; then APP_ID="ca-app-pub-3940256099942544~1458002511"; fi
+          /usr/libexec/PlistBuddy -c "Add :GADApplicationIdentifier string $APP_ID" ios/Runner/Info.plist 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :GADApplicationIdentifier $APP_ID" ios/Runner/Info.plist
       - name: Analyze and build unsigned iOS
         working-directory: flutter_app
         run: |
           API_URL="${{ vars.WARQNA_API_URL }}"
           EXTRA=""
-          if [ -n "$API_URL" ]; then EXTRA="--dart-define=WARQNA_API_URL=$API_URL"; fi
+          if [ -n "$API_URL" ]; then EXTRA="$EXTRA --dart-define=WARQNA_API_URL=$API_URL"; fi
+          REWARDED_ID="${{ vars.ADMOB_REWARDED_IOS_ID }}"
+          if [ -z "$REWARDED_ID" ]; then REWARDED_ID="ca-app-pub-3940256099942544/1712485313"; fi
+          EXTRA="$EXTRA --dart-define=ADMOB_REWARDED_IOS_ID=$REWARDED_ID"
           flutter analyze --no-fatal-infos --no-fatal-warnings
           flutter test
           flutter build ios --release --no-codesign $EXTRA
       - uses: actions/upload-artifact@v4
         with:
-          name: warqna-v145-ios-unsigned
+          name: warqna-v147-ios-unsigned
           path: flutter_app/build/ios/iphoneos/Runner.app

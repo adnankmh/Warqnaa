@@ -17,16 +17,26 @@ jobs:
           if [ -f test/widget_test.dart ] && grep -q "MyApp" test/widget_test.dart; then rm test/widget_test.dart; fi
       - run: flutter pub get
         working-directory: flutter_app
-      - name: Configure Android application
+      - name: Configure Android application and AdMob
         working-directory: flutter_app
+        env:
+          ADMOB_APP_ID: ${{ vars.ADMOB_ANDROID_APP_ID }}
         run: |
           python3 - <<'PYCODE'
+          import os
           from pathlib import Path
           manifest = Path('android/app/src/main/AndroidManifest.xml')
           text = manifest.read_text()
+          newline = chr(10)
           if 'android.permission.INTERNET' not in text:
-              text = text.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">', '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET"/>')
+              text = text.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">', '<manifest xmlns:android="http://schemas.android.com/apk/res/android">' + newline + '    <uses-permission android:name="android.permission.INTERNET"/>')
           text = text.replace('android:label="warqna_mobile"', 'android:label="Warqna"')
+          app_id = os.environ.get('ADMOB_APP_ID','').strip() or 'ca-app-pub-3940256099942544~3347511713'
+          if 'android:usesCleartextTraffic' not in text:
+              text = text.replace('<application', '<application' + newline + '        android:usesCleartextTraffic="true"', 1)
+          if 'com.google.android.gms.ads.APPLICATION_ID' not in text:
+              meta = '        <meta-data' + newline + '            android:name="com.google.android.gms.ads.APPLICATION_ID"' + newline + f'            android:value="{app_id}"/>' + newline
+              text = text.replace('</application>', meta + '</application>')
           manifest.write_text(text)
           PYCODE
       - name: Analyze and build APK
@@ -34,14 +44,17 @@ jobs:
         run: |
           API_URL="${{ vars.WARQNA_API_URL }}"
           EXTRA=""
-          if [ -n "$API_URL" ]; then EXTRA="--dart-define=WARQNA_API_URL=$API_URL"; fi
+          if [ -n "$API_URL" ]; then EXTRA="$EXTRA --dart-define=WARQNA_API_URL=$API_URL"; fi
+          REWARDED_ID="${{ vars.ADMOB_REWARDED_ANDROID_ID }}"
+          if [ -z "$REWARDED_ID" ]; then REWARDED_ID="ca-app-pub-3940256099942544/5224354917"; fi
+          EXTRA="$EXTRA --dart-define=ADMOB_REWARDED_ANDROID_ID=$REWARDED_ID"
           flutter analyze --no-fatal-infos --no-fatal-warnings
           flutter test
           flutter build apk --release $EXTRA
           flutter build appbundle --release $EXTRA
       - uses: actions/upload-artifact@v4
         with:
-          name: warqna-v145-android
+          name: warqna-v147-android
           path: |
             flutter_app/build/app/outputs/flutter-apk/app-release.apk
             flutter_app/build/app/outputs/bundle/release/app-release.aab

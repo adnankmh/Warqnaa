@@ -24,6 +24,8 @@ Route::prefix('mobile/v1')->group(function () {
         Route::patch('/notifications/{id}/read', [MobileApiController::class, 'markNotification']);
         Route::delete('/notifications/{id}', [MobileApiController::class, 'deleteNotification']);
         Route::post('/rewards/daily', [MobileApiController::class, 'claimDaily']);
+        Route::post('/rewards/rewarded-ad', [MobileApiController::class, 'claimRewardedAd']);
+        Route::delete('/account', [MobileApiController::class, 'deleteAccount']);
 
         Route::post('/games/session', [MobileGameController::class, 'create']);
         Route::get('/games/session/{room:code}', [MobileGameController::class, 'show']);

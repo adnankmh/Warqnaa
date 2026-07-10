@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Club,DailyRewardClaim,Game,Profile,Room,StoreItem,Tournament,User,Wallet};
+use App\Models\{Club,DailyRewardClaim,Game,Profile,RewardedAdClaim,Room,StoreItem,Tournament,User,Wallet};
 use App\Services\Wallet\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Auth,DB,Hash};
@@ -53,16 +53,19 @@ class MobileApiController extends Controller
         if ($user->is_banned) return response()->json(['ok' => false, 'message' => 'الحساب موقوف'], 403);
         $user->tokens()->where('name', 'mobile')->delete();
         $user->update(['last_seen_at' => now()]);
+        $streakReward = $this->applyLoginStreak($user);
         return response()->json([
             'ok' => true,
             'token' => $user->createToken('mobile')->plainTextToken,
             'user' => $user->load('profile')->publicProfile(),
             'wallet' => $this->walletPayload($user),
+            'streak_reward' => $streakReward,
         ]);
     }
 
     public function bootstrap(Request $request)
     {
+        $request->user()->update(['last_seen_at'=>now()]);
         $user = $request->user()->load('profile', 'wallet');
         return response()->json([
             'ok' => true,
@@ -101,6 +104,8 @@ class MobileApiController extends Controller
             'locale' => 'nullable|in:ar,en,de,tr,fr,es',
             'theme' => 'nullable|string|max:40',
             'sound_enabled' => 'nullable|boolean',
+            'avatar' => 'nullable|string|max:32',
+            'avatar_data' => 'nullable|string|max:1500000',
         ]);
         $profile = $request->user()->profile()->firstOrCreate([
             'user_id' => $request->user()->id,
@@ -116,6 +121,8 @@ class MobileApiController extends Controller
         }
         if (isset($data['theme'])) $profile->active_site_theme = $data['theme'];
         if (isset($data['sound_enabled'])) $profile->sound_enabled = $data['sound_enabled'];
+        if (array_key_exists('avatar',$data)) $profile->avatar = $data['avatar'];
+        if (array_key_exists('avatar_data',$data)) $profile->avatar_data = $data['avatar_data'];
         $profile->save();
 
         return response()->json(['ok' => true, 'message' => 'تم تحديث الملف الشخصي', 'user' => $request->user()->fresh('profile')->publicProfile()]);
@@ -228,6 +235,69 @@ class MobileApiController extends Controller
         ]);
     }
 
+    public function claimRewardedAd(Request $request, WalletService $wallet)
+    {
+        $data = $request->validate([
+            'verification_id'=>'required|string|min:8|max:190',
+            'network'=>'nullable|string|max:40',
+            'reward_type'=>'nullable|in:standard,double',
+        ]);
+        $user = $request->user();
+        $today = now()->toDateString();
+        $dailyCount = RewardedAdClaim::where('user_id',$user->id)->whereDate('claim_date',$today)->count();
+        if ($dailyCount >= 5) return response()->json(['ok'=>false,'message'=>'وصلت إلى الحد اليومي للإعلانات المكافِئة.'],429);
+        if (RewardedAdClaim::where('verification_id',$data['verification_id'])->exists()) {
+            return response()->json(['ok'=>false,'message'=>'تم استخدام إثبات الإعلان مسبقاً.'],409);
+        }
+        $multiplier = ($data['reward_type'] ?? 'standard') === 'double' ? 2 : 1;
+        $tokens = 3000 * $multiplier;
+        $xp = 35 * $multiplier;
+        DB::transaction(function () use ($user,$wallet,$data,$today,$tokens,$xp) {
+            $wallet->credit($user,$tokens,'rewarded_ad',['verification_id'=>$data['verification_id']]);
+            RewardedAdClaim::create([
+                'user_id'=>$user->id,'claim_date'=>$today,'reward_tokens'=>$tokens,'reward_xp'=>$xp,
+                'network'=>$data['network'] ?? 'admob','verification_id'=>$data['verification_id'],
+                'payload'=>['reward_type'=>$data['reward_type'] ?? 'standard'],
+            ]);
+            $user->profile?->increment('xp',$xp);
+        });
+        return response()->json([
+            'ok'=>true,'message'=>'تمت إضافة مكافأة الإعلان','tokens'=>$tokens,'xp'=>$xp,
+            'remaining'=>max(0,4-$dailyCount),'wallet'=>$this->walletPayload($user->fresh()),
+            'profile'=>$user->profile?->fresh(),
+        ]);
+    }
+
+    public function deleteAccount(Request $request)
+    {
+        $data = $request->validate(['password'=>'required|string|max:120','confirmation'=>'required|accepted']);
+        $user = $request->user();
+        if ($user->is_admin) return response()->json(['ok'=>false,'message'=>'لا يمكن حذف حساب المدير الرئيسي من التطبيق.'],403);
+        if (!Hash::check($data['password'],$user->password)) return response()->json(['ok'=>false,'message'=>'كلمة المرور غير صحيحة.'],422);
+        DB::transaction(function () use ($user) {
+            $user->tokens()->delete();
+            $user->delete();
+        });
+        return response()->json(['ok'=>true,'message'=>'تم حذف الحساب وجميع بياناته نهائياً.']);
+    }
+
+    private function applyLoginStreak(User $user): array
+    {
+        $profile = $user->profile()->firstOrCreate(['user_id'=>$user->id],[
+            'display_name'=>$user->username,'country_code'=>'PS','country_name'=>'Palestine'
+        ]);
+        $today = now()->startOfDay();
+        $last = $profile->last_login_reward_at ? $profile->last_login_reward_at->copy()->startOfDay() : null;
+        if ($last && $last->equalTo($today)) return ['streak'=>(int)$profile->login_streak,'pasha_awarded'=>0];
+        $streak = $last && $last->equalTo($today->copy()->subDay()) ? ((int)$profile->login_streak + 1) : 1;
+        $award = $streak % 3 === 0 ? 1 : 0;
+        $profile->login_streak = $streak;
+        $profile->last_login_reward_at = now();
+        if ($award) $profile->pasha_days = (int)$profile->pasha_days + 1;
+        $profile->save();
+        return ['streak'=>$streak,'pasha_awarded'=>$award];
+    }
+
     public function logout(Request $request)
     {
         $request->user()?->currentAccessToken()?->delete();
@@ -248,12 +318,14 @@ class MobileApiController extends Controller
                 return;
             case 'name_color':
                 if (isset($payload['color'])) $profile->name_color = (string) $payload['color'];
+                $profile->name_color_expires_at = $item->duration_days ? now()->addDays((int)$item->duration_days) : null;
                 $profile->active_name_frame = $payload['frame'] ?? $payload['glow'] ?? $profile->active_name_frame;
                 break;
             case 'text_color':
                 if (isset($payload['color'])) {
                     $profile->text_color = (string) $payload['color'];
                     $profile->chat_color = (string) $payload['color'];
+                    $profile->chat_color_expires_at = $item->duration_days ? now()->addDays((int)$item->duration_days) : null;
                 }
                 break;
             case 'badge':
@@ -268,6 +340,7 @@ class MobileApiController extends Controller
             case 'name_frame':
                 $profile->active_name_frame = $payload['frame'] ?? $item->key;
                 if (isset($payload['color'])) $profile->name_color = (string) $payload['color'];
+                $profile->name_color_expires_at = $item->duration_days ? now()->addDays((int)$item->duration_days) : null;
                 break;
             case 'xp_booster':
                 $profile->xp_boost_multiplier = (float) ($payload['multiplier'] ?? 1.25);

@@ -1,23 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:image_picker/image_picker.dart';
 
 import 'engines/tarneeb_engine.dart';
 import 'engines/local_game_engine.dart';
 import 'services/api_client.dart';
-import 'services/rewarded_ads.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await RewardedAds.initialize();
   runApp(const WarqnaApp());
 }
 
@@ -59,14 +54,6 @@ class _WarqnaAppState extends State<WarqnaApp> {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          builder: (context, child) {
-            final current = MediaQuery.textScalerOf(context).scale(1.0);
-            final safeScale = current.clamp(.9, 1.15).toDouble();
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(safeScale)),
-              child: ClipRect(child: child ?? const SizedBox.shrink()),
-            );
-          },
           theme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.dark,
@@ -136,11 +123,6 @@ class AppController extends ChangeNotifier {
   String selectedTable = 'table_premium_01';
   String selectedCardBack = 'cardback_01';
   String selectedNameColor = '#facc15';
-  String selectedChatColor = '#ffffff';
-  DateTime? nameColorExpiresAt;
-  DateTime? chatColorExpiresAt;
-  String avatarEmoji = '🦁';
-  String? avatarData;
   String selectedBadge = 'badge_pro';
   String selectedEmojiPack = 'emoji_free_basic';
   String selectedEffect = 'effect_gold_entry';
@@ -149,7 +131,6 @@ class AppController extends ChangeNotifier {
   final Set<int> claimedGiftSteps = <int>{};
   String? activeCompetition;
   String? activeChallenge;
-  String? activeGame;
   final Set<String> rewardedMatches = <String>{};
   String localeCode = 'ar';
   String themeCode = 'dark';
@@ -162,10 +143,6 @@ class AppController extends ChangeNotifier {
   int xp = 18560;
   int xpNext = 25000;
   int vipDays = 12;
-  int consecutiveLoginDays = 0;
-  String? lastLoginDate;
-  int rewardedAdClaimsToday = 0;
-  String? rewardedAdClaimDate;
   String? activeClub;
   final Set<String> owned = {'emoji_fun'};
   final List<AppNotice> notices = [
@@ -207,28 +184,16 @@ class AppController extends ChangeNotifier {
     selectedTable = prefs.getString('selectedTable') ?? selectedTable;
     selectedCardBack = prefs.getString('selectedCardBack') ?? selectedCardBack;
     selectedNameColor = prefs.getString('selectedNameColor') ?? selectedNameColor;
-    selectedChatColor = prefs.getString('selectedChatColor') ?? selectedChatColor;
-    nameColorExpiresAt = DateTime.tryParse(prefs.getString('nameColorExpiresAt') ?? '');
-    chatColorExpiresAt = DateTime.tryParse(prefs.getString('chatColorExpiresAt') ?? '');
-    avatarEmoji = prefs.getString('avatarEmoji') ?? avatarEmoji;
-    avatarData = prefs.getString('avatarData');
     selectedBadge = prefs.getString('selectedBadge') ?? selectedBadge;
     selectedEmojiPack = prefs.getString('selectedEmojiPack') ?? selectedEmojiPack;
     selectedEffect = prefs.getString('selectedEffect') ?? selectedEffect;
     activeXpMultiplier = prefs.getDouble('activeXpMultiplier') ?? activeXpMultiplier;
     giftRoadProgress = prefs.getInt('giftRoadProgress') ?? giftRoadProgress;
-    consecutiveLoginDays = prefs.getInt('consecutiveLoginDays') ?? consecutiveLoginDays;
-    lastLoginDate = prefs.getString('lastLoginDate');
-    rewardedAdClaimsToday = prefs.getInt('rewardedAdClaimsToday') ?? 0;
-    rewardedAdClaimDate = prefs.getString('rewardedAdClaimDate');
-    _normalizeTimedCosmetics();
-    _resetAdCounterIfNeeded();
     claimedGiftSteps
       ..clear()
       ..addAll((prefs.getStringList('claimedGiftSteps') ?? const <String>[]).map(int.parse));
     activeCompetition = prefs.getString('activeCompetition');
     activeChallenge = prefs.getString('activeChallenge');
-    activeGame = prefs.getString('activeGame');
     owned
       ..clear()
       ..addAll(prefs.getStringList('owned') ?? const ['emoji_fun']);
@@ -251,14 +216,9 @@ class AppController extends ChangeNotifier {
       displayName = prefs.getString('displayName') ?? username;
       email = prefs.getString('email') ?? email;
       isAdmin = prefs.getBool('isAdmin') ?? username.toLowerCase() == 'adnan';
-      if (isAdmin) {
-        coins = BigInt.parse('1000000000000000000');
-        level = math.max(level, 90);
-        vipDays = math.max(vipDays, 1000);
-      }
+      if (isAdmin) coins = BigInt.parse('1000000000000000000');
       isAuthenticated = true;
       serverConnected = false;
-      _applyLocalLoginStreak();
     }
     ready = true;
     notifyListeners();
@@ -275,24 +235,14 @@ class AppController extends ChangeNotifier {
     await prefs.setString('selectedTable', selectedTable);
     await prefs.setString('selectedCardBack', selectedCardBack);
     await prefs.setString('selectedNameColor', selectedNameColor);
-    await prefs.setString('selectedChatColor', selectedChatColor);
-    if (nameColorExpiresAt == null) { await prefs.remove('nameColorExpiresAt'); } else { await prefs.setString('nameColorExpiresAt', nameColorExpiresAt!.toIso8601String()); }
-    if (chatColorExpiresAt == null) { await prefs.remove('chatColorExpiresAt'); } else { await prefs.setString('chatColorExpiresAt', chatColorExpiresAt!.toIso8601String()); }
-    await prefs.setString('avatarEmoji', avatarEmoji);
-    if (avatarData == null) { await prefs.remove('avatarData'); } else { await prefs.setString('avatarData', avatarData!); }
     await prefs.setString('selectedBadge', selectedBadge);
     await prefs.setString('selectedEmojiPack', selectedEmojiPack);
     await prefs.setString('selectedEffect', selectedEffect);
     await prefs.setDouble('activeXpMultiplier', activeXpMultiplier);
     await prefs.setInt('giftRoadProgress', giftRoadProgress);
-    await prefs.setInt('consecutiveLoginDays', consecutiveLoginDays);
-    if (lastLoginDate == null) { await prefs.remove('lastLoginDate'); } else { await prefs.setString('lastLoginDate', lastLoginDate!); }
-    await prefs.setInt('rewardedAdClaimsToday', rewardedAdClaimsToday);
-    if (rewardedAdClaimDate == null) { await prefs.remove('rewardedAdClaimDate'); } else { await prefs.setString('rewardedAdClaimDate', rewardedAdClaimDate!); }
     await prefs.setStringList('claimedGiftSteps', claimedGiftSteps.map((e) => '$e').toList());
     if (activeCompetition == null) { await prefs.remove('activeCompetition'); } else { await prefs.setString('activeCompetition', activeCompetition!); }
     if (activeChallenge == null) { await prefs.remove('activeChallenge'); } else { await prefs.setString('activeChallenge', activeChallenge!); }
-    if (activeGame == null) { await prefs.remove('activeGame'); } else { await prefs.setString('activeGame', activeGame!); }
     await prefs.setStringList('owned', owned.toList());
     await prefs.setBool('offlineLoggedIn', isAuthenticated && !serverConnected);
     await prefs.setString('username', username);
@@ -335,14 +285,11 @@ class AppController extends ChangeNotifier {
       isAdmin = user['admin'] == true;
       coins = BigInt.parse(user['coins']!.toString());
       level = int.tryParse(user['level']!.toString()) ?? 1;
-      if (isAdmin) level = math.max(level, 90);
-      xp = isAdmin ? 0 : level * 620;
-      xpNext = xpNeededForLevel(level);
-      if (isAdmin) vipDays = math.max(vipDays, 1000);
+      xp = level * 1200;
+      xpNext = (level + 1) * 1200;
       isAuthenticated = true;
       serverConnected = false;
       authToken = null;
-      _applyLocalLoginStreak();
       await _save();
       notifyListeners();
       return null;
@@ -352,12 +299,6 @@ class AppController extends ChangeNotifier {
       authToken = data['token']?.toString();
       api.token = authToken;
       _applySession(data);
-      final streak = data['streak_reward'];
-      if (streak is Map) {
-        consecutiveLoginDays = int.tryParse(streak['streak']?.toString() ?? '') ?? consecutiveLoginDays;
-        final awarded = int.tryParse(streak['pasha_awarded']?.toString() ?? '') ?? 0;
-        if (awarded > 0) notices.insert(0, AppNotice('🎩', 'مكافأة الاستمرارية', 'حصلت على يوم باشا مجاني بعد 3 أيام دخول متواصلة.'));
-      }
       isAuthenticated = true;
       serverConnected = true;
       await _save();
@@ -412,173 +353,17 @@ class AppController extends ChangeNotifier {
       username = user['username']?.toString() ?? username;
       displayName = user['display_name']?.toString() ?? user['name']?.toString() ?? username;
       email = user['email']?.toString() ?? email;
-      avatarEmoji = user['avatar']?.toString() ?? avatarEmoji;
-      avatarData = user['avatar_data']?.toString().isNotEmpty == true ? user['avatar_data']?.toString() : avatarData;
-      selectedNameColor = user['name_color']?.toString() ?? selectedNameColor;
-      selectedChatColor = user['chat_color']?.toString() ?? selectedChatColor;
-      nameColorExpiresAt = DateTime.tryParse(user['name_color_expires_at']?.toString() ?? '');
-      chatColorExpiresAt = DateTime.tryParse(user['chat_color_expires_at']?.toString() ?? '');
-      consecutiveLoginDays = int.tryParse(user['login_streak']?.toString() ?? '') ?? consecutiveLoginDays;
       isAdmin = user['is_admin'] == true || user['is_admin'] == 1;
       level = int.tryParse(user['level']?.toString() ?? '') ?? level;
       xp = int.tryParse(user['xp']?.toString() ?? '') ?? xp;
       vipDays = int.tryParse(user['pasha_days']?.toString() ?? '') ?? vipDays;
-      xpNext = xpNeededForLevel(level);
     }
     if (wallet is Map) {
       coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
     }
-    if (isAdmin && username.toLowerCase() == 'adnan') {
-      if (coins < BigInt.parse('1000000000000000000')) coins = BigInt.parse('1000000000000000000');
-      level = math.max(level, 90);
-      vipDays = math.max(vipDays, 1000);
+    if (isAdmin && username.toLowerCase() == 'adnan' && coins < BigInt.parse('1000000000000000000')) {
+      coins = BigInt.parse('1000000000000000000');
     }
-    _normalizeTimedCosmetics();
-  }
-
-  int xpNeededForLevel(int currentLevel) {
-    final safe = currentLevel.clamp(1, 200);
-    return 900 + (safe * 260) + (safe * safe * 18);
-  }
-
-  void _recalculateLevel() {
-    if (isAdmin) {
-      level = math.max(level, 90);
-      xpNext = xpNeededForLevel(level);
-      return;
-    }
-    xpNext = xpNeededForLevel(level);
-    while (xp >= xpNext && level < 200) {
-      xp -= xpNext;
-      level += 1;
-      xpNext = xpNeededForLevel(level);
-      notices.insert(0, AppNotice('⭐', 'ترقية مستوى', 'وصلت إلى المستوى $level وحصلت على شارة تقدم جديدة.'));
-    }
-  }
-
-  void _normalizeTimedCosmetics() {
-    final now = DateTime.now();
-    if (nameColorExpiresAt != null && now.isAfter(nameColorExpiresAt!)) {
-      selectedNameColor = '#facc15';
-      nameColorExpiresAt = null;
-    }
-    if (chatColorExpiresAt != null && now.isAfter(chatColorExpiresAt!)) {
-      selectedChatColor = '#ffffff';
-      chatColorExpiresAt = null;
-    }
-  }
-
-  void _resetAdCounterIfNeeded() {
-    final today = DateTime.now().toIso8601String().substring(0, 10);
-    if (rewardedAdClaimDate != today) {
-      rewardedAdClaimDate = today;
-      rewardedAdClaimsToday = 0;
-    }
-  }
-
-  int get rewardedAdsRemaining {
-    _resetAdCounterIfNeeded();
-    return math.max(0, 5 - rewardedAdClaimsToday);
-  }
-
-  void _applyLocalLoginStreak() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final todayText = today.toIso8601String().substring(0, 10);
-    if (lastLoginDate == todayText) return;
-    final previous = DateTime.tryParse(lastLoginDate ?? '');
-    final yesterday = today.subtract(const Duration(days: 1));
-    consecutiveLoginDays = previous != null && DateTime(previous.year, previous.month, previous.day) == yesterday
-        ? consecutiveLoginDays + 1
-        : 1;
-    lastLoginDate = todayText;
-    if (consecutiveLoginDays % 3 == 0) {
-      vipDays += 1;
-      notices.insert(0, AppNotice('🎩', 'يوم باشا مجاني', 'أكملت 3 أيام دخول متواصلة، وتمت إضافة يوم باشا.'));
-    }
-  }
-
-  Future<String?> updateAvatarFromGallery() async {
-    try {
-      final file = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 640, imageQuality: 82);
-      if (file == null) return null;
-      final bytes = await file.readAsBytes();
-      if (bytes.length > 1400000) return 'الصورة كبيرة جداً. اختر صورة أصغر من 1.4MB.';
-      avatarData = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-      if (serverConnected) {
-        await api.updateProfile({'avatar_data': avatarData, 'avatar': avatarEmoji});
-      }
-      await _save();
-      notifyListeners();
-      return null;
-    } on ApiException catch (e) {
-      return e.message;
-    } catch (_) {
-      return 'تعذر قراءة الصورة المختارة.';
-    }
-  }
-
-  Future<String?> chooseAvatarEmoji(String emoji) async {
-    avatarEmoji = emoji;
-    avatarData = null;
-    if (serverConnected) {
-      try {
-        await api.updateProfile({'avatar': emoji, 'avatar_data': null});
-      } on ApiException catch (e) {
-        return e.message;
-      }
-    }
-    await _save();
-    notifyListeners();
-    return null;
-  }
-
-  Future<String?> deleteAccount(String password) async {
-    if (isAdmin) return 'لا يمكن حذف حساب المدير الرئيسي.';
-    if (password.trim().isEmpty) return 'أدخل كلمة المرور لتأكيد حذف الحساب.';
-    if (serverConnected) {
-      try {
-        await api.deleteAccount(password);
-      } on ApiException catch (e) {
-        return e.message;
-      }
-    }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    isAuthenticated = false;
-    serverConnected = false;
-    authToken = null;
-    api.token = null;
-    notifyListeners();
-    return null;
-  }
-
-  Future<String?> grantRewardedAd(String verificationId) async {
-    _resetAdCounterIfNeeded();
-    if (rewardedAdClaimsToday >= 5) return 'وصلت إلى الحد اليومي: 5 إعلانات مكافِئة.';
-    var tokens = 3000;
-    var earnedXp = 35;
-    if (serverConnected) {
-      try {
-        final data = await api.claimRewardedAd(verificationId);
-        tokens = int.tryParse(data['tokens']?.toString() ?? '') ?? tokens;
-        earnedXp = int.tryParse(data['xp']?.toString() ?? '') ?? earnedXp;
-        final wallet = data['wallet'];
-        if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
-      } on ApiException catch (e) {
-        return e.message;
-      }
-    } else {
-      coins += BigInt.from(tokens);
-    }
-    rewardedAdClaimsToday += 1;
-    xp += earnedXp;
-    _recalculateLevel();
-    transactions.insert(0, TokenTransaction('مكافأة مشاهدة إعلان', tokens, 'الآن'));
-    notices.insert(0, AppNotice('📺', 'مكافأة إعلان', 'حصلت على $tokens توكن و$earnedXp XP.'));
-    await _save();
-    notifyListeners();
-    return null;
   }
 
   void changeLocale(String value) {
@@ -642,11 +427,6 @@ class AppController extends ChangeNotifier {
         break;
       case 'names':
         selectedNameColor = product.value ?? selectedNameColor;
-        nameColorExpiresAt = product.durationDays == null ? null : DateTime.now().add(Duration(days: product.durationDays!));
-        break;
-      case 'chat_colors':
-        selectedChatColor = product.value ?? selectedChatColor;
-        chatColorExpiresAt = product.durationDays == null ? null : DateTime.now().add(Duration(days: product.durationDays!));
         break;
       case 'badges':
         selectedBadge = product.id;
@@ -678,44 +458,14 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool joinCompetition(String id) {
-    if (activeCompetition != null && activeCompetition != id) return false;
+  void joinCompetition(String id) {
     activeCompetition = id;
     _save();
     notifyListeners();
-    return true;
   }
 
-  void leaveCompetition() {
-    activeCompetition = null;
-    _save();
-    notifyListeners();
-  }
-
-  bool joinChallenge(String id) {
-    if (activeChallenge != null && activeChallenge != id) return false;
+  void joinChallenge(String id) {
     activeChallenge = id;
-    _save();
-    notifyListeners();
-    return true;
-  }
-
-  void leaveChallenge() {
-    activeChallenge = null;
-    _save();
-    notifyListeners();
-  }
-
-  bool enterGame(String id) {
-    if (activeGame != null && activeGame != id) return false;
-    activeGame = id;
-    _save();
-    notifyListeners();
-    return true;
-  }
-
-  void leaveGame([String? id]) {
-    if (id == null || activeGame == id) activeGame = null;
     _save();
     notifyListeners();
   }
@@ -728,7 +478,6 @@ class AppController extends ChangeNotifier {
     final xpReward = (10 * (vipDays > 0 ? 2 : 1) * activeXpMultiplier).round();
     coins += BigInt.from(baseReward);
     xp += xpReward;
-    _recalculateLevel();
     giftRoadProgress = (giftRoadProgress + 1).clamp(0, 30).toInt();
     transactions.insert(0, TokenTransaction('مكافأة فوز', baseReward, 'الآن'));
     notices.insert(0, AppNotice(storeProductById(selectedEffect)?.icon ?? '🏆', 'فوز جديد', 'حصلت على $baseReward توكن و$xpReward XP مع تفعيل مؤثر الفوز.'));
@@ -776,8 +525,6 @@ class AppController extends ChangeNotifier {
       addCoins(2500, 'مكافأة يومية');
     }
     xp += 20;
-    _recalculateLevel();
-    await _save();
     notifyListeners();
   }
 
@@ -791,12 +538,10 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool joinClub(String id) {
-    if (activeClub != null && activeClub != id) return false;
+  void joinClub(String id) {
     activeClub = id;
     _save();
     notifyListeners();
-    return true;
   }
 
   void leaveClub() {
@@ -963,12 +708,6 @@ class AppPalette {
           Colors.white,
           Color(0xffc8b59f),
         );
-      case 'crimson':
-        return const AppPalette(Color(0xff21070d), Color(0xff3b1019), Color(0xff521725), Color(0xffffd078), Color(0xff20a777), Color(0xffef334f), Colors.white, Color(0xffd2a5ad));
-      case 'midnight':
-        return const AppPalette(Color(0xff020617), Color(0xff0b1730), Color(0xff112448), Color(0xffe7c873), Color(0xff21b58a), Color(0xff4f86ff), Colors.white, Color(0xff91a4c4));
-      case 'aurora':
-        return const AppPalette(Color(0xff04171b), Color(0xff0a2b31), Color(0xff10414a), Color(0xffffd772), Color(0xff35d09a), Color(0xff67e8f9), Colors.white, Color(0xffa4ced2));
       default:
         return const AppPalette(
           Color(0xff07111c),
@@ -990,8 +729,8 @@ class L {
       'home': 'الرئيسية',
       'games': 'الألعاب',
       'store': 'المتجر',
-      'clubs': 'المجموعات',
-      'events': 'المنافسات',
+      'clubs': 'الأندية',
+      'events': 'الأحداث',
       'welcome': 'مرحباً بعودتك',
       'level': 'المستوى',
       'coins': 'العملات',
@@ -1003,9 +742,9 @@ class L {
       'giftRoad': 'طريق الهدايا',
       'featured': 'ألعاب مميزة',
       'friendly': 'مباراة ودية',
-      'competitions': 'المنافسات',
+      'competitions': 'المسابقات',
       'challenges': 'التحديات',
-      'tournaments': 'المنافسات',
+      'tournaments': 'البطولات',
       'friends': 'الأصدقاء',
       'settings': 'الإعدادات',
       'language': 'اللغة',
@@ -1029,7 +768,7 @@ class L {
       'search': 'ابحث عن لعبة',
       'members': 'عضو',
       'treasury': 'الخزينة',
-      'leaveClub': 'مغادرة المجموعة',
+      'leaveClub': 'مغادرة النادي',
       'joinClub': 'انضمام',
       'domino': 'دومينو',
       'tarneeb': 'طرنيب',
@@ -1054,8 +793,8 @@ class L {
       'home': 'Home',
       'games': 'Games',
       'store': 'Store',
-      'clubs': 'Groups',
-      'events': 'Competitions',
+      'clubs': 'Clubs',
+      'events': 'Events',
       'welcome': 'Welcome back',
       'level': 'Level',
       'coins': 'Coins',
@@ -1093,7 +832,7 @@ class L {
       'search': 'Search games',
       'members': 'members',
       'treasury': 'Treasury',
-      'leaveClub': 'Leave Group',
+      'leaveClub': 'Leave Club',
       'joinClub': 'Join',
       'domino': 'Domino',
       'tarneeb': 'Tarneeb',
@@ -1118,8 +857,8 @@ class L {
       'home': 'Startseite',
       'games': 'Spiele',
       'store': 'Shop',
-      'clubs': 'Groups',
-      'events': 'Competitions',
+      'clubs': 'Clubs',
+      'events': 'Events',
       'welcome': 'Willkommen zurück',
       'level': 'Stufe',
       'coins': 'Token',
@@ -1157,7 +896,7 @@ class L {
       'search': 'Spiel suchen',
       'members': 'Mitglieder',
       'treasury': 'Kasse',
-      'leaveClub': 'Gruppe verlassen',
+      'leaveClub': 'Club verlassen',
       'joinClub': 'Beitreten',
       'domino': 'Domino',
       'tarneeb': 'Tarneeb',
@@ -1182,8 +921,8 @@ class L {
       'home': 'Ana Sayfa',
       'games': 'Oyunlar',
       'store': 'Mağaza',
-      'clubs': 'Gruplar',
-      'events': 'Yarışmalar',
+      'clubs': 'Kulüpler',
+      'events': 'Etkinlikler',
       'welcome': 'Tekrar hoş geldin',
       'level': 'Seviye',
       'coins': 'Jeton',
@@ -1221,7 +960,7 @@ class L {
       'search': 'Oyun ara',
       'members': 'üye',
       'treasury': 'Kasa',
-      'leaveClub': 'Gruptan Ayrıl',
+      'leaveClub': 'Kulüpten Ayrıl',
       'joinClub': 'Katıl',
       'domino': 'Domino',
       'tarneeb': 'Tarneeb',
@@ -1246,7 +985,7 @@ class L {
       'home': 'Accueil',
       'games': 'Jeux',
       'store': 'Boutique',
-      'clubs': 'Groups',
+      'clubs': 'Clubs',
       'events': 'Événements',
       'welcome': 'Bon retour',
       'level': 'Niveau',
@@ -1285,7 +1024,7 @@ class L {
       'search': 'Rechercher un jeu',
       'members': 'membres',
       'treasury': 'Trésorerie',
-      'leaveClub': 'Quitter le groupe',
+      'leaveClub': 'Quitter le club',
       'joinClub': 'Rejoindre',
       'domino': 'Domino',
       'tarneeb': 'Tarneeb',
@@ -1310,8 +1049,8 @@ class L {
       'home': 'Inicio',
       'games': 'Juegos',
       'store': 'Tienda',
-      'clubs': 'Grupos',
-      'events': 'Competiciones',
+      'clubs': 'Clubes',
+      'events': 'Eventos',
       'welcome': 'Bienvenido de nuevo',
       'level': 'Nivel',
       'coins': 'Fichas',
@@ -1349,7 +1088,7 @@ class L {
       'search': 'Buscar juego',
       'members': 'miembros',
       'treasury': 'Tesorería',
-      'leaveClub': 'Salir del grupo',
+      'leaveClub': 'Salir del club',
       'joinClub': 'Unirse',
       'domino': 'Dominó',
       'tarneeb': 'Tarneeb',
@@ -1434,84 +1173,16 @@ class StoreProduct {
   String name(String lang) => lang == 'ar' ? nameAr : nameEn;
   String description(String lang) => lang == 'ar' ? descriptionAr : descriptionEn;
   bool get reusable => category == 'pasha' || category == 'boost';
-  String get tier {
-    final days = durationDays ?? 0;
-    if (days >= 30 || price >= 25000 || id.contains('legend')) return 'legendary';
-    if (days >= 7 || price >= 7000 || id.contains('pro')) return 'pro';
-    return 'beginner';
-  }
-
-  String tierLabel(String lang) {
-    if (lang == 'ar') return tier == 'legendary' ? 'أسطوري' : tier == 'pro' ? 'محترف' : 'مبتدئ';
-    return tier == 'legendary' ? 'Legendary' : tier == 'pro' ? 'Professional' : 'Beginner';
-  }
 }
-
-List<StoreProduct> buildTimedColorProducts() {
-  const palette = <(String, String, String, Color)>[
-    ('ruby', 'ياقوت متوهج', 'Ruby Glow', Color(0xffff355e)),
-    ('orange', 'برتقالي شمسي', 'Solar Orange', Color(0xffff8a00)),
-    ('amber', 'كهرماني فاخر', 'Luxury Amber', Color(0xffffc107)),
-    ('gold', 'ذهبي ملكي', 'Royal Gold', Color(0xfff5c542)),
-    ('lime', 'ليموني نيون', 'Neon Lime', Color(0xffa3e635)),
-    ('emerald', 'زمرد عميق', 'Deep Emerald', Color(0xff10b981)),
-    ('mint', 'نعناع نيون', 'Neon Mint', Color(0xff5eead4)),
-    ('cyan', 'سماوي ليزر', 'Laser Cyan', Color(0xff22d3ee)),
-    ('sky', 'أزرق سماوي', 'Sky Blue', Color(0xff38bdf8)),
-    ('royal', 'أزرق ملكي', 'Royal Blue', Color(0xff3b82f6)),
-    ('indigo', 'نيلي فاخر', 'Luxury Indigo', Color(0xff6366f1)),
-    ('violet', 'بنفسجي مخملي', 'Velvet Violet', Color(0xff8b5cf6)),
-    ('amethyst', 'جمشت لامع', 'Shiny Amethyst', Color(0xffc084fc)),
-    ('pink', 'وردي لؤلؤي', 'Pearl Pink', Color(0xffec4899)),
-    ('rose', 'وردي غروب', 'Sunset Rose', Color(0xfffb7185)),
-    ('coral', 'مرجاني فاخر', 'Luxury Coral', Color(0xffff7f6e)),
-    ('silver', 'فضي معدني', 'Metallic Silver', Color(0xffcbd5e1)),
-    ('diamond', 'ألماسي جليدي', 'Ice Diamond', Color(0xffe0f2fe)),
-    ('white', 'أبيض ناصع', 'Pure White', Color(0xffffffff)),
-    ('bronze', 'برونزي قديم', 'Antique Bronze', Color(0xffc08457)),
-    ('teal', 'تركوازي محترف', 'Pro Teal', Color(0xff14b8a6)),
-    ('magenta', 'ماجنتا أسطوري', 'Legendary Magenta', Color(0xffd946ef)),
-    ('crimson', 'قرمزي ناري', 'Fire Crimson', Color(0xffdc2626)),
-    ('aurora', 'شفق قطبي', 'Aurora', Color(0xff67e8f9)),
-  ];
-  const durations = <int>[3, 7, 30];
-  final result = <StoreProduct>[];
-  for (var index = 0; index < palette.length; index++) {
-    final item = palette[index];
-    final days = durations[index % durations.length];
-    final base = days == 3 ? 2400 : days == 7 ? 6200 : 16800;
-    final price = base + (index * 175);
-    final hex = '#${item.$4.value.toRadixString(16).padLeft(8, '0').substring(2)}';
-    result.add(StoreProduct(
-      id: 'player_color_${item.$1}_${days}d', category: 'names', icon: '✨',
-      nameAr: 'لون لاعب ${item.$2} — $days أيام', nameEn: '${item.$3} player color — $days days',
-      descriptionAr: 'لون متوهج حول صورة اللاعب واسمه داخل البروفايل والطاولة مع معاينة مباشرة.',
-      descriptionEn: 'Glowing player color around the avatar and name with a live preview.',
-      price: price, durationDays: days, value: hex, previewColor1: item.$4, previewColor2: const Color(0xff07111c),
-    ));
-    result.add(StoreProduct(
-      id: 'chat_color_${item.$1}_${days}d', category: 'chat_colors', icon: '💬',
-      nameAr: 'لون دردشة ${item.$2} — $days أيام', nameEn: '${item.$3} chat color — $days days',
-      descriptionAr: 'لون فاخر لرسائلك داخل الدردشة العامة والخاصة ودردشة الغرفة.',
-      descriptionEn: 'Premium color for public, private and in-room chat messages.',
-      price: price + 900, durationDays: days, value: hex, previewColor1: item.$4, previewColor2: const Color(0xff111827),
-    ));
-  }
-  return result;
-}
-
 
 final List<StoreProduct> products = <StoreProduct>[
-  StoreProduct(id: "pasha_1_day_v132", category: "pasha", icon: "🎩", nameAr: "باشا يوم واحد", nameEn: "Pasha 1 Day", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 1700, durationDays: 1, value: "pasha"),
-  StoreProduct(id: "pasha_3_days_v132", category: "pasha", icon: "🎩", nameAr: "باشا 3 أيام", nameEn: "Pasha 3 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 5000, durationDays: 3, value: "pasha"),
-  StoreProduct(id: "pasha_7_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا 7 أيام", nameEn: "Pasha 7 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 10000, durationDays: 7, value: "pasha"),
-  StoreProduct(id: "pasha_30_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا 30 يوم", nameEn: "Pasha 30 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 38000, durationDays: 30, value: "pasha"),
-  StoreProduct(id: "pasha_90_days_v132", category: "pasha", icon: "🎩", nameAr: "باشا 90 يوم", nameEn: "Pasha 90 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 105000, durationDays: 90, value: "pasha"),
-  StoreProduct(id: "pasha_365_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا سنة كاملة", nameEn: "Pasha 365 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 300000, durationDays: 365, value: "pasha"),
+  StoreProduct(id: "pasha_1_day_v132", category: "pasha", icon: "🎩", nameAr: "باشا يوم واحد", nameEn: "Pasha 1 Day", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء نوادٍ ومسابقات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 1700, durationDays: 1, value: "pasha"),
+  StoreProduct(id: "pasha_3_days_v132", category: "pasha", icon: "🎩", nameAr: "باشا 3 أيام", nameEn: "Pasha 3 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء نوادٍ ومسابقات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 5000, durationDays: 3, value: "pasha"),
+  StoreProduct(id: "pasha_7_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا 7 أيام", nameEn: "Pasha 7 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء نوادٍ ومسابقات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 10000, durationDays: 7, value: "pasha"),
+  StoreProduct(id: "pasha_30_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا 30 يوم", nameEn: "Pasha 30 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء نوادٍ ومسابقات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 38000, durationDays: 30, value: "pasha"),
+  StoreProduct(id: "pasha_90_days_v132", category: "pasha", icon: "🎩", nameAr: "باشا 90 يوم", nameEn: "Pasha 90 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء نوادٍ ومسابقات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 105000, durationDays: 90, value: "pasha"),
+  StoreProduct(id: "pasha_365_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا سنة كاملة", nameEn: "Pasha 365 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء نوادٍ ومسابقات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 300000, durationDays: 365, value: "pasha"),
   StoreProduct(id: "theme_dark_premium", category: "themes", icon: "🎨", nameAr: "داكن فاخر", nameEn: "Premium Dark", descriptionAr: "ثيم كامل يغيّر الخلفيات والبطاقات والأزرار والطاولات.", descriptionEn: "A complete theme for backgrounds, panels, buttons and tables.", price: 0, value: "dark", previewColor1: Color(0xff07111f), previewColor2: Color(0xffd6aa59)),
-  StoreProduct(id: "theme_crimson_legend", category: "themes", icon: "🌹", nameAr: "قرمزي أسطوري", nameEn: "Legendary Crimson", descriptionAr: "ثيم قرمزي داكن مع وهج ذهبي وبطاقات احترافية.", descriptionEn: "Deep crimson theme with gold glow and premium panels.", price: 34000, value: "crimson", previewColor1: Color(0xff21070d), previewColor2: Color(0xffef334f)),
-  StoreProduct(id: "theme_midnight_elite", category: "themes", icon: "🌌", nameAr: "منتصف الليل النخبوي", nameEn: "Elite Midnight", descriptionAr: "ثيم أزرق ليلي احترافي للغرف والمتجر والملف الشخصي.", descriptionEn: "Premium midnight-blue theme for rooms, store and profile.", price: 42000, value: "midnight", previewColor1: Color(0xff020617), previewColor2: Color(0xff4f86ff)),
-  StoreProduct(id: "theme_aurora_supreme", category: "themes", icon: "🌈", nameAr: "الشفق الفاخر", nameEn: "Supreme Aurora", descriptionAr: "ثيم تركوازي متوهج بمظهر عالمي وهادئ.", descriptionEn: "Glowing aurora theme with a refined global look.", price: 52000, value: "aurora", previewColor1: Color(0xff04171b), previewColor2: Color(0xff67e8f9)),
   StoreProduct(id: "theme_emerald", category: "themes", icon: "🎨", nameAr: "زمردي ملكي", nameEn: "Royal Emerald", descriptionAr: "ثيم كامل يغيّر الخلفيات والبطاقات والأزرار والطاولات.", descriptionEn: "A complete theme for backgrounds, panels, buttons and tables.", price: 11800, value: "emerald", previewColor1: Color(0xff052e26), previewColor2: Color(0xff10b981)),
   StoreProduct(id: "theme_royal", category: "themes", icon: "🎨", nameAr: "أزرق ملكي", nameEn: "Royal Blue", descriptionAr: "ثيم كامل يغيّر الخلفيات والبطاقات والأزرار والطاولات.", descriptionEn: "A complete theme for backgrounds, panels, buttons and tables.", price: 12500, value: "royal", previewColor1: Color(0xff071b3d), previewColor2: Color(0xff3b82f6)),
   StoreProduct(id: "theme_purple", category: "themes", icon: "🎨", nameAr: "بنفسجي أسطوري", nameEn: "Legendary Purple", descriptionAr: "ثيم كامل يغيّر الخلفيات والبطاقات والأزرار والطاولات.", descriptionEn: "A complete theme for backgrounds, panels, buttons and tables.", price: 14500, value: "purple", previewColor1: Color(0xff2e1065), previewColor2: Color(0xffa855f7)),
@@ -1630,7 +1301,6 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "name_purple", category: "names", icon: "🅰️", nameAr: "بنفسجي", nameEn: "Purple", descriptionAr: "لون اسم واضح مع معاينة مباشرة على البروفايل والطاولة.", descriptionEn: "Player-name color with a live profile and table preview.", price: 6500, value: "#a855f7", previewColor1: Color(0xffa855f7), previewColor2: const Color(0xff111827)),
   StoreProduct(id: "name_cyan", category: "names", icon: "🅰️", nameAr: "سماوي", nameEn: "Cyan", descriptionAr: "لون اسم واضح مع معاينة مباشرة على البروفايل والطاولة.", descriptionEn: "Player-name color with a live profile and table preview.", price: 6500, value: "#06b6d4", previewColor1: Color(0xff06b6d4), previewColor2: const Color(0xff111827)),
   StoreProduct(id: "name_white", category: "names", icon: "🅰️", nameAr: "أبيض ألماسي", nameEn: "Diamond White", descriptionAr: "لون اسم واضح مع معاينة مباشرة على البروفايل والطاولة.", descriptionEn: "Player-name color with a live profile and table preview.", price: 6500, value: "#ffffff", previewColor1: Color(0xffffffff), previewColor2: const Color(0xff111827)),
-  ...buildTimedColorProducts(),
   StoreProduct(id: "badge_king", category: "badges", icon: "👑", nameAr: "شارة الملك", nameEn: "King Badge", descriptionAr: "عنصر تجميلي فاخر يظهر في الملف الشخصي وغرفة اللعب.", descriptionEn: "Premium cosmetic shown in the profile and game room.", price: 30000),
   StoreProduct(id: "badge_pro", category: "badges", icon: "🔥", nameAr: "شارة المحترف", nameEn: "Pro Badge", descriptionAr: "عنصر تجميلي فاخر يظهر في الملف الشخصي وغرفة اللعب.", descriptionEn: "Premium cosmetic shown in the profile and game room.", price: 30000),
   StoreProduct(id: "badge_fairplay", category: "badges", icon: "🛡️", nameAr: "شارة اللعب النظيف", nameEn: "Fair Play Badge", descriptionAr: "عنصر تجميلي فاخر يظهر في الملف الشخصي وغرفة اللعب.", descriptionEn: "Premium cosmetic shown in the profile and game room.", price: 30000),
@@ -1959,30 +1629,28 @@ class PremiumTopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(30),
-              onTap: () => showProfile(context, controller),
-              child: Row(
-                children: [
-                  AccountAvatar(controller: controller, size: 41),
-                  const SizedBox(width: 7),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(controller.displayName, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w900, color: colorFromHex(controller.selectedNameColor))),
-                      Row(children: [
-                        Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: controller.serverConnected ? Colors.greenAccent : Colors.amber)),
-                        const SizedBox(width: 4),
-                        Flexible(child: Text(controller.serverConnected ? 'متصل' : 'محلي', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 8, color: Colors.white60))),
-                      ]),
-                    ],
-                  )),
-                ],
-              ),
+          InkWell(
+            borderRadius: BorderRadius.circular(30),
+            onTap: () => showProfile(context, controller),
+            child: Row(
+              children: [
+                PremiumAvatar(text: controller.displayName.isEmpty ? '?' : controller.displayName.substring(0, 1)),
+                const SizedBox(width: 9),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(controller.displayName, style: const TextStyle(fontWeight: FontWeight.w900)),
+                    Row(children: [
+                      Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: controller.serverConnected ? Colors.greenAccent : Colors.amber)),
+                      const SizedBox(width: 4),
+                      Text(controller.serverConnected ? 'متصل بالخادم' : 'وضع محلي', style: const TextStyle(fontSize: 9, color: Colors.white60)),
+                    ]),
+                  ],
+                ),
+              ],
             ),
           ),
+          const Spacer(),
           IconButton(
             tooltip: controller.landscapeMode ? 'العودة للوضع الطولي' : 'تفعيل العرض الأفقي',
             onPressed: controller.toggleOrientationMode,
@@ -2035,9 +1703,6 @@ class PremiumTopBar extends StatelessWidget {
               PopupMenuItem(value: 'royal', child: Text('أزرق ملكي')),
               PopupMenuItem(value: 'purple', child: Text('بنفسجي')),
               PopupMenuItem(value: 'classic', child: Text('كلاسيكي')),
-              PopupMenuItem(value: 'crimson', child: Text('قرمزي أسطوري')),
-              PopupMenuItem(value: 'midnight', child: Text('منتصف الليل')),
-              PopupMenuItem(value: 'aurora', child: Text('الشفق الفاخر')),
             ],
           ),
         ],
@@ -2117,14 +1782,12 @@ class HomePage extends StatelessWidget {
         ),
         const SizedBox(height: 13),
         PremiumPanel(
-          child: Wrap(
-            alignment: WrapAlignment.spaceAround,
-            runAlignment: WrapAlignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               QuickButton(icon: '🎯', label: L.t(lang, 'challenges'), onTap: () => showChallenges(context, controller)),
-              QuickButton(icon: '🏆', label: L.t(lang, 'competitions'), onTap: () => showCompetitions(context, controller)),
+              QuickButton(icon: '🏆', label: L.t(lang, 'tournaments'), onTap: () => showCompetitions(context, controller)),
               QuickButton(icon: '🛡️', label: L.t(lang, 'clubs'), onTap: () => onTab(3)),
-              QuickButton(icon: '🎁', label: L.t(lang, 'rewards'), onTap: () => showRewards(context, controller)),
               QuickButton(icon: '👥', label: L.t(lang, 'friends'), onTap: () => showFriends(context, controller)),
               QuickButton(icon: '⚙️', label: L.t(lang, 'settings'), onTap: () => showSettings(context, controller)),
             ],
@@ -2215,7 +1878,6 @@ class StorePage extends StatefulWidget {
 
 class _StorePageState extends State<StorePage> {
   String category = 'all';
-  String tier = 'all';
   String query = '';
 
   @override
@@ -2223,9 +1885,8 @@ class _StorePageState extends State<StorePage> {
     final lang = widget.controller.localeCode;
     final visible = products.where((p) {
       final categoryMatch = category == 'all' || p.category == category;
-      final tierMatch = tier == 'all' || p.tier == tier;
       final text = '${p.name(lang)} ${p.description(lang)}'.toLowerCase();
-      return categoryMatch && tierMatch && text.contains(query.toLowerCase());
+      return categoryMatch && text.contains(query.toLowerCase());
     }).toList();
     final categories = const [
       ('all', 'الكل'),
@@ -2235,8 +1896,7 @@ class _StorePageState extends State<StorePage> {
       ('cards', 'ظهر الورق'),
       ('emoji', 'الإيموجي'),
       ('boost', 'المسرعات'),
-      ('names', 'ألوان اللاعب'),
-      ('chat_colors', 'ألوان الدردشة'),
+      ('names', 'ألوان الاسم'),
       ('badges', 'الشارات'),
       ('effects', 'المؤثرات'),
     ];
@@ -2285,22 +1945,6 @@ class _StorePageState extends State<StorePage> {
             },
           ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            const Text('التصنيف', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white60)),
-            const SizedBox(width: 8),
-            for (final entry in const [('all', 'الكل'), ('beginner', 'مبتدئ'), ('pro', 'محترف'), ('legendary', 'أسطوري')])
-              Padding(
-                padding: const EdgeInsetsDirectional.only(end: 5),
-                child: FilterChip(
-                  label: Text(entry.$2, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900)),
-                  selected: tier == entry.$1,
-                  onSelected: (_) => setState(() => tier = entry.$1),
-                ),
-              ),
-          ],
-        ),
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -2312,7 +1956,7 @@ class _StorePageState extends State<StorePage> {
                 crossAxisCount: columns,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: columns == 2 ? .60 : .70,
+                childAspectRatio: columns == 2 ? .66 : .74,
               ),
               itemCount: visible.length,
               itemBuilder: (_, i) => ProductCard(
@@ -2346,8 +1990,8 @@ class ClubsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final lang = controller.localeCode;
     final clubs = const [
-      ('falcons', '🦅', 'صقور العرب', 18, 46, 315000, 'متصدر دوري المجموعات'),
-      ('kings', '👑', 'ملوك الورق', 25, 50, 728000, 'مجموعة احترافية • دخول بالباشا'),
+      ('falcons', '🦅', 'صقور العرب', 18, 46, 315000, 'متصدر دوري الأندية'),
+      ('kings', '👑', 'ملوك الورق', 25, 50, 728000, 'نادي احترافي • دخول بالباشا'),
       ('friends', '🤝', 'رفاق اللعب', 12, 31, 146000, 'مجتمع ودي وتحديات يومية'),
       ('aces', '🂡', 'نخبة الآسات', 31, 48, 910000, 'بطولات أسبوعية وجوائز كبيرة'),
     ];
@@ -2382,7 +2026,7 @@ class ClubsPage extends StatelessWidget {
                   ]),
                   const SizedBox(height: 12),
                   Row(children: [
-                    Expanded(child: FilledButton.icon(onPressed: () => showClubChallenges(context, controller, current.$3), icon: const Icon(Icons.emoji_events_outlined), label: const Text('تحديات المجموعة'))),
+                    Expanded(child: FilledButton.icon(onPressed: () => showClubChallenges(context, controller, current.$3), icon: const Icon(Icons.emoji_events_outlined), label: const Text('تحديات النادي'))),
                     const SizedBox(width: 8),
                     Expanded(child: FilledButton.tonalIcon(onPressed: controller.leaveClub, icon: const Icon(Icons.logout), label: Text(L.t(lang, 'leaveClub')))),
                   ]),
@@ -2391,7 +2035,7 @@ class ClubsPage extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 12),
-        const SectionTitle(title: 'المجموعات المقترحة'),
+        const SectionTitle(title: 'الأندية المقترحة'),
         const SizedBox(height: 8),
         ...clubs.map((club) => Padding(
           padding: const EdgeInsets.only(bottom: 10),
@@ -2408,7 +2052,7 @@ class ClubsPage extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text('${club.$5}/50 عضو • خزينة ${formatNumber(club.$6)}', style: const TextStyle(color: Colors.white54, fontSize: 9)),
                 ])),
-                FilledButton.tonal(onPressed: controller.activeClub == club.$1 ? () => controller.leaveClub() : () { final ok = controller.joinClub(club.$1); if (!ok) showToast(context, 'غادر المجموعة الحالية قبل الانضمام إلى مجموعة أخرى.'); }, child: Text(controller.activeClub == club.$1 ? 'مغادرة' : L.t(lang, 'joinClub'))),
+                FilledButton.tonal(onPressed: controller.activeClub == club.$1 ? null : () => controller.joinClub(club.$1), child: Text(controller.activeClub == club.$1 ? 'نشط' : L.t(lang, 'joinClub'))),
               ]),
             ),
           ),
@@ -2442,7 +2086,7 @@ class EventsPage extends StatelessWidget {
     final entries = const [
       ('champions', '🏆', 'بطولة الأبطال', 'طرنيب • 64 لاعب', 250000),
       ('weekend', '🎉', 'تحدي نهاية الأسبوع', 'اختيار لعبة • 16 لاعب', 75000),
-      ('clubs_war', '🛡️', 'دوري المجموعات', 'فرق المجموعات • 32 فريقاً', 500000),
+      ('clubs_war', '🛡️', 'حرب الأندية', 'فرق الأندية • 32 فريقاً', 500000),
       ('ramadan', '🌙', 'كأس السهرة', 'تركس وهاند • 32 لاعباً', 150000),
     ];
     return ListView(
@@ -2479,7 +2123,7 @@ class EventsPage extends StatelessWidget {
                     Text(entry.$3, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
                     Text('${entry.$4} • جائزة ${formatNumber(entry.$5)}', style: const TextStyle(color: Colors.white60, fontSize: 10)),
                   ])),
-                  FilledButton(onPressed: () { if (active) { controller.leaveCompetition(); showToast(context, 'تمت مغادرة المنافسة.'); } else { final ok = controller.joinCompetition(entry.$1); showToast(context, ok ? 'تم تسجيلك في ${entry.$3}.' : 'غادر المنافسة الحالية قبل الانضمام لأخرى.'); } }, child: Text(active ? 'مغادرة' : L.t(lang, 'join'))),
+                  FilledButton(onPressed: active ? null : () { controller.joinCompetition(entry.$1); showToast(context, 'تم تسجيلك في ${entry.$3}.'); }, child: Text(active ? 'مسجّل' : L.t(lang, 'join'))),
                 ]),
               ),
             ),
@@ -2687,19 +2331,6 @@ class ProductCard extends StatelessWidget {
         padding: const EdgeInsets.all(11),
         child: Column(
           children: [
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: product.tier == 'legendary' ? Colors.amber.withOpacity(.16) : product.tier == 'pro' ? Colors.blueAccent.withOpacity(.13) : Colors.white.withOpacity(.06),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: product.previewColor1?.withOpacity(.45) ?? Colors.white12),
-                ),
-                child: Text(product.tierLabel(controller.localeCode), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900)),
-              ),
-            ),
-            const SizedBox(height: 6),
             Expanded(
               child: InkWell(
                 onTap: () => showProductPreview(context, controller, product),
@@ -2715,9 +2346,9 @@ class ProductCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(product.name(controller.localeCode), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5)),
+            Text(product.name(controller.localeCode), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5)),
             const SizedBox(height: 5),
-            Text(product.description(controller.localeCode), maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, fontSize: 12.0, height: 1.42)),
+            Text(product.description(controller.localeCode), maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, fontSize: 11.2, height: 1.42)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -2731,7 +2362,7 @@ class ProductCard extends StatelessWidget {
                     }
                     await showProductPreview(context, controller, product);
                   },
-                  style: FilledButton.styleFrom(minimumSize: const Size(74, 44), padding: const EdgeInsets.symmetric(horizontal: 9)),
+                  style: FilledButton.styleFrom(minimumSize: const Size(66, 40), padding: const EdgeInsets.symmetric(horizontal: 9)),
                   child: Text(owned && !product.reusable ? 'تفعيل' : L.t(controller.localeCode, 'buy'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
                 ),
               ],
@@ -3009,10 +2640,10 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
                   Positioned(top: compact ? 38 : 51, left: 0, right: 0, child: Center(child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack))),
                   Positioned(left: landscape ? 90 : 47, top: constraints.maxHeight * .41, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true)),
                   Positioned(right: landscape ? 90 : 47, top: constraints.maxHeight * .41, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true)),
-                  Positioned(top: 0, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[2], letter: 'ل', avatarEmoji: '🌙', bid: _seatBid(2))),
-                  Positioned(left: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[1], letter: 'س', avatarEmoji: '🦅', bid: _seatBid(1), vertical: true)),
-                  Positioned(right: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[3], letter: 'ج', avatarEmoji: '🦁', bid: _seatBid(3), vertical: true)),
-                  Positioned(bottom: compact ? 64 : 78, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[0], letter: widget.controller.displayName.isEmpty ? '?' : widget.controller.displayName.substring(0, 1), bid: _seatBid(0), nameColor: colorFromHex(widget.controller.selectedNameColor), badge: storeProductById(widget.controller.selectedBadge)?.icon, avatarEmoji: widget.controller.avatarEmoji)),
+                  Positioned(top: 0, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[2], letter: 'ل', bid: _seatBid(2))),
+                  Positioned(left: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[1], letter: 'س', bid: _seatBid(1), vertical: true)),
+                  Positioned(right: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[3], letter: 'ج', bid: _seatBid(3), vertical: true)),
+                  Positioned(bottom: compact ? 64 : 78, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[0], letter: widget.controller.displayName.isEmpty ? '?' : widget.controller.displayName.substring(0, 1), bid: _seatBid(0), nameColor: colorFromHex(widget.controller.selectedNameColor), badge: storeProductById(widget.controller.selectedBadge)?.icon)),
                   Positioned(
                     right: landscape ? 92 : 48,
                     bottom: compact ? 92 : 112,
@@ -3086,37 +2717,37 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
   Widget _handWidget(BuildContext context, {required double maxWidth, required bool compact}) {
     final hand = engine.humanHand;
     if (hand.isEmpty) return const SizedBox(height: 8);
-    final perRow = maxWidth >= 760 ? hand.length : 7;
-    final rows = (hand.length / perRow).ceil();
-    final spacing = 3.0;
-    final available = maxWidth - 16 - ((perRow - 1) * spacing);
-    final cardWidth = math.min(compact ? 43.0 : 52.0, math.max(34.0, available / perRow)).toDouble();
-    final cardHeight = cardWidth * 1.52;
+    final cardWidth = compact ? 40.0 : math.min(55.0, math.max(36.0, maxWidth / 8.3)).toDouble();
+    final handWidth = math.min(maxWidth - 12, landscapeSafeWidth(maxWidth)).toDouble();
+    final step = hand.length == 1 ? 0.0 : math.min(cardWidth * .64, (handWidth - cardWidth) / (hand.length - 1)).toDouble();
+    final totalWidth = cardWidth + step * (hand.length - 1);
     final legal = engine.phase == TarneebPhase.playing && engine.currentSeat == 0
         ? engine.legalCards(0).map((e) => e.code).toSet()
         : hand.map((e) => e.code).toSet();
     return SizedBox(
-      height: (rows * (cardHeight + 4)) + 12,
+      height: cardWidth * 1.62 + 16,
       child: Center(
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          spacing: spacing,
-          runSpacing: 4,
-          children: hand.map((card) {
-            final selected = selectedCode == card.code;
-            return Transform.translate(
-              offset: Offset(0, selected ? -7 : 0),
-              child: GestureDetector(
-                onTap: legal.contains(card.code) && engine.phase == TarneebPhase.playing && engine.currentSeat == 0
-                    ? () => setState(() => selectedCode = selected ? null : card.code)
-                    : null,
-                child: Opacity(
-                  opacity: engine.phase == TarneebPhase.playing && engine.currentSeat == 0 && !legal.contains(card.code) ? .42 : 1,
-                  child: PlayingCard(label: card.label, width: cardWidth, height: cardHeight, selected: selected),
+        child: SizedBox(
+          width: totalWidth,
+          height: cardWidth * 1.62 + 16,
+          child: Stack(
+            children: [
+              for (var i = 0; i < hand.length; i++)
+                Positioned(
+                  left: i * step,
+                  bottom: selectedCode == hand[i].code ? 13 : 0,
+                  child: GestureDetector(
+                    onTap: legal.contains(hand[i].code) && engine.phase == TarneebPhase.playing && engine.currentSeat == 0
+                        ? () => setState(() => selectedCode = selectedCode == hand[i].code ? null : hand[i].code)
+                        : null,
+                    child: Opacity(
+                      opacity: engine.phase == TarneebPhase.playing && engine.currentSeat == 0 && !legal.contains(hand[i].code) ? .42 : 1,
+                      child: PlayingCard(label: hand[i].label, width: cardWidth, height: cardWidth * 1.52, selected: selectedCode == hand[i].code),
+                    ),
+                  ),
                 ),
-              ),
-            );
-          }).toList(),
+            ],
+          ),
         ),
       ),
     );
@@ -3382,7 +3013,7 @@ class _LuxuryTable extends StatelessWidget {
     final dark = Color.lerp(c1, Colors.black, .62)!;
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(46),
+        borderRadius: BorderRadius.circular(112),
         gradient: RadialGradient(center: const Alignment(0, -.25), radius: .95, colors: [c2.withOpacity(.72), c1, dark]),
         border: Border.all(color: c2, width: 5),
         boxShadow: [
@@ -3717,7 +3348,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
         Expanded(
           child: Stack(
             children: [
-              Positioned.fill(left: 34, right: 34, top: 34, bottom: 128, child: _LuxuryTable(trump: state['trump']?.toString(), phase: phase, skinId: widget.controller.selectedTable)),
+              Positioned.fill(left: 34, right: 34, top: 34, bottom: 74, child: _LuxuryTable(trump: state['trump']?.toString(), phase: phase, skinId: widget.controller.selectedTable)),
               Positioned(top: 40, left: 0, right: 0, child: Center(child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack))),
               Positioned(left: 40, top: 120, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true)),
               if (players.length > 2) Positioned(right: 40, top: 120, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true)),
@@ -3726,7 +3357,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
                 left: 80,
                 right: 80,
                 top: 100,
-                bottom: 190,
+                bottom: 140,
                 child: Center(child: _stateSummary()),
               ),
               Positioned(bottom: 0, left: 4, right: 4, child: _serverHand()),
@@ -3758,15 +3389,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
 
   Widget _serverPlayer(Map<String, dynamic> player, int index, int count) {
     final name = player['name']?.toString() ?? 'لاعب ${index + 1}';
-    const botAvatars = <String>['🦁', '🦅', '🌙', '🐺', '🦊', '🐯'];
-    final seat = PlayerSeat(
-      name: name,
-      letter: name.isEmpty ? '?' : name.substring(0, 1),
-      avatarEmoji: index == 0 ? widget.controller.avatarEmoji : botAvatars[index % botAvatars.length],
-      bid: player['bot'] == true ? 'AI PRO' : 'LIVE',
-      nameColor: index == 0 ? colorFromHex(widget.controller.selectedNameColor) : const Color(0xffe5e7eb),
-      badge: index == 0 ? storeProductById(widget.controller.selectedBadge)?.icon : '🤖',
-    );
+    final seat = PlayerSeat(name: name, letter: name.isEmpty ? '?' : name.substring(0, 1), bid: player['bot'] == true ? 'AI' : 'LIVE', nameColor: index == 0 ? colorFromHex(widget.controller.selectedNameColor) : null, badge: index == 0 ? storeProductById(widget.controller.selectedBadge)?.icon : null);
     if (index == 0) return Positioned(bottom: 72, left: 0, right: 0, child: seat);
     if (index == 1) return Positioned(left: 0, top: 180, child: seat);
     if (index == 2) return Positioned(top: 0, left: 0, right: 0, child: seat);
@@ -3990,32 +3613,28 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
   Widget _serverHand() {
     if (hand.isEmpty) return const SizedBox(height: 55, child: Center(child: Text('لا توجد أوراق ظاهرة في هذه المرحلة', style: TextStyle(color: Colors.white38, fontSize: 10))));
     return LayoutBuilder(builder: (context, constraints) {
-      final perRow = constraints.maxWidth >= 760 ? hand.length : 7;
-      final rows = (hand.length / perRow).ceil();
-      const spacing = 3.0;
-      final available = constraints.maxWidth - 12 - ((perRow - 1) * spacing);
-      final cardWidth = math.min(52.0, math.max(34.0, available / perRow)).toDouble();
-      final cardHeight = cardWidth * 1.5;
+      final cardWidth = math.min(54.0, math.max(34.0, constraints.maxWidth / 8.5)).toDouble();
+      final step = hand.length == 1 ? 0.0 : math.min(cardWidth * .65, (constraints.maxWidth - cardWidth - 8) / (hand.length - 1)).toDouble();
+      final width = cardWidth + step * (hand.length - 1);
       return SizedBox(
-        height: rows * (cardHeight + 4) + 12,
+        height: cardWidth * 1.55 + 15,
         child: Center(
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            spacing: spacing,
-            runSpacing: 4,
-            children: hand.map((card) {
-              final selected = selectedCard == card;
-              return Transform.translate(
-                offset: Offset(0, selected ? -7 : 0),
-                child: GestureDetector(
-                  onTap: () => setState(() => selectedCard = selected ? null : card),
-                  child: Opacity(
-                    opacity: legal.isNotEmpty && !legal.contains(card) ? .42 : 1,
-                    child: PlayingCard(label: _cardLabel(card), width: cardWidth, height: cardHeight, selected: selected),
+          child: SizedBox(
+            width: width,
+            child: Stack(children: [
+              for (var i = 0; i < hand.length; i++)
+                Positioned(
+                  left: i * step,
+                  bottom: selectedCard == hand[i] ? 12 : 0,
+                  child: GestureDetector(
+                    onTap: () => setState(() => selectedCard = selectedCard == hand[i] ? null : hand[i]),
+                    child: Opacity(
+                      opacity: legal.isNotEmpty && !legal.contains(hand[i]) ? .42 : 1,
+                      child: PlayingCard(label: _cardLabel(hand[i]), width: cardWidth, height: cardWidth * 1.5, selected: selectedCard == hand[i]),
+                    ),
                   ),
                 ),
-              );
-            }).toList(),
+            ]),
           ),
         ),
       );
@@ -4371,7 +3990,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
                             margin: const EdgeInsets.only(bottom: 5),
                             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                             decoration: BoxDecoration(color: message.mine ? Theme.of(context).colorScheme.primary.withOpacity(.16) : Colors.white.withOpacity(.055), borderRadius: BorderRadius.circular(11)),
-                            child: Text('${message.sender}: ${message.body}', style: TextStyle(fontSize: 9, height: 1.35, fontWeight: message.mine ? FontWeight.w800 : FontWeight.w500, color: message.mine ? colorFromHex(widget.controller.selectedChatColor) : Colors.white)),
+                            child: Text('${message.sender}: ${message.body}', style: const TextStyle(fontSize: 9, height: 1.35)),
                           ),
                         );
                       },
@@ -4428,14 +4047,13 @@ class PlayerSeat extends StatelessWidget {
   final bool vertical;
   final Color? nameColor;
   final String? badge;
-  final String? avatarEmoji;
 
-  const PlayerSeat({super.key, required this.name, required this.letter, required this.bid, this.vertical = false, this.nameColor, this.badge, this.avatarEmoji});
+  const PlayerSeat({super.key, required this.name, required this.letter, required this.bid, this.vertical = false, this.nameColor, this.badge});
 
   @override
   Widget build(BuildContext context) {
     final content = [
-      GlowAvatar(text: avatarEmoji ?? letter, size: 43, color: nameColor ?? Theme.of(context).colorScheme.primary),
+      PremiumAvatar(text: letter, size: 41),
       const SizedBox(width: 5, height: 4),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -4520,58 +4138,6 @@ class PremiumAvatar extends StatelessWidget {
       child: Text(text, style: const TextStyle(fontWeight: FontWeight.w900)),
     );
   }
-}
-
-class GlowAvatar extends StatelessWidget {
-  final String text;
-  final double size;
-  final Color color;
-  final Uint8List? bytes;
-  const GlowAvatar({super.key, required this.text, required this.color, this.size = 44, this.bytes});
-
-  @override
-  Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        padding: const EdgeInsets.all(2.5),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(colors: [color, color.withOpacity(.3)]),
-          boxShadow: [BoxShadow(color: color.withOpacity(.55), blurRadius: 16, spreadRadius: 1)],
-        ),
-        child: ClipOval(
-          child: Container(
-            alignment: Alignment.center,
-            color: const Color(0xff0a1420),
-            child: bytes == null ? Text(text, style: TextStyle(fontSize: size * .43, fontWeight: FontWeight.w900)) : Image.memory(bytes!, fit: BoxFit.cover, width: size, height: size),
-          ),
-        ),
-      );
-}
-
-class AccountAvatar extends StatelessWidget {
-  final AppController controller;
-  final double size;
-  const AccountAvatar({super.key, required this.controller, this.size = 44});
-
-  Uint8List? _decode() {
-    final raw = controller.avatarData;
-    if (raw == null || raw.isEmpty) return null;
-    try {
-      final body = raw.contains(',') ? raw.split(',').last : raw;
-      return base64Decode(body);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => GlowAvatar(
-        text: controller.avatarEmoji.isNotEmpty ? controller.avatarEmoji : (controller.displayName.isEmpty ? '?' : controller.displayName.substring(0, 1)),
-        bytes: _decode(),
-        size: size,
-        color: colorFromHex(controller.selectedNameColor),
-      );
 }
 
 class SectionTitle extends StatelessWidget {
@@ -4666,46 +4232,12 @@ class PremiumListTile extends StatelessWidget {
   }
 }
 
-Future<void> showAvatarPicker(BuildContext context, AppController controller) async {
-  const avatars = <String>['🦁','🦅','🐺','🦊','🐯','🐼','🌙','⭐','👑','🎩','🧠','🔥'];
-  await showPremiumSheet(context, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    const Text('تغيير الصورة الرمزية', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
-    const SizedBox(height: 12),
-    Center(child: AccountAvatar(controller: controller, size: 96)),
-    const SizedBox(height: 13),
-    FilledButton.icon(onPressed: () async { final err = await controller.updateAvatarFromGallery(); if (context.mounted) showToast(context, err ?? 'تم تحديث الصورة.'); }, icon: const Icon(Icons.photo_library_outlined), label: const Text('اختيار صورة من الجهاز')),
-    const SizedBox(height: 12),
-    Wrap(spacing: 8, runSpacing: 8, alignment: WrapAlignment.center, children: avatars.map((emoji) => InkWell(onTap: () async { await controller.chooseAvatarEmoji(emoji); if (context.mounted) Navigator.pop(context); }, borderRadius: BorderRadius.circular(50), child: Container(width: 54, height: 54, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(.06), border: Border.all(color: emoji == controller.avatarEmoji ? Theme.of(context).colorScheme.primary : Colors.white12)), child: Text(emoji, style: const TextStyle(fontSize: 28))))).toList()),
-  ]));
-}
-
-Future<void> showDeleteAccountDialog(BuildContext context, AppController controller) async {
-  final password = TextEditingController();
-  bool confirmed = false;
-  final shouldDelete = await showDialog<bool>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setState) => AlertDialog(
-    title: const Text('حذف الحساب نهائياً'),
-    content: Column(mainAxisSize: MainAxisSize.min, children: [
-      const Text('سيتم حذف الحساب والملف والمحفظة وسجل المشتريات. كما تُحذف الحسابات غير النشطة بعد 30 يوماً من الخادم، باستثناء حساب المدير.', style: TextStyle(height: 1.5)),
-      const SizedBox(height: 12),
-      TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة المرور للتأكيد')),
-      CheckboxListTile(contentPadding: EdgeInsets.zero, value: confirmed, onChanged: (v) => setState(() => confirmed = v == true), title: const Text('أفهم أن الحذف نهائي ولا يمكن التراجع عنه', style: TextStyle(fontSize: 12))),
-    ]),
-    actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')), FilledButton(onPressed: confirmed ? () => Navigator.pop(dialogContext, true) : null, style: FilledButton.styleFrom(backgroundColor: Colors.red), child: const Text('حذف نهائي'))],
-  ))) ?? false;
-  if (!shouldDelete) { password.dispose(); return; }
-  final error = await controller.deleteAccount(password.text);
-  password.dispose();
-  if (!context.mounted) return;
-  if (error == null) Navigator.pop(context);
-  showToast(context, error ?? 'تم حذف الحساب.');
-}
-
 void showProfile(BuildContext context, AppController controller) {
   showPremiumSheet(
     context,
     child: Column(
       children: [
-        AccountAvatar(controller: controller, size: 82),
+        PremiumAvatar(text: controller.displayName.isEmpty ? '?' : controller.displayName.substring(0, 1), size: 76),
         const SizedBox(height: 9),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Flexible(child: Text(controller.displayName, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: colorFromHex(controller.selectedNameColor)))),
@@ -4740,7 +4272,7 @@ void showProfile(BuildContext context, AppController controller) {
           spacing: 6,
           runSpacing: 6,
           children: [
-            Chip(avatar: Image.asset('assets/images/pasha.png', width: 22, height: 22), label: Text('${controller.vipDays} يوم باشا')),
+            Chip(avatar: const Text('🎩'), label: Text('${controller.vipDays} يوم باشا')),
             Chip(avatar: const Icon(Icons.table_restaurant_outlined, size: 16), label: Text(storeProductById(controller.selectedTable)?.name(controller.localeCode) ?? 'طاولة افتراضية')),
             Chip(avatar: const Icon(Icons.style_outlined, size: 16), label: Text(storeProductById(controller.selectedCardBack)?.name(controller.localeCode) ?? 'ظهر افتراضي')),
             Chip(avatar: const Icon(Icons.bolt, size: 16), label: Text('XP ×${controller.activeXpMultiplier.toStringAsFixed(2)}')),
@@ -4749,8 +4281,6 @@ void showProfile(BuildContext context, AppController controller) {
           ],
         ),
         const SizedBox(height: 11),
-        FilledButton.tonalIcon(onPressed: () => showAvatarPicker(context, controller), icon: const Icon(Icons.add_a_photo_outlined), label: const Text('تغيير الصورة أو الرمز'), style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44))),
-        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(child: FilledButton.tonalIcon(onPressed: () => showWallet(context, controller), icon: const Icon(Icons.account_balance_wallet_outlined), label: const Text('المحفظة'))),
@@ -4763,11 +4293,7 @@ void showProfile(BuildContext context, AppController controller) {
           FilledButton.icon(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => AdminDashboardPage(controller: controller))); }, icon: const Icon(Icons.admin_panel_settings_outlined), label: const Text('فتح لوحة الإدارة'), style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46))),
         ],
         const SizedBox(height: 8),
-        Row(children: [
-          Expanded(child: OutlinedButton.icon(onPressed: () { Navigator.pop(context); showSettings(context, controller); }, icon: const Icon(Icons.settings_outlined), label: const Text('الإعدادات'))),
-          const SizedBox(width: 7),
-          Expanded(child: OutlinedButton.icon(onPressed: () async { Navigator.pop(context); await controller.logout(); }, icon: const Icon(Icons.logout, color: Colors.redAccent), label: const Text('الخروج'))),
-        ]),
+        OutlinedButton.icon(onPressed: () async { Navigator.pop(context); await controller.logout(); }, icon: const Icon(Icons.logout, color: Colors.redAccent), label: const Text('تسجيل الخروج'), style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44))),
       ],
     ),
   );
@@ -4845,55 +4371,6 @@ void showWallet(BuildContext context, AppController controller) {
   );
 }
 
-Future<void> watchRewardedAd(BuildContext context, AppController controller) async {
-  if (controller.rewardedAdsRemaining <= 0) {
-    showToast(context, 'وصلت إلى الحد اليومي للإعلانات المكافِئة.');
-    return;
-  }
-  bool earned;
-  if (kIsWeb) {
-    earned = await showDialog<bool>(context: context, barrierDismissible: false, builder: (_) => const RewardedWebPreviewDialog()) ?? false;
-  } else {
-    earned = await RewardedAds.show();
-    if (!earned && context.mounted) showToast(context, 'الإعلان غير متاح الآن. جرّب لاحقاً.');
-  }
-  if (!earned || !context.mounted) return;
-  final error = await controller.grantRewardedAd('reward-${DateTime.now().millisecondsSinceEpoch}');
-  if (!context.mounted) return;
-  showToast(context, error ?? 'تمت إضافة 3,000 توكن و35 XP بعد إكمال الإعلان.');
-}
-
-class RewardedWebPreviewDialog extends StatefulWidget {
-  const RewardedWebPreviewDialog({super.key});
-  @override
-  State<RewardedWebPreviewDialog> createState() => _RewardedWebPreviewDialogState();
-}
-
-class _RewardedWebPreviewDialogState extends State<RewardedWebPreviewDialog> {
-  int seconds = 7;
-  Timer? timer;
-  @override
-  void initState() {
-    super.initState();
-    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) return;
-      if (seconds <= 1) { timer.cancel(); setState(() => seconds = 0); } else { setState(() => seconds -= 1); }
-    });
-  }
-  @override
-  void dispose() { timer?.cancel(); super.dispose(); }
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('📺 إعلان مكافأة تجريبي'),
-    content: Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(height: 150, alignment: Alignment.center, decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xff10254a), Color(0xff4c1d95)]), borderRadius: BorderRadius.circular(20)), child: Column(mainAxisSize: MainAxisSize.min, children: [const Text('WARQNA REWARD', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)), const SizedBox(height: 8), Text(seconds == 0 ? 'اكتملت المشاهدة' : 'انتظر $seconds ثانية', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900))])),
-      const SizedBox(height: 12),
-      const Text('هذه معاينة الويب. في تطبيق Android وiOS يُعرض إعلان AdMob الحقيقي ولا تُصرف المكافأة إلا بعد إكماله.', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: Colors.white60, height: 1.5)),
-    ]),
-    actions: [TextButton(onPressed: seconds == 0 ? () => Navigator.pop(context, true) : null, child: const Text('استلام المكافأة'))],
-  );
-}
-
 void showRewards(BuildContext context, AppController controller) {
   showPremiumSheet(
     context,
@@ -4904,9 +4381,7 @@ void showRewards(BuildContext context, AppController controller) {
         const SizedBox(height: 10),
         PremiumListTile(icon: '🎁', title: 'المكافأة اليومية', subtitle: '2,500 توكن + 20 XP', action: FilledButton(onPressed: () async { await controller.claimDaily(); if (context.mounted) { Navigator.pop(context); showToast(context, 'تم استلام المكافأة'); } }, child: Text(L.t(controller.localeCode, 'claim')))),
         const SizedBox(height: 8),
-        PremiumListTile(icon: '📺', title: 'شاهد إعلاناً واحصل على مكافأة', subtitle: '3,000 توكن + 35 XP • المتبقي اليوم ${controller.rewardedAdsRemaining}/5', action: FilledButton(onPressed: controller.rewardedAdsRemaining > 0 ? () async { await watchRewardedAd(context, controller); if (context.mounted) Navigator.pop(context); } : null, child: const Text('مشاهدة'))),
-        const SizedBox(height: 8),
-        PremiumListTile(icon: '🔥', title: 'استمرارية الدخول', subtitle: '${controller.consecutiveLoginDays} أيام • كل 3 أيام = يوم باشا مجاني', action: FilledButton.tonal(onPressed: null, child: Text('${controller.consecutiveLoginDays}/3'))),
+        PremiumListTile(icon: '🔥', title: 'سلسلة دخول 7 أيام', subtitle: '7,500 توكن + مسرع', action: FilledButton(onPressed: () => showToast(context, 'تحتاج يومين إضافيين'), child: const Text('5/7'))),
       ],
     ),
   );
@@ -4929,17 +4404,12 @@ void showSettings(BuildContext context, AppController controller) {
           SwitchListTile(value: vibration, onChanged: (v) => setLocalState(() => vibration = v), title: const Text('الاهتزاز'), subtitle: const Text('اهتزاز خفيف عند وصول الدور')),
           SwitchListTile(value: autoPlay, onChanged: (v) => setLocalState(() => autoPlay = v), title: const Text('اللعب التلقائي القانوني'), subtitle: const Text('يتصرف الكمبيوتر عند انتهاء وقت الدور')),
           SwitchListTile(value: controller.landscapeMode, onChanged: (_) async { await controller.toggleOrientationMode(); setLocalState(() {}); }, title: const Text('تخطيط أفقي'), subtitle: const Text('يجعل الطاولة والدردشة جنباً إلى جنب حتى من المتصفح')),
-          ListTile(leading: AccountAvatar(controller: controller, size: 42), title: const Text('الصورة الشخصية'), subtitle: const Text('اختر صورة من الجهاز أو رمزاً فاخراً'), trailing: const Icon(Icons.chevron_right), onTap: () => showAvatarPicker(context, controller)),
           ListTile(leading: const Icon(Icons.install_mobile_rounded), title: const Text('تثبيت التطبيق على الهاتف'), subtitle: const Text('من زر تثبيت ورقنا أسفل الصفحة أو من قائمة المتصفح: إضافة إلى الشاشة الرئيسية.')),
-          const ListTile(leading: Icon(Icons.history_toggle_off_rounded), title: Text('سياسة الحساب غير النشط'), subtitle: Text('يُحذف الحساب غير الإداري بعد 30 يوماً دون فتحه عند تشغيل Laravel Scheduler.')),
           ListTile(leading: const Icon(Icons.table_restaurant_outlined), title: const Text('الطاولة النشطة'), subtitle: Text(storeProductById(controller.selectedTable)?.name(controller.localeCode) ?? controller.selectedTable)),
           ListTile(leading: const Icon(Icons.style_outlined), title: const Text('ظهر الورق النشط'), subtitle: Text(storeProductById(controller.selectedCardBack)?.name(controller.localeCode) ?? controller.selectedCardBack)),
           const Divider(),
           ListTile(leading: const Icon(Icons.language), title: const Text('لغة التطبيق'), subtitle: Text(controller.localeCode.toUpperCase()), trailing: PopupMenuButton<String>(onSelected: (v) { controller.changeLocale(v); setLocalState(() {}); }, itemBuilder: (_) => const [PopupMenuItem(value:'ar',child:Text('العربية')),PopupMenuItem(value:'en',child:Text('English')),PopupMenuItem(value:'de',child:Text('Deutsch')),PopupMenuItem(value:'tr',child:Text('Türkçe')),PopupMenuItem(value:'fr',child:Text('Français')),PopupMenuItem(value:'es',child:Text('Español'))])),
-          ListTile(leading: const Icon(Icons.palette_outlined), title: const Text('الثيم'), subtitle: Text(controller.themeCode), trailing: PopupMenuButton<String>(onSelected: (v) { controller.changeTheme(v); setLocalState(() {}); }, itemBuilder: (_) => const [PopupMenuItem(value:'dark',child:Text('داكن فاخر')),PopupMenuItem(value:'emerald',child:Text('زمردي')),PopupMenuItem(value:'royal',child:Text('ملكي')),PopupMenuItem(value:'purple',child:Text('بنفسجي')),PopupMenuItem(value:'classic',child:Text('كلاسيكي')),PopupMenuItem(value:'crimson',child:Text('قرمزي أسطوري')),PopupMenuItem(value:'midnight',child:Text('منتصف الليل')),PopupMenuItem(value:'aurora',child:Text('الشفق الفاخر'))])),
-          const Divider(),
-          if (!controller.isAdmin) OutlinedButton.icon(onPressed: () => showDeleteAccountDialog(context, controller), icon: const Icon(Icons.delete_forever, color: Colors.redAccent), label: const Text('حذف الحساب نهائياً', style: TextStyle(color: Colors.redAccent))),
-          if (controller.isAdmin) const ListTile(leading: Icon(Icons.shield_outlined, color: Colors.amber), title: Text('حساب المدير محمي'), subtitle: Text('لا يمكن حذف حساب Adnan الرئيسي.')),
+          ListTile(leading: const Icon(Icons.palette_outlined), title: const Text('الثيم'), subtitle: Text(controller.themeCode), trailing: PopupMenuButton<String>(onSelected: (v) { controller.changeTheme(v); setLocalState(() {}); }, itemBuilder: (_) => const [PopupMenuItem(value:'dark',child:Text('داكن فاخر')),PopupMenuItem(value:'emerald',child:Text('زمردي')),PopupMenuItem(value:'royal',child:Text('ملكي')),PopupMenuItem(value:'purple',child:Text('بنفسجي')),PopupMenuItem(value:'classic',child:Text('كلاسيكي'))])),
           const SizedBox(height: 8),
           FilledButton(onPressed: () { Navigator.pop(context); showToast(context, 'تم حفظ الإعدادات وتطبيقها على التطبيق.'); }, child: const Text('حفظ وإغلاق')),
         ],
@@ -4984,10 +4454,10 @@ void showGiftRoadSheet(BuildContext context, AppController controller) {
 void showPashaBenefits(BuildContext context, AppController controller) {
   final pasha = products.where((p) => p.category == 'pasha').toList();
   showPremiumSheet(context, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    Center(child: Image.asset('assets/images/pasha.png', width: 104, height: 104, fit: BoxFit.contain)),
+    const Center(child: Text('👑', style: TextStyle(fontSize: 72))),
     const Text('مزايا الباشا', textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
     const SizedBox(height: 8),
-    const Text('شارة ذهبية • 20 XP لكل جولة • إنشاء مجموعات ومنافسات • صلاحية إدارة الغرفة • أولوية دخول وملف شخصي فاخر.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white60, height: 1.6)),
+    const Text('شارة ذهبية • 20 XP لكل جولة • إنشاء نوادٍ ومسابقات • صلاحية إدارة الغرفة • أولوية دخول وملف شخصي فاخر.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white60, height: 1.6)),
     const SizedBox(height: 12),
     SizedBox(height: 108, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: pasha.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) { final product = pasha[i]; return SizedBox(width: 142, child: FilledButton.tonal(onPressed: () => showProductPreview(context, controller, product), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text('${product.durationDays} يوم', style: const TextStyle(fontWeight: FontWeight.w900)), Text('🪙 ${formatNumber(product.price)}', style: const TextStyle(fontSize: 9))]))); })),
   ]));
@@ -4997,19 +4467,10 @@ void showClubChallenges(BuildContext context, AppController controller, String c
   showPremiumSheet(context, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
     Text('تحديات $clubName', style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
     const SizedBox(height: 9),
-    PremiumListTile(icon: '⚔️', title: 'فوزان في الطرنيب', subtitle: 'مكافأة 8,000 توكن + 100 XP', action: FilledButton(onPressed: () { controller.joinChallenge('club_tarneeb'); Navigator.pop(context); showToast(context, 'تم تفعيل تحدي المجموعة.'); }, child: const Text('ابدأ'))),
+    PremiumListTile(icon: '⚔️', title: 'فوزان في الطرنيب', subtitle: 'مكافأة 8,000 توكن + 100 XP', action: FilledButton(onPressed: () { controller.joinChallenge('club_tarneeb'); Navigator.pop(context); showToast(context, 'تم تفعيل تحدي النادي.'); }, child: const Text('ابدأ'))),
     const SizedBox(height: 8),
     PremiumListTile(icon: '🎴', title: 'فوز في الهاند أو البناكل', subtitle: 'مكافأة 5,000 توكن + نقطة للنادي', action: FilledButton(onPressed: () { controller.joinChallenge('club_rummy'); Navigator.pop(context); showToast(context, 'تم تفعيل التحدي.'); }, child: const Text('ابدأ'))),
   ]));
-}
-
-Future<void> openGameRoom(BuildContext context, AppController controller, GameInfo game) async {
-  if (!controller.enterGame(game.id)) {
-    showToast(context, 'أنت داخل لعبة أخرى. غادر اللعبة الحالية قبل بدء لعبة جديدة.');
-    return;
-  }
-  await Navigator.push(context, MaterialPageRoute(builder: (_) => GameRoomPage(controller: controller, game: game)));
-  controller.leaveGame(game.id);
 }
 
 void showChallenges(BuildContext context, AppController controller) {
@@ -5024,7 +4485,7 @@ void showChallenges(BuildContext context, AppController controller) {
     const SizedBox(height: 4),
     const Text('اختر تحدياً. الفوز يمنحك توكنز وXP ويرفع طريق الهدايا، بدون رسوم دخول.', style: TextStyle(color: Colors.white60, height: 1.5)),
     const SizedBox(height: 10),
-    ...challenges.map((entry) => Padding(padding: const EdgeInsets.only(bottom: 9), child: PremiumListTile(icon: entry.$2, title: entry.$3, subtitle: '${L.t(controller.localeCode, entry.$4)} • مكافأة ${formatNumber(entry.$5)}', action: FilledButton(onPressed: () async { if (!controller.joinChallenge(entry.$1)) { showToast(context, 'غادر التحدي الحالي أولاً.'); return; } final game = gamesCatalog.firstWhere((g) => g.id == entry.$4); Navigator.pop(context); await openGameRoom(context, controller, game); controller.leaveChallenge(); }, child: const Text('تحدَّ الآن'))))),
+    ...challenges.map((entry) => Padding(padding: const EdgeInsets.only(bottom: 9), child: PremiumListTile(icon: entry.$2, title: entry.$3, subtitle: '${L.t(controller.localeCode, entry.$4)} • مكافأة ${formatNumber(entry.$5)}', action: FilledButton(onPressed: () { controller.joinChallenge(entry.$1); final game = gamesCatalog.firstWhere((g) => g.id == entry.$4); Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => GameRoomPage(controller: controller, game: game))); }, child: const Text('تحدَّ الآن'))))),
   ]));
 }
 
@@ -5041,7 +4502,7 @@ void showCompetitions(BuildContext context, AppController controller) {
       const SizedBox(height: 10),
       ...competitions.map((entry) {
         final active = controller.activeCompetition == entry.$1;
-        return Padding(padding: const EdgeInsets.only(bottom: 9), child: PremiumListTile(icon: entry.$2, title: entry.$3, subtitle: 'الجائزة ${formatNumber(entry.$4)} • دخول مجاني', action: FilledButton(onPressed: () { if (active) { controller.leaveCompetition(); showToast(context, 'تمت مغادرة المنافسة.'); } else { final ok = controller.joinCompetition(entry.$1); showToast(context, ok ? 'تم تسجيلك في ${entry.$3}.' : 'غادر المنافسة الحالية قبل الانضمام لأخرى.'); } }, child: Text(active ? 'مغادرة' : L.t(controller.localeCode, 'join')))));
+        return Padding(padding: const EdgeInsets.only(bottom: 9), child: PremiumListTile(icon: entry.$2, title: entry.$3, subtitle: 'الجائزة ${formatNumber(entry.$4)} • دخول مجاني', action: FilledButton(onPressed: active ? null : () { controller.joinCompetition(entry.$1); showToast(context, 'تم تسجيلك في ${entry.$3}.'); }, child: Text(active ? 'مسجّل' : L.t(controller.localeCode, 'join')))));
       }),
       const SizedBox(height: 4),
       FilledButton.tonalIcon(onPressed: () { Navigator.pop(context); showChallenges(context, controller); }, icon: const Icon(Icons.bolt_rounded), label: const Text('تحديات فورية بين اللاعبين')),
@@ -5062,7 +4523,7 @@ void showGameLobby(BuildContext context, AppController controller, GameInfo game
         const SizedBox(height: 15),
         Row(
           children: [
-            Expanded(child: FilledButton.icon(onPressed: () async { Navigator.pop(context); await openGameRoom(context, controller, game); }, icon: const Icon(Icons.play_arrow), label: Text(L.t(controller.localeCode, 'friendly')))),
+            Expanded(child: FilledButton.icon(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => GameRoomPage(controller: controller, game: game))); }, icon: const Icon(Icons.play_arrow), label: Text(L.t(controller.localeCode, 'friendly')))),
             const SizedBox(width: 8),
             Expanded(child: FilledButton.tonalIcon(onPressed: () => showCompetitions(context, controller), icon: const Icon(Icons.emoji_events), label: Text(L.t(controller.localeCode, 'competitions')))),
           ],
@@ -5102,10 +4563,10 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
           if (private) TextField(controller: passwordController, decoration: const InputDecoration(labelText: 'كلمة السر')),
           const SizedBox(height: 10),
           FilledButton(
-            onPressed: () async {
+            onPressed: () {
               Navigator.pop(context);
               showToast(context, private ? 'تم إنشاء غرفة خاصة — كلمة السر ${passwordController.text}' : 'تم إنشاء غرفة عامة');
-              await openGameRoom(context, controller, game);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => GameRoomPage(controller: controller, game: game)));
             },
             child: const Text('إنشاء وبدء اللعب'),
           ),
@@ -5132,11 +4593,8 @@ Future<void> showProductPreview(BuildContext context, AppController controller, 
             Expanded(child: _StoreFact(icon: '🪙', label: 'السعر', value: formatNumber(product.price))),
             const SizedBox(width: 8),
             Expanded(child: _StoreFact(icon: '🛡️', label: 'الحالة', value: controller.owned.contains(product.id) && !product.reusable ? 'مملوك' : product.reusable ? 'قابل للتجديد' : 'متاح')),
-            const SizedBox(width: 8),
-            Expanded(child: _StoreFact(icon: '⭐', label: 'الفئة', value: product.tierLabel(controller.localeCode))),
           ],
         ),
-        if (product.durationDays != null) ...[const SizedBox(height: 8), _StoreFact(icon: '⏳', label: 'المدة', value: '${product.durationDays} أيام')],
         const SizedBox(height: 13),
         FilledButton.icon(
           onPressed: controller.owned.contains(product.id) && !product.reusable
@@ -5187,7 +4645,7 @@ class _ProductLivePreview extends StatelessWidget {
         width: 290,
         height: 160,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(34),
+          borderRadius: BorderRadius.circular(76),
           gradient: RadialGradient(colors: [c2.withOpacity(.88), c1, Color.lerp(c1, Colors.black, .58)!]),
           border: Border.all(color: c2, width: 5),
           boxShadow: [BoxShadow(color: c2.withOpacity(.24), blurRadius: 26, spreadRadius: 2), BoxShadow(color: Colors.black.withOpacity(.5), blurRadius: 24, offset: const Offset(0, 13))],
@@ -5224,24 +4682,13 @@ class _ProductLivePreview extends StatelessWidget {
       preview = Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          GlowAvatar(text: controller.avatarEmoji, bytes: AccountAvatar(controller: controller)._decode(), size: 72, color: c1),
+          PremiumAvatar(text: controller.displayName.isEmpty ? '?' : controller.displayName.substring(0, 1), size: 68),
           const SizedBox(width: 14),
           Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
             Text(controller.displayName, style: TextStyle(color: c1, fontSize: 25, fontWeight: FontWeight.w900, shadows: [Shadow(color: c1.withOpacity(.55), blurRadius: 12), const Shadow(color: Colors.black, blurRadius: 8)])),
             Text('المستوى ${controller.level} • ${controller.vipDays > 0 ? 'باشا' : 'لاعب'}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
           ]),
         ],
-      );
-    } else if (product.category == 'chat_colors') {
-      preview = Container(
-        width: 285,
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(color: const Color(0xff111827), borderRadius: BorderRadius.circular(22), border: Border.all(color: c1.withOpacity(.55))),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [GlowAvatar(text: controller.avatarEmoji, bytes: AccountAvatar(controller: controller)._decode(), size: 42, color: c1), const SizedBox(width: 9), Text(controller.displayName, style: TextStyle(color: c1, fontWeight: FontWeight.w900, shadows: [Shadow(color: c1, blurRadius: 10)]))]),
-          const SizedBox(height: 10),
-          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: c1.withOpacity(.13), borderRadius: BorderRadius.circular(15), border: Border.all(color: c1.withOpacity(.35))), child: Text('رسالة تجريبية بلون الدردشة المختار', style: TextStyle(color: c1, fontWeight: FontWeight.w800))),
-        ]),
       );
     } else if (product.category == 'themes') {
       preview = Container(
@@ -5716,7 +5163,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.fromLTRB(12, 9, 12, 7),
                   decoration: BoxDecoration(color: message.mine ? Theme.of(context).colorScheme.primary.withOpacity(.18) : Colors.white.withOpacity(.06), borderRadius: BorderRadius.only(topLeft: const Radius.circular(17), topRight: const Radius.circular(17), bottomLeft: Radius.circular(message.mine ? 17 : 4), bottomRight: Radius.circular(message.mine ? 4 : 17))),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(message.body, style: TextStyle(height: 1.45, color: message.mine ? colorFromHex(widget.controller.selectedChatColor) : Colors.white, fontWeight: message.mine ? FontWeight.w800 : FontWeight.w500)), const SizedBox(height: 3), Text(message.time, style: const TextStyle(color: Colors.white38, fontSize: 8))]),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(message.body, style: const TextStyle(height: 1.45)), const SizedBox(height: 3), Text(message.time, style: const TextStyle(color: Colors.white38, fontSize: 8))]),
                 ),
               );
             },

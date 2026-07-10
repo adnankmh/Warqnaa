@@ -1,0 +1,43 @@
+{
+  "version": "1.47.0+147",
+  "release": "Warqna v147 Premium Retention Ads Groups Competitions",
+  "games": 12,
+  "literal_store_products": 134,
+  "generated_timed_color_products": 48,
+  "languages": [
+    "ar",
+    "en",
+    "de",
+    "tr",
+    "fr",
+    "es"
+  ],
+  "themes": [
+    "dark",
+    "emerald",
+    "royal",
+    "purple",
+    "classic",
+    "crimson",
+    "midnight",
+    "aurora"
+  ],
+  "rewarded_ads": {
+    "daily_limit": 5,
+    "tokens": 3000,
+    "xp": 35
+  },
+  "retention_days": 30,
+  "admin": {
+    "username": "Adnan",
+    "level_min": 90,
+    "pasha_days_min": 1000,
+    "tokens": "1000000000000000000"
+  },
+  "build_targets": [
+    "web-pwa",
+    "android-apk",
+    "android-aab",
+    "ios-unsigned"
+  ]
+}

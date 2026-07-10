@@ -1,11 +1,5 @@
-# Warqna v145
+# Warqna v147
 
-Premium Flutter + Laravel social card-games platform.
+منصة ألعاب ورقية اجتماعية مبنية بـFlutter وLaravel، تعمل كتطبيق Web/PWA وAndroid وiOS، مع متجر فاخر ومحركات لعب ومجموعات ومنافسات وإعلانات مكافِئة.
 
-ابدأ من: `START_HERE_V145_AR.md`
-
-المجلدات الرئيسية:
-
-- `flutter_app`: تطبيق Flutter للويب وAndroid وiOS، مع محركات محلية احتياطية لـ GitHub Pages.
-- `backend-laravel`: Laravel API وقاعدة البيانات والمتجر والمحركات الخادمية.
-- `.github/workflows`: بناء GitHub Pages وAPK/AAB وiOS سحابياً.
+ابدأ من: `START_HERE_AR.md`.

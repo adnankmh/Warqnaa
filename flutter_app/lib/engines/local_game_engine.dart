@@ -217,6 +217,8 @@ class LocalGameSession {
           'key': index == 0 ? 'user:0' : 'bot:$index',
           'name': name,
           'bot': index != 0,
+          'bot_level': index == 0 ? null : 'expert',
+          'avatar': index == 0 ? '🦁' : const <String>['🦅','🌙','🦁'][index - 1],
           'seat': index,
           'score': _scores[index] ?? 0,
         };
