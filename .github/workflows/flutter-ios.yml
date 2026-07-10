@@ -1,17 +1,13 @@
 name: Build iOS unsigned
 on:
   workflow_dispatch:
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
   ios:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.0'
           channel: stable
           cache: true
       - name: Create iOS platform
@@ -41,5 +37,5 @@ jobs:
           flutter build ios --release --no-codesign $EXTRA
       - uses: actions/upload-artifact@v4
         with:
-          name: warqna-v148-ios-unsigned
+          name: warqna-v149-ios-unsigned
           path: flutter_app/build/ios/iphoneos/Runner.app

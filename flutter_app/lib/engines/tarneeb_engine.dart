@@ -63,6 +63,11 @@ class TarneebLocalEngine {
   final int targetScore;
   final math.Random _random;
   final List<String> playerNames;
+  final String difficulty;
+
+  bool get _easyAi => difficulty == 'easy';
+  bool get _normalAi => difficulty == 'normal';
+  bool get _masterAi => difficulty == 'master';
 
   TarneebPhase phase = TarneebPhase.bidding;
   int dealerSeat = 3;
@@ -85,6 +90,7 @@ class TarneebLocalEngine {
     this.targetScore = 41,
     math.Random? random,
     List<String>? playerNames,
+    this.difficulty = 'pro',
   })  : _random = random ?? math.Random.secure(),
         playerNames = playerNames ?? const ['أحمد', 'عاصم', 'ليلى', 'جميل'] {
     startNextRound();
@@ -239,7 +245,10 @@ class TarneebLocalEngine {
     estimate = estimate.clamp(7, 10).toInt();
     final minimum = (highestBid ?? 6) + 1;
     if (estimate < minimum || minimum > 13) return null;
-    if (_random.nextDouble() < .12 && estimate < 10) return null;
+    if (_easyAi && _random.nextDouble() < .45) return _random.nextBool() ? null : math.min(minimum, 8).toInt();
+    if (_normalAi && _random.nextDouble() < .22 && estimate < 10) return null;
+    if (!_masterAi && _random.nextDouble() < .12 && estimate < 10) return null;
+    if (_masterAi) estimate = math.min(11, estimate + (hand.where((c) => c.rank == 'A' || c.rank == 'K').length >= 4 ? 1 : 0)).toInt();
     return math.min(estimate, 13).toInt();
   }
 
@@ -253,9 +262,18 @@ class TarneebLocalEngine {
 
   TarneebCard _botCard(int seat) {
     final legal = [...legalCards(seat)]..sort((a, b) => a.power.compareTo(b.power));
+    if (_easyAi) return legal[_random.nextInt(legal.length)];
+    if (_normalAi && _random.nextDouble() < .18) return legal[_random.nextInt(legal.length)];
+
     if (trick.isEmpty) {
+      final suitCounts = <String, int>{for (final suit in suits) suit: 0};
+      for (final card in hands[seat]) suitCounts[card.suit] = (suitCounts[card.suit] ?? 0) + 1;
+      final longSuit = suitCounts.entries.where((entry) => entry.key != trump).reduce((a, b) => a.value >= b.value ? a : b).key;
+      final longSuitCards = legal.where((card) => card.suit == longSuit).toList()..sort((a, b) => b.power.compareTo(a.power));
       final aces = legal.where((c) => c.rank == 'A').toList();
-      return aces.isNotEmpty && _random.nextDouble() < .65 ? aces.first : legal.first;
+      if (aces.isNotEmpty && (_masterAi || _random.nextDouble() < .72)) return aces.first;
+      if (_masterAi && longSuitCards.length > 2) return longSuitCards[1];
+      return longSuitCards.isNotEmpty ? longSuitCards.first : legal.last;
     }
 
     final currentWinner = _trickWinner(trick);
@@ -265,8 +283,15 @@ class TarneebLocalEngine {
     final winning = legal.where((candidate) {
       final test = [...trick, TarneebPlay(seat, candidate)];
       return _trickWinner(test) == seat;
-    }).toList();
+    }).toList()..sort((a, b) => a.power.compareTo(b.power));
     if (winning.isNotEmpty) return winning.first;
+
+    // If void in the leading suit, master AI discards a dangerous high card
+    // while preserving trump whenever possible.
+    if (_masterAi) {
+      final nonTrump = legal.where((card) => card.suit != trump).toList()..sort((a, b) => b.power.compareTo(a.power));
+      if (nonTrump.isNotEmpty) return nonTrump.first;
+    }
     return legal.first;
   }
 

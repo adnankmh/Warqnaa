@@ -13,6 +13,6 @@ return [
   'smoke'=>['icon'=>'💨','ar'=>'دخان','cost'=>120,'tier'=>'premium'],
   'royal_crown'=>['icon'=>'👑','ar'=>'تاج ملكي','cost'=>500,'tier'=>'legendary'],
  ],
- 'daily_rewards'=>[1=>500,2=>750,3=>1000,4=>1500,5=>2500,6=>3500,7=>5000],
- 'ads'=>['rewarded_coins'=>500,'daily_limit'=>10],
+ 'daily_rewards'=>[1=>50,2=>50,3=>100,4=>50,5=>100,6=>100,7=>200],
+ 'ads'=>['rewarded_coins'=>50,'daily_limit'=>5],
 ];

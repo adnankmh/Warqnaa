@@ -6,14 +6,19 @@ import 'dart:math';
 /// keeps every curated card game playable when the app is hosted on GitHub
 /// Pages or opened without a backend connection.
 class LocalGameSession {
-  LocalGameSession({required this.gameId, required this.humanName, int? seed})
+  LocalGameSession({required this.gameId, required this.humanName, this.difficulty = 'pro', int? seed})
       : _random = Random(seed) {
     _setup();
   }
 
   final String gameId;
   final String humanName;
+  final String difficulty;
   final Random _random;
+
+  bool get _easyAi => difficulty == 'easy';
+  bool get _normalAi => difficulty == 'normal';
+  bool get _masterAi => difficulty == 'master';
 
   static const _standardRanks = <String>[
     '2',
@@ -217,7 +222,7 @@ class LocalGameSession {
           'key': index == 0 ? 'user:0' : 'bot:$index',
           'name': name,
           'bot': index != 0,
-          'bot_level': index == 0 ? null : 'expert',
+          'bot_level': index == 0 ? null : difficulty,
           'avatar': index == 0 ? '🦁' : const <String>['🦅','🌙','🦁'][index - 1],
           'seat': index,
           'score': _scores[index] ?? 0,
@@ -611,26 +616,61 @@ class LocalGameSession {
     if (legal.isEmpty) {
       return _hands[seat].first;
     }
-    if (_trick.isEmpty) {
-      legal.sort((a, b) => _rankPower(b).compareTo(_rankPower(a)));
-      return legal.first;
+    if (_easyAi) {
+      return legal[_random.nextInt(legal.length)];
     }
-    final winning = legal.where((card) {
-      final lead = _cardSuit(_trick.values.first);
-      var bestCard = _trick.values.first;
-      for (final value in _trick.values.skip(1)) {
-        if (_beats(value, bestCard, lead)) {
-          bestCard = value;
-        }
+    if (_normalAi && _random.nextDouble() < .18) {
+      return legal[_random.nextInt(legal.length)];
+    }
+
+    if (_trick.isEmpty) {
+      // Professional bots conserve trump and try to establish a long suit.
+      final suitCount = <String, int>{for (final suit in _suits) suit: 0};
+      for (final card in _hands[seat]) {
+        suitCount[_cardSuit(card)] = (suitCount[_cardSuit(card)] ?? 0) + 1;
       }
-      return _beats(card, bestCard, lead);
-    }).toList();
+      final preferredSuit = suitCount.entries
+          .where((entry) => entry.key != trump)
+          .reduce((a, b) => a.value >= b.value ? a : b)
+          .key;
+      final preferred = legal.where((card) => _cardSuit(card) == preferredSuit).toList();
+      final choices = preferred.isEmpty ? legal : preferred;
+      choices.sort((a, b) => _rankPower(b, trumpSuit: _cardSuit(b) == trump)
+          .compareTo(_rankPower(a, trumpSuit: _cardSuit(a) == trump)));
+      if (_masterAi && choices.length > 2) {
+        // Lead a medium-high card to keep the absolute top card as control.
+        return choices[1];
+      }
+      return choices.first;
+    }
+
+    final lead = _cardSuit(_trick.values.first);
+    var currentWinnerSeat = _trick.keys.first;
+    var currentBest = _trick.values.first;
+    for (final entry in _trick.entries.skip(1)) {
+      if (_beats(entry.value, currentBest, lead)) {
+        currentWinnerSeat = entry.key;
+        currentBest = entry.value;
+      }
+    }
+    final partner = (seat + 2) % 4;
+    final partnerWinning = currentWinnerSeat == partner;
+
+    if (partnerWinning && (_masterAi || difficulty == 'pro')) {
+      final safe = List<String>.from(legal)
+        ..sort((a, b) => _rankPower(a, trumpSuit: _cardSuit(a) == trump)
+            .compareTo(_rankPower(b, trumpSuit: _cardSuit(b) == trump)));
+      return safe.first;
+    }
+
+    final winning = legal.where((card) => _beats(card, currentBest, lead)).toList();
     if (winning.isNotEmpty) {
       winning.sort((a, b) => _rankPower(a, trumpSuit: _cardSuit(a) == trump)
           .compareTo(_rankPower(b, trumpSuit: _cardSuit(b) == trump)));
       return winning.first;
     }
-    legal.sort((a, b) => _rankPower(a).compareTo(_rankPower(b)));
+    legal.sort((a, b) => _rankPower(a, trumpSuit: _cardSuit(a) == trump)
+        .compareTo(_rankPower(b, trumpSuit: _cardSuit(b) == trump)));
     return legal.first;
   }
 
@@ -781,8 +821,9 @@ class LocalGameSession {
     if (_deck.isNotEmpty) {
       _hands[seat].add(_deck.removeLast());
     }
-    final suggestions = _meldSuggestions(_hands[seat]);
-    if (suggestions.isNotEmpty && _random.nextDouble() > .2) {
+    final suggestions = _meldSuggestions(_hands[seat])..sort((a, b) => b.length.compareTo(a.length));
+    final meldThreshold = _easyAi ? .72 : _normalAi ? .35 : _masterAi ? .02 : .15;
+    if (suggestions.isNotEmpty && _random.nextDouble() > meldThreshold) {
       final meld = suggestions.first;
       for (final card in meld) {
         _hands[seat].remove(card);
@@ -794,7 +835,7 @@ class LocalGameSession {
       _finishRummy(seat);
       return;
     }
-    final discard = _highestCard(_hands[seat]);
+    final discard = _easyAi ? _hands[seat][_random.nextInt(_hands[seat].length)] : _smartRummyDiscard(_hands[seat]);
     _hands[seat].remove(discard);
     _discard.add(discard);
     _messages.add('${_seatName(seat)} رمى ${_prettyCard(discard)}');
@@ -824,6 +865,15 @@ class LocalGameSession {
     } else {
       _messages.add('${_seatName(winner)} أنهى يده وفاز بالجولة.');
     }
+  }
+
+  String _smartRummyDiscard(List<String> hand) {
+    final suggestions = _meldSuggestions(hand);
+    final protected = <String>{for (final meld in suggestions) ...meld};
+    final candidates = hand.where((card) => !protected.contains(card)).toList();
+    final pool = candidates.isEmpty ? List<String>.from(hand) : candidates;
+    pool.sort((a, b) => _cardPoints(b).compareTo(_cardPoints(a)));
+    return pool.first;
   }
 
   void _ensureDeckForRummy() {
@@ -981,11 +1031,22 @@ class LocalGameSession {
   }
 
   String _bestBasraCard(int seat) {
-    for (final card in _hands[seat]) {
-      if (_basraCapture(card).isNotEmpty) {
-        return card;
-      }
+    if (_easyAi) {
+      return _hands[seat][_random.nextInt(_hands[seat].length)];
     }
+    final ranked = <MapEntry<String, int>>[];
+    for (final card in _hands[seat]) {
+      final captured = _basraCapture(card);
+      var value = captured.length * 10;
+      if (captured.length == _table.length && captured.isNotEmpty && _cardRank(card) != 'J') value += 45;
+      if (captured.contains('7D')) value += 18;
+      if (captured.contains('10D')) value += 16;
+      value += captured.where((item) => _cardRank(item) == 'A').length * 8;
+      if (_masterAi && card == '7D') value += 6;
+      ranked.add(MapEntry(card, value));
+    }
+    ranked.sort((a, b) => b.value.compareTo(a.value));
+    if (ranked.first.value > 0) return ranked.first.key;
     final cards = List<String>.from(_hands[seat]);
     cards.sort((a, b) => _numericValue(a).compareTo(_numericValue(b)));
     return cards.first;

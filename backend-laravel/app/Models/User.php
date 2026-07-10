@@ -55,6 +55,9 @@ class User extends Authenticatable
             'chat_color'=>$p?->chat_color,
             'active_table_skin'=>$p?->active_table_skin,
             'active_card_back'=>$p?->active_card_back,
+            'active_cover'=>$p?->active_profile_cover,
+            'bot_difficulty'=>$p?->bot_difficulty ?? 'pro',
+            'ui_preferences'=>$p?->ui_preferences,
         ];
     }
 }

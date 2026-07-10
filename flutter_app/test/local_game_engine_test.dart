@@ -72,4 +72,21 @@ void main() {
   });
 
 
+  test('all AI difficulty levels initialize safely for every curated engine', () {
+    const ids = <String>[
+      'syrian_tarneeb', 'tarneeb_400', 'trix', 'trix_partner', 'trix_complex',
+      'hand', 'hand_partner', 'saudi_hand', 'banakil', 'baloot', 'basra',
+    ];
+    const difficulties = <String>['easy', 'normal', 'pro', 'master'];
+    for (final difficulty in difficulties) {
+      for (var index = 0; index < ids.length; index++) {
+        final game = LocalGameSession(gameId: ids[index], humanName: 'Tester', difficulty: difficulty, seed: 1490 + index);
+        final state = Map<String, dynamic>.from(game.room()['state'] as Map);
+        expect(state['hand'], isA<List>(), reason: '${ids[index]} / $difficulty');
+        expect((state['hand'] as List).isNotEmpty, isTrue, reason: '${ids[index]} / $difficulty');
+      }
+    }
+  });
+
 }
+

@@ -52,7 +52,7 @@ class DatabaseSeeder extends Seeder { public function run(): void {
   DB::table('economy_seasons')->updateOrInsert(['key'=>'season_royal_launch'],[
    'name'=>json_encode(['ar'=>'موسم الانطلاق الملكي','en'=>'Royal Launch Season'],JSON_UNESCAPED_UNICODE),
    'starts_at'=>now()->startOfMonth(),'ends_at'=>now()->addMonth(),'active'=>true,
-   'rewards'=>json_encode(['top_1'=>'إطار أسطوري + 100000 توكنز','top_10'=>'شارة ملكية','daily'=>'مكافآت دخول'],JSON_UNESCAPED_UNICODE),
+   'rewards'=>json_encode(['top_1'=>'إطار أسطوري + 200 توكن','top_10'=>'شارة ملكية','daily'=>'مكافآت دخول'],JSON_UNESCAPED_UNICODE),
    'created_at'=>now(),'updated_at'=>now()
   ]);
  }
@@ -361,7 +361,7 @@ foreach($tables as [$key,$ar,$en,$css,$tier,$price,$days]) DB::table('store_item
  foreach($v82Cards as [$key,$ar,$en,$css,$price,$days]) DB::table('store_items')->updateOrInsert(['key'=>$key],['name'=>json_encode(['ar'=>$ar,'en'=>$en],JSON_UNESCAPED_UNICODE),'category'=>'card_back','price'=>$price,'duration_days'=>$days,'payload'=>json_encode(['card_back'=>$css,'v82'=>true],JSON_UNESCAPED_UNICODE),'active'=>true,'created_at'=>now(),'updated_at'=>now()]);
 
  $club=Club::firstOrCreate(['name'=>'Warqna Elite'],['owner_id'=>$admin->id,'level'=>5,'weekly_points'=>95000,'treasury'=>1000000]); ClubMember::firstOrCreate(['club_id'=>$club->id,'user_id'=>$admin->id],['role'=>'owner','permissions'=>['all'=>true],'weekly_points'=>9999]);
- $tarneeb=DB::table('games')->where('key','tarneeb')->first(); if($tarneeb) Tournament::firstOrCreate(['creator_id'=>$admin->id,'game_id'=>$tarneeb->id,'status'=>'open'],['stages'=>3,'seats_per_match'=>4,'entry_fee'=>0,'prize_pool'=>5000,'bracket'=>[]]);
+ $tarneeb=DB::table('games')->where('key','tarneeb')->first(); if($tarneeb) Tournament::firstOrCreate(['creator_id'=>$admin->id,'game_id'=>$tarneeb->id,'status'=>'open'],['stages'=>3,'seats_per_match'=>4,'entry_fee'=>0,'prize_pool'=>200,'bracket'=>[]]);
 
  // v145 curated mobile catalog + additional test accounts.
  $v145Games=['tarneeb','trix','hand','banakil','baloot','basra','tarneeb_400','syrian_tarneeb','trix_complex','saudi_hand','hand_partner','trix_partner'];
@@ -377,6 +377,11 @@ foreach($tables as [$key,$ar,$en,$css,$tier,$price,$days]) DB::table('store_item
    ['Jameel','jameel@warqna.local','Jameel12345','#22d3ee','PS',22,88000],
    ['Nour','nour@warqna.local','Nour12345','#f472b6','EG',19,76000],
    ['Yaser','yaser@warqna.local','Yaser12345','#a3e635','SA',27,130000],
+   ['Omar','omar@warqna.local','Omar12345','#60a5fa','PS',32,90000],
+   ['Sara','sara@warqna.local','Sara12345','#f472b6','JO',29,85000],
+   ['Basel','basel@warqna.local','Basel12345','#34d399','PS',38,120000],
+   ['Hala','hala@warqna.local','Hala12345','#c084fc','EG',26,78000],
+   ['Yazan','yazan@warqna.local','Yazan12345','#f59e0b','SA',41,150000],
  ] as [$username,$email,$password,$color,$country,$level,$tokens]) {
    $u=User::updateOrCreate(['email'=>$email],['username'=>$username,'password'=>Hash::make($password),'is_admin'=>false,'is_banned'=>false]);
    Profile::updateOrCreate(['user_id'=>$u->id],['display_name'=>$username,'country_code'=>$country,'country_name'=>country_name($country),'level'=>$level,'xp'=>$level*1200,'games_played'=>$level*15,'wins'=>$level*7,'name_color'=>$color,'chat_color'=>$color,'pasha_days'=>0,'badge'=>'pro']);

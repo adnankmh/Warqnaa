@@ -106,6 +106,9 @@ class MobileApiController extends Controller
             'sound_enabled' => 'nullable|boolean',
             'avatar' => 'nullable|string|max:32',
             'avatar_data' => 'nullable|string|max:1500000',
+            'active_cover' => 'nullable|string|max:120',
+            'bot_difficulty' => 'nullable|in:easy,normal,pro,master',
+            'ui_preferences' => 'nullable|array',
         ]);
         $profile = $request->user()->profile()->firstOrCreate([
             'user_id' => $request->user()->id,
@@ -123,6 +126,9 @@ class MobileApiController extends Controller
         if (isset($data['sound_enabled'])) $profile->sound_enabled = $data['sound_enabled'];
         if (array_key_exists('avatar',$data)) $profile->avatar = $data['avatar'];
         if (array_key_exists('avatar_data',$data)) $profile->avatar_data = $data['avatar_data'];
+        if (isset($data['active_cover'])) $profile->active_profile_cover = $data['active_cover'];
+        if (isset($data['bot_difficulty'])) $profile->bot_difficulty = $data['bot_difficulty'];
+        if (array_key_exists('ui_preferences',$data)) $profile->ui_preferences = $data['ui_preferences'];
         $profile->save();
 
         return response()->json(['ok' => true, 'message' => 'تم تحديث الملف الشخصي', 'user' => $request->user()->fresh('profile')->publicProfile()]);
@@ -163,7 +169,7 @@ class MobileApiController extends Controller
                 ]);
 
                 // Only one cosmetic from the same category remains active.
-                if (in_array($item->category, ['name_color','text_color','badge','table','xp_booster','card_back','name_frame','effect','emoji_pack'], true)) {
+                if (in_array($item->category, ['name_color','text_color','badge','table','xp_booster','card_back','name_frame','effect','emoji_pack','profile_cover'], true)) {
                     $user->inventoryItems()
                         ->whereHas('storeItem', fn ($query) => $query->where('category', $item->category))
                         ->update(['active' => false]);
@@ -217,7 +223,7 @@ class MobileApiController extends Controller
         if (DailyRewardClaim::where('user_id', $user->id)->whereDate('claim_date', $today)->exists()) {
             return response()->json(['ok' => false, 'message' => 'تم استلام مكافأة اليوم مسبقاً'], 409);
         }
-        $coins = 2500;
+        $coins = 100;
         $xp = 20;
         $wallet->credit($user, $coins, 'daily_reward', ['claim_date' => $today]);
         DailyRewardClaim::create(['user_id' => $user->id, 'claim_date' => $today, 'streak' => 1, 'coins' => $coins, 'payload' => ['xp' => $xp]]);
@@ -250,8 +256,8 @@ class MobileApiController extends Controller
             return response()->json(['ok'=>false,'message'=>'تم استخدام إثبات الإعلان مسبقاً.'],409);
         }
         $multiplier = ($data['reward_type'] ?? 'standard') === 'double' ? 2 : 1;
-        $tokens = 3000 * $multiplier;
-        $xp = 35 * $multiplier;
+        $tokens = 50 * $multiplier;
+        $xp = 15 * $multiplier;
         DB::transaction(function () use ($user,$wallet,$data,$today,$tokens,$xp) {
             $wallet->credit($user,$tokens,'rewarded_ad',['verification_id'=>$data['verification_id']]);
             RewardedAdClaim::create([
@@ -348,6 +354,9 @@ class MobileApiController extends Controller
             case 'effect':
                 if (isset($payload['theme'])) $profile->active_site_theme = (string) $payload['theme'];
                 else $profile->active_effect = $payload['effect'] ?? $item->key;
+                break;
+            case 'profile_cover':
+                $profile->active_profile_cover = $payload['cover'] ?? $item->key;
                 break;
         }
         $profile->save();
