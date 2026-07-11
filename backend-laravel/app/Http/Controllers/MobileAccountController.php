@@ -69,14 +69,17 @@ class MobileAccountController extends Controller
 
     public function requestDeletion(Request $request, AccountCancellationService $cancellation)
     {
+        $user = $request->user();
+        abort_if($user->is_admin, 403, 'لا يمكن إلغاء حساب المدير الرئيسي.');
+
         $data = $request->validate([
             'password' => 'required|string|max:120',
             'reason' => 'nullable|string|max:500',
-            'confirmation' => 'nullable|accepted',
+            'confirmation' => 'sometimes|accepted',
         ]);
-        abort_unless(Hash::check($data['password'], $request->user()->password), 422, 'كلمة المرور غير صحيحة.');
+        abort_unless(Hash::check($data['password'], $user->password), 422, 'كلمة المرور غير صحيحة.');
 
-        $deletion = $cancellation->request($request->user(), $data['reason'] ?? null);
+        $deletion = $cancellation->request($user, $data['reason'] ?? null);
         $days = $cancellation->graceDays();
 
         return response()->json([

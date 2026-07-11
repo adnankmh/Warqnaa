@@ -298,12 +298,14 @@ class MobileApiController extends Controller
 
     public function deleteAccount(Request $request, AccountCancellationService $cancellation)
     {
+        $user = $request->user();
+        abort_if($user->is_admin, 403, 'لا يمكن إلغاء حساب المدير الرئيسي.');
+
         $data = $request->validate([
             'password' => 'required|string|max:120',
-            'confirmation' => 'nullable|accepted',
+            'confirmation' => 'sometimes|accepted',
             'reason' => 'nullable|string|max:500',
         ]);
-        $user = $request->user();
         abort_unless(Hash::check($data['password'], $user->password), 422, 'كلمة المرور غير صحيحة.');
         $deletion = $cancellation->request($user, $data['reason'] ?? null);
 

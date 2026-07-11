@@ -1,0 +1,27 @@
+{
+  "product": "Warqna",
+  "version": "1.63.0",
+  "build": 163,
+  "channel": "production",
+  "codename": "ci-account-cancellation-flutter-fix",
+  "release_date": "2026-07-11",
+  "platforms": [
+    "web",
+    "android",
+    "ios",
+    "laravel"
+  ],
+  "highlights": [
+    "Fixed Flutter StorePage undefined controller references that blocked analyze and all builds",
+    "Flutter cancellation API now sends an explicit confirmation flag",
+    "Admin accounts return HTTP 403 before request validation",
+    "Legacy clients may omit confirmation while explicitly false confirmation remains rejected",
+    "Added regression tests and source-package preflight checks for both failures",
+    "Preserved the 30-day account recovery and permanent purge lifecycle"
+  ],
+  "external_configuration_required": [
+    "Laravel Scheduler must run every minute in production",
+    "WARQNA_API_URL must point to the deployed HTTPS Laravel API",
+    "Google, Facebook and Apple OAuth credentials remain required for social login"
+  ]
+}

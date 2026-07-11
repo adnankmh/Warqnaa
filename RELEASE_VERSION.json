@@ -1,8 +1,8 @@
 {
-  "version": "1.62.0",
-  "build": 162,
-  "full": "1.62.0+162",
-  "release": "v162",
+  "version": "1.63.0",
+  "build": 163,
+  "full": "1.63.0+163",
+  "release": "v163",
   "channel": "production",
-  "codename": "voice-social-progression"
+  "codename": "ci-account-cancellation-flutter-fix"
 }

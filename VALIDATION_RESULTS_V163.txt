@@ -1,0 +1,19 @@
+Warqna v163 validation results
+Date: 2026-07-11
+Version: 1.63.0+163
+
+PASS - tools/verify_release_versions.py
+PASS - tools/validate_release.py
+PASS - PHP syntax: 272 files
+PASS - JSON parse: 20 files
+PASS - YAML structural audit: 15 files
+PASS - Bash syntax for analyzer and release scripts
+PASS - Python bytecode compilation for release tools
+PASS - StorePage controller regression guard
+PASS - Account cancellation admin/confirmation regression guard
+PASS - Git conflict and secret scans
+
+Not executed in this packaging container:
+- flutter analyze / flutter test (Flutter SDK unavailable)
+- php artisan test (Composer vendor dependencies unavailable)
+These remain authoritative in GitHub Actions after upload.

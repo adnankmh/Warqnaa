@@ -1,15 +1,15 @@
-# Warqna — الإصدار الحالي
+# Warqna — ابدأ من هنا
 
-الإصدار الحالي هو **v162 — 1.62.0+162**.
+الإصدار الحالي هو **v163 — 1.63.0+163**.
 
-ابدأ بقراءة:
+افتح أولاً:
 
 ```text
-START_HERE_V162_AR.md
+START_HERE_V163_AR.md
 ```
 
 ثم شغّل:
 
 ```text
-CHECK_V162_WINDOWS.bat
+CHECK_V163_WINDOWS.bat
 ```

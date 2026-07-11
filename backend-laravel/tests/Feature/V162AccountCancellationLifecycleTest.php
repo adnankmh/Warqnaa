@@ -113,6 +113,23 @@ class V162AccountCancellationLifecycleTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $future->id]);
     }
 
+
+    public function test_explicitly_unaccepted_confirmation_is_rejected(): void
+    {
+        $user = $this->makeUser('not-confirmed');
+        $token = $user->createToken('mobile')->plainTextToken;
+
+        $this->withToken($token)
+            ->postJson('/api/mobile/v1/account/deletion-request', [
+                'password' => 'password123',
+                'confirmation' => false,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['confirmation']);
+
+        $this->assertNull($user->fresh()->deletion_requested_at);
+    }
+
     public function test_admin_account_cannot_be_cancelled(): void
     {
         $admin = $this->makeUser('protected-admin');

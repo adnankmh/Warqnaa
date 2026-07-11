@@ -80,6 +80,7 @@ def check_required_files() -> None:
         "backend-laravel/app/Services/Account/AccountCancellationService.php",
         "backend-laravel/app/Console/Commands/PurgeCancelledAccounts.php",
         "backend-laravel/tests/Feature/V162AccountCancellationLifecycleTest.php",
+        "backend-laravel/tests/Unit/V163CiRegressionContractTest.php",
         "tools/flutter_analyze_ci.sh",
         ".github/workflows/backend-ci.yml",
         ".github/workflows/flutter-android.yml",
@@ -611,6 +612,45 @@ def check_v162_account_cancellation_and_analyzer() -> None:
     print("[OK] v162 30-day account cancellation/reactivation and analyzer-only-info handling")
 
 
+
+def check_v163_ci_regressions() -> None:
+    main = read("flutter_app/lib/main.dart")
+    start = main.find("class _StorePageState")
+    end = main.find("\nclass ", start + 20)
+    if start < 0:
+        fail("Store page state is missing")
+    store = main[start:] if end < 0 else main[start:end]
+    for needle in [
+        "widget.controller.level",
+        "widget.controller.xp",
+        "widget.controller.levelProgress",
+        "widget.controller.roundPoints",
+        "widget.controller.tournamentPoints",
+        "widget.controller.clubPoints",
+    ]:
+        if needle not in store:
+            fail(f"v163 StorePage controller binding missing: {needle}")
+    if re.search(r"(?<!widget\.)\bcontroller\.(?:level|xp|xpNext|levelProgress|pointsToNextLevel|roundPoints|tournamentPoints|clubPoints|vipDays|activeXpMultiplier)", store):
+        fail("Unqualified StorePage controller reference returned")
+
+    api = read("flutter_app/lib/services/api_client.dart")
+    if "'confirmation': true" not in api:
+        fail("Flutter cancellation request no longer sends explicit confirmation")
+
+    for rel in [
+        "backend-laravel/app/Http/Controllers/MobileAccountController.php",
+        "backend-laravel/app/Http/Controllers/MobileApiController.php",
+    ]:
+        text = read(rel)
+        if "'confirmation' => 'sometimes|accepted'" not in text:
+            fail(f"Backward-compatible accepted confirmation rule missing: {rel}")
+        admin_guard = text.find("abort_if($user->is_admin, 403")
+        validation = text.find("$request->validate([", max(0, admin_guard - 200))
+        if admin_guard < 0 or validation < 0 or admin_guard > validation:
+            fail(f"Admin cancellation guard must run before validation: {rel}")
+
+    print("[OK] v163 StorePage controller and account-cancellation validation regressions")
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -642,6 +682,7 @@ def main() -> None:
     check_android_ci_order()
     check_v161_voice_social_progression()
     check_v162_account_cancellation_and_analyzer()
+    check_v163_ci_regressions()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")
