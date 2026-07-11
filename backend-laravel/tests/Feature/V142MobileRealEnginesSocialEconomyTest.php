@@ -49,10 +49,13 @@ class V142MobileRealEnginesSocialEconomyTest extends TestCase
         $this->withToken($token)->postJson('/api/mobile/v1/social/transfer', [
             'receiver' => 'receiver',
             'amount' => 1000,
-        ])->assertOk()->assertJsonPath('fee', 100)->assertJsonPath('total_debited', 1100);
+        ])->assertOk()
+            ->assertJsonPath('fee', 100)
+            ->assertJsonPath('total_debited', 1100)
+            ->assertJsonPath('wallet.tokens', 900);
 
-        $this->assertSame('900', (string) $sender->wallet()->fresh()->tokens);
-        $this->assertSame('1000', (string) $receiver->wallet()->fresh()->tokens);
-        $this->assertSame('100', (string) $admin->wallet()->fresh()->tokens);
+        $this->assertSame('900', (string) $sender->wallet()->firstOrFail()->tokens);
+        $this->assertSame('1000', (string) $receiver->wallet()->firstOrFail()->tokens);
+        $this->assertSame('100', (string) $admin->wallet()->firstOrFail()->tokens);
     }
 }

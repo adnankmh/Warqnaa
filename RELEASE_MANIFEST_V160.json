@@ -1,0 +1,25 @@
+{
+  "release": "Warqna v160",
+  "version": "1.60.0",
+  "build": 160,
+  "base_release": "v159",
+  "focus": [
+    "single-source release metadata",
+    "dynamic GitHub Actions version contract",
+    "Eloquent HasOne wallet refresh fix",
+    "case-insensitive HTTP charset tests"
+  ],
+  "required_files": [
+    "RELEASE_VERSION.json",
+    "tools/release_metadata.py",
+    "tools/verify_release_versions.py",
+    "backend-laravel/app/Http/Controllers/MobileSocialController.php",
+    "backend-laravel/tests/Feature/V142MobileRealEnginesSocialEconomyTest.php"
+  ],
+  "guides": {
+    "arabic": "START_HERE_V160_AR.md",
+    "github": "GITHUB_UPLOAD_V160_AR.md",
+    "windows": "CHECK_V160_WINDOWS.bat",
+    "unix": "check-v160.sh"
+  }
+}

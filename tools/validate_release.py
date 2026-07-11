@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Warqna v159 source-package preflight using the Python standard library.
+"""Warqna source-package preflight using the Python standard library.
 
 Framework-level Laravel and Flutter tests remain authoritative in GitHub Actions.
 This preflight rejects known regressions before a commit reaches CI.
@@ -13,8 +13,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_VERSION = "1.59.0"
-EXPECTED_BUILD = 159
+RELEASE_META = json.loads((ROOT / "RELEASE_VERSION.json").read_text(encoding="utf-8"))
+EXPECTED_VERSION = str(RELEASE_META["version"])
+EXPECTED_BUILD = int(RELEASE_META["build"])
 TEXT_SUFFIXES = {
     ".dart", ".php", ".py", ".js", ".ts", ".yml", ".yaml", ".json",
     ".md", ".html", ".css", ".xml", ".gradle", ".properties", ".sh", ".bat",
@@ -75,13 +76,16 @@ def check_required_files() -> None:
         ".github/workflows/flutter-web-pages.yml",
         ".github/workflows/flutter-ios.yml",
         "tools/verify_flutter_lock.py",
-        "START_HERE_V159_AR.md",
-        "GITHUB_UPLOAD_V159_AR.md",
-        "RELEASE_MANIFEST_V159.json",
-        "QUALITY_REPORT_V159_AR.md",
-        "CHECK_V159_WINDOWS.bat",
-        "check-v159.sh",
-        "START_WARQNA_V159_WINDOWS.bat",
+        f"START_HERE_V{EXPECTED_BUILD}_AR.md",
+        f"GITHUB_UPLOAD_V{EXPECTED_BUILD}_AR.md",
+        f"RELEASE_MANIFEST_V{EXPECTED_BUILD}.json",
+        f"QUALITY_REPORT_V{EXPECTED_BUILD}_AR.md",
+        f"CHECK_V{EXPECTED_BUILD}_WINDOWS.bat",
+        f"check-v{EXPECTED_BUILD}.sh",
+        f"START_WARQNA_V{EXPECTED_BUILD}_WINDOWS.bat",
+        "RELEASE_VERSION.json",
+        "tools/release_metadata.py",
+        "tools/verify_release_versions.py",
         "backend-laravel/app/Http/Controllers/Controller.php",
         "backend-laravel/tests/Unit/ControllerFoundationTest.php",
         "backend-laravel/tools/verify_http_foundation.php",
@@ -89,7 +93,7 @@ def check_required_files() -> None:
     missing = [item for item in required if not (ROOT / item).is_file()]
     if missing:
         fail("Missing release files: " + ", ".join(missing))
-    print("[OK] Required v159 release files")
+    print(f"[OK] Required v{EXPECTED_BUILD} release files")
 
 
 def check_conflicts() -> None:
@@ -107,6 +111,18 @@ def check_conflicts() -> None:
     print("[OK] No Git conflict markers")
 
 
+def check_text_control_characters() -> None:
+    offenders: list[str] = []
+    for path in iter_text_files():
+        data = path.read_bytes()
+        bad = sorted({byte for byte in data if byte < 32 and byte not in (9, 10, 13)})
+        if bad:
+            offenders.append(f"{path.relative_to(ROOT)}:{bad}")
+    if offenders:
+        fail("Unexpected control characters in text files: " + ", ".join(offenders[:20]))
+    print("[OK] No corrupt control characters in text launchers or source files")
+
+
 def check_login_fix() -> None:
     require("flutter_app/lib/main.dart", [
         "Future<String?> login(String loginId, String password",
@@ -122,23 +138,16 @@ def check_login_fix() -> None:
 
 
 def check_versions() -> None:
-    checks = {
-        "flutter_app/pubspec.yaml": f"version: {EXPECTED_VERSION}+{EXPECTED_BUILD}",
-        "flutter_app/lib/services/api_client.dart": f"defaultValue: '{EXPECTED_VERSION}'",
-        "backend-laravel/config/warqna.php": f"env('WARQNA_VERSION', '{EXPECTED_VERSION}')",
-        "backend-laravel/.env.example": f"WARQNA_BUILD={EXPECTED_BUILD}",
-        "backend-laravel/.env.production.example": f"WARQNA_VERSION={EXPECTED_VERSION}",
-        ".github/workflows/flutter-android.yml": f"WARQNA_APP_BUILD={EXPECTED_BUILD}",
-        ".github/workflows/flutter-web-pages.yml": f"WARQNA_APP_BUILD={EXPECTED_BUILD}",
-        ".github/workflows/flutter-ios.yml": f"WARQNA_APP_BUILD={EXPECTED_BUILD}",
-        ".github/workflows/production-release-check.yml": f"version: {EXPECTED_VERSION}+{EXPECTED_BUILD}",
-    }
-    for rel, needle in checks.items():
-        if needle not in read(rel):
-            fail(f"Version mismatch in {rel}; expected {needle}")
-    require("backend-laravel/config/warqna.php", [f"env('WARQNA_BUILD', {EXPECTED_BUILD})"])
-    require("flutter_app/lib/services/api_client.dart", [f"defaultValue: {EXPECTED_BUILD}"])
-    print(f"[OK] Version consistency {EXPECTED_VERSION}+{EXPECTED_BUILD}")
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/verify_release_versions.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Release version contract failed: " + result.stdout.strip())
+    print(result.stdout.strip())
 
 
 def check_json() -> None:
@@ -193,7 +202,7 @@ def check_flutter_lock_verification() -> None:
         "python3 ../tools/verify_flutter_lock.py pubspec.lock",
         "google_mobile_ads=7.0.0",
         "flutter_webrtc=1.4.0",
-        "name: warqna-v159-android",
+        "name: warqna-v${{ steps.release.outputs.build }}-android",
     ]:
         if needle not in workflow:
             fail(f"Android lock verification incomplete: {needle}")
@@ -385,6 +394,38 @@ def check_product_contract_tests() -> None:
     print("[OK] Current 12-game, 50-table, 40-card-back product contract")
 
 
+def check_release_and_wallet_regressions() -> None:
+    gate = read(".github/workflows/production-release-check.yml")
+    if "WARQNA_APP_BUILD=158" in gate or "grep -q 'version:" in gate:
+        fail("Stale hard-coded release gate returned")
+    require(".github/workflows/production-release-check.yml", [
+        "python3 tools/verify_release_versions.py",
+    ])
+
+    controller = "backend-laravel/app/Http/Controllers/MobileSocialController.php"
+    require(controller, [
+        "$freshWallet = $sender->wallet()->firstOrFail();",
+        "'wallet' => $freshWallet",
+    ])
+    forbid(controller, ["wallet()->fresh()"])
+
+    test = "backend-laravel/tests/Feature/V142MobileRealEnginesSocialEconomyTest.php"
+    require(test, [
+        "assertJsonPath('wallet.tokens', 900)",
+        "$sender->wallet()->firstOrFail()->tokens",
+        "$receiver->wallet()->firstOrFail()->tokens",
+        "$admin->wallet()->firstOrFail()->tokens",
+    ])
+    forbid(test, ["wallet()->fresh()"])
+
+    platform_test = "backend-laravel/tests/Feature/PlatformFoundationTest.php"
+    require(platform_test, [
+        "strtolower((string) $robots->headers->get('Content-Type'))",
+        "text/plain; charset=utf-8",
+    ])
+    print("[OK] Dynamic release gate, Eloquent wallet relation and charset regression guards")
+
+
 def check_android_ci_order() -> None:
     workflow = read(".github/workflows/flutter-android.yml")
     for needle in ["actions/checkout@v5", "actions/setup-java@v5", "actions/upload-artifact@v6"]:
@@ -412,6 +453,7 @@ def main() -> None:
     print(f"Warqna {EXPECTED_VERSION}+{EXPECTED_BUILD} preflight")
     check_required_files()
     check_conflicts()
+    check_text_control_characters()
     check_login_fix()
     check_versions()
     check_json()
@@ -424,10 +466,11 @@ def main() -> None:
     check_gameplay_fixes()
     check_api_pwa_contracts()
     check_product_contract_tests()
+    check_release_and_wallet_regressions()
     check_android_ci_order()
     check_secrets()
     check_dart_structure()
-    print("[PASS] Warqna v159 source-package preflight completed successfully")
+    print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")
 
 
 if __name__ == "__main__":

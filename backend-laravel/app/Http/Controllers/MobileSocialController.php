@@ -171,13 +171,15 @@ class MobileSocialController extends Controller
             return response()->json(['ok' => false, 'message' => 'الرصيد غير كافٍ. المطلوب مع عمولة الإدارة: ' . number_format($total)], 422);
         }
 
+        $freshWallet = $sender->wallet()->firstOrFail();
+
         return response()->json([
             'ok' => true,
             'message' => 'تم إرسال ' . number_format((int) $data['amount']) . ' توكنز، وخصم عمولة إدارة ' . $feePercent . '% بقيمة ' . number_format($fee) . '.',
             'amount' => (int) $data['amount'],
             'fee' => $fee,
             'total_debited' => $total,
-            'wallet' => $sender->wallet()->fresh(),
+            'wallet' => $freshWallet,
         ]);
     }
 

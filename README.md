@@ -1,29 +1,31 @@
-# Warqna v159 — HTTP Foundation & Stable Test Suite
+# Warqna v160 — Release Contract & Wallet Hotfix
 
-حزمة المصدر الكاملة لتطبيق Warqna بإصدار `1.59.0+159`، مبنية على v158 مع الحفاظ على جميع الميزات الحالية.
+حزمة المصدر الكاملة لتطبيق Warqna بإصدار `1.60.0+160`، مبنية على v159 مع الحفاظ على جميع ميزات التطبيق الحالية.
 
-أهم إصلاحات هذا الإصدار:
+أهم إصلاحات الإصدار:
 
-- إعادة ملف Laravel الأساسي `app/Http/Controllers/Controller.php` الذي تعتمد عليه جميع واجهات Mobile API والصفحات القانونية والحساب والسلامة.
-- منع أخطاء HTTP 500 الناتجة عن فشل Composer في تحميل الأب `Controller`.
-- إزالة اختبارات توزيع الورق العشوائية المتذبذبة واستبدالها بفحوص ثابتة: 52 ورقة فريدة و13 ورقة لكل لاعب دون تقوية مصطنعة.
-- إضافة فحص CI مستقل لشجرة Controllers قبل PHPUnit.
-- توحيد الإصدار في Flutter وLaravel وبناء Android/Web/iOS.
+- إلغاء فحص الإصدار القديم المعتمد على أوامر `grep` ثابتة، والذي بقي يبحث عن build 158 داخل إصدار v159.
+- إضافة مصدر واحد للإصدار: `RELEASE_VERSION.json`.
+- جعل Android وWeb وiOS يقرؤون الإصدار والبناء آليًا من المصدر نفسه.
+- إضافة `tools/verify_release_versions.py` لمنع أي تعارض بين Flutter وLaravel وGitHub Actions.
+- إصلاح تحويل التوكنز بعد إزالة الاستدعاء غير الصحيح `fresh()` من علاقة `HasOne`.
+- تحديث اختبار تحويل التوكنز ليتحقق من الخصم 1100، عمولة 100، والأرصدة النهائية الصحيحة.
+- جعل اختبارات `Content-Type` تتعامل مع `UTF-8` و`utf-8` بصورة صحيحة وفق عدم حساسية أسماء charset لحالة الأحرف.
 
 ابدأ من:
 
-- `START_HERE_V159_AR.md`
-- `GITHUB_UPLOAD_V159_AR.md`
-- `QUALITY_REPORT_V159_AR.md`
+- `START_HERE_V160_AR.md`
+- `GITHUB_UPLOAD_V160_AR.md`
+- `QUALITY_REPORT_V160_AR.md`
 
 فحص Windows:
 
 ```bat
-CHECK_V159_WINDOWS.bat
+CHECK_V160_WINDOWS.bat
 ```
 
 فحص Linux/macOS:
 
 ```bash
-./check-v159.sh
+./check-v160.sh
 ```

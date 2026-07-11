@@ -17,6 +17,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Load release metadata
+        id: release
+        run: python3 tools/release_metadata.py --github-output >> "$GITHUB_OUTPUT"
+
       - name: Validate source package and reject merge markers
         run: python3 tools/validate_release.py
 
@@ -70,8 +74,10 @@ jobs:
         env:
           API_URL: ${{ vars.WARQNA_API_URL }}
           REWARDED_ID: ${{ vars.ADMOB_REWARDED_IOS_ID }}
+          WARQNA_APP_VERSION: ${{ steps.release.outputs.version }}
+          WARQNA_APP_BUILD: ${{ steps.release.outputs.build }}
         run: |
-          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.59.0" "--dart-define=WARQNA_APP_BUILD=159")
+          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=$WARQNA_APP_VERSION" "--dart-define=WARQNA_APP_BUILD=$WARQNA_APP_BUILD")
           if [ -n "$API_URL" ]; then
             EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL" "--dart-define=WARQNA_PRODUCTION_MODE=true")
           else
@@ -86,7 +92,7 @@ jobs:
       - name: Upload unsigned iOS app
         uses: actions/upload-artifact@v6
         with:
-          name: warqna-v159-ios-unsigned
+          name: warqna-v${{ steps.release.outputs.build }}-ios-unsigned
           if-no-files-found: error
           retention-days: 14
           path: flutter_app/build/ios/iphoneos/Runner.app

@@ -1,0 +1,25 @@
+Warqna v160 — validation results
+Version: 1.60.0+160
+Date: 2026-07-11
+
+Implemented root fixes
+- Added RELEASE_VERSION.json as the single release metadata source.
+- Added tools/release_metadata.py for GitHub Actions step outputs.
+- Added tools/verify_release_versions.py and removed brittle hard-coded release grep checks.
+- Android, Web and iOS workflows now consume version/build outputs dynamically.
+- Removed the stale WARQNA_APP_BUILD=158 production-gate contract.
+- Replaced HasOne::fresh() with a real Wallet model query in MobileSocialController.
+- Updated the token-transfer feature test to assert response wallet balance and final balances.
+- Made Content-Type charset assertions case-insensitive.
+
+Executed in the packaging environment
+- tools/verify_release_versions.py: PASS.
+- tools/validate_release.py: PASS.
+- Python bytecode compilation: PASS.
+- PHP syntax audit: PASS.
+- JSON and YAML structural checks: PASS.
+- Git conflict marker and secret-bearing file checks: PASS.
+- ZIP integrity test: performed after packaging.
+
+Environment limitation
+- The complete php artisan test suite was not executed locally because Composer/vendor dependencies are not available in this offline packaging environment. GitHub Actions installs dependencies and runs the full Laravel suite after upload.

@@ -22,7 +22,7 @@ Route::get('/health-old', function(){
 
 Route::get('/robots.txt', function(){
     $base=url('/');
-    return response("User-agent: *\nAllow: /\nSitemap: {$base}/sitemap.xml\n",200)->header('Content-Type','text/plain');
+    return response("User-agent: *\nAllow: /\nSitemap: {$base}/sitemap.xml\n",200)->header('Content-Type','text/plain; charset=UTF-8');
 });
 
 Route::get('/sitemap.xml', function(){

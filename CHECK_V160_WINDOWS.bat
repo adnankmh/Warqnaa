@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 echo ================================================
-echo Warqna v159 - Historical Source Package Preflight
+echo Warqna v160 - Source Package Preflight
 echo ================================================
 where python >nul 2>nul
 if errorlevel 1 (
@@ -11,4 +11,6 @@ if errorlevel 1 (
 )
 python tools\validate_release.py
 if errorlevel 1 exit /b 1
+echo.
+echo Warqna v160 source preflight passed.
 endlocal
