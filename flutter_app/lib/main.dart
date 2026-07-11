@@ -540,8 +540,8 @@ class AppController extends ChangeNotifier {
   Future<String?> login(String login, String password, {bool offline = false}) async {
     if (login.trim().isEmpty || password.isEmpty) return 'أدخل اسم المستخدم وكلمة المرور.';
     final loopbackApi = api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost');
-    if (!offline && kIsWeb && loopbackApi && !warqnaProductionMode) {
-      return login(login, password, offline: true);
+    if (!offline && kIsWeb && loopbackApi) {
+      return this.login(login, password, offline: true);
     }
     if (offline && warqnaProductionMode) return 'وضع الدخول المحلي معطل في نسخة الإنتاج.';
     if (offline) {
@@ -609,16 +609,14 @@ class AppController extends ChangeNotifier {
       notifyListeners();
       return null;
     } on ApiException catch (e) {
-      if (warqnaProductionMode) return e.message;
-      final fallback = await login(login, password, offline: true);
+      final fallback = await this.login(login, password, offline: true);
       if (fallback == null) {
         notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
         return null;
       }
       return e.message;
     } catch (_) {
-      if (warqnaProductionMode) return 'تعذر الاتصال بخادم Warqna. تحقق من الإنترنت وحاول مجددًا.';
-      final fallback = await login(login, password, offline: true);
+      final fallback = await this.login(login, password, offline: true);
       if (fallback == null) {
         notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
         return null;
