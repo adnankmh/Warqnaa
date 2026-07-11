@@ -88,7 +88,7 @@ def main() -> None:
         "Brittle hard-coded release grep returned",
     )
 
-    manifest_rel = f"RELEASE_MANIFEST_V{build}.json"
+    manifest_rel = f"releases/manifests/current/RELEASE_MANIFEST_V{build}.json"
     manifest = json.loads(read(manifest_rel))
     if manifest.get("version") != version or manifest.get("build") != build:
         fail(f"{manifest_rel} does not match RELEASE_VERSION.json")

@@ -1,7 +1,11 @@
-# Warqna v166
+# Warqna v167
 
-Warqna production source package, version `1.66.0+166`.
+مشروع Warqna متعدد المنصات: Flutter للويب وAndroid وiOS، وLaravel للخادم.
 
-This release preserves the Android WorkManager boot fix from v165 and adds the global voice, social, gameplay, accessibility, store, profile, notification, privacy and Play Store polish requested for v166.
+ابدأ من [START_HERE_AR.md](START_HERE_AR.md).
 
-ابدأ من: `START_HERE_V166_AR.md`.
+- التطبيق: `flutter_app/`
+- الخادم: `backend-laravel/`
+- الوثائق: `docs/README_AR.md`
+- السكربتات: `scripts/`
+- أصول Google Play: `assets/play-store/`

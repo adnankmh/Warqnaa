@@ -85,13 +85,13 @@ def check_required_files() -> None:
         "backend-laravel/config/push.php",
         "backend-laravel/database/migrations/2026_07_12_000166_create_push_devices_table.php",
         "backend-laravel/tests/Feature/V166GlobalPolishContractTest.php",
-        "VOICE_ANDROID_PUSH_SETUP_V166_AR.md",
-        "VALIDATION_RESULTS_V166.txt",
-        "PLAY_STORE_ASSETS_V166_AR.md",
-        "play_store_assets/icon-512.png",
-        "play_store_assets/feature-graphic-1024x500.png",
+        "docs/ar/product/VOICE_ANDROID_PUSH_SETUP_V166_AR.md",
+        "docs/ar/validation/archive/VALIDATION_RESULTS_V166.txt",
+        "docs/ar/product/PLAY_STORE_ASSETS_V166_AR.md",
+        "assets/play-store/icon-512.png",
+        "assets/play-store/feature-graphic-1024x500.png",
         "backend-laravel/app/Http/Controllers/SocialAuthController.php",
-        "VOICE_AND_SOCIAL_SETUP_V161_AR.md",
+        "docs/ar/troubleshooting/VOICE_AND_SOCIAL_SETUP_V161_AR.md",
         "backend-laravel/app/Services/Account/AccountCancellationService.php",
         "backend-laravel/app/Console/Commands/PurgeCancelledAccounts.php",
         "backend-laravel/tests/Feature/V162AccountCancellationLifecycleTest.php",
@@ -105,16 +105,16 @@ def check_required_files() -> None:
         "tools/configure_android_startup.py",
         "tools/verify_android_startup.py",
         "tools/configure_android_workmanager_guard.py",
-        "ANDROID_APK_STARTUP_FIX_V164_AR.md",
-        "ANDROID_WORKMANAGER_BOOT_FIX_V165_AR.md",
-        "CAPTURE_ANDROID_CRASH_LOG_WINDOWS.bat",
-        f"START_HERE_V{EXPECTED_BUILD}_AR.md",
-        f"GITHUB_UPLOAD_V{EXPECTED_BUILD}_AR.md",
-        f"RELEASE_MANIFEST_V{EXPECTED_BUILD}.json",
-        f"QUALITY_REPORT_V{EXPECTED_BUILD}_AR.md",
-        f"CHECK_V{EXPECTED_BUILD}_WINDOWS.bat",
-        f"check-v{EXPECTED_BUILD}.sh",
-        f"START_WARQNA_V{EXPECTED_BUILD}_WINDOWS.bat",
+        "docs/ar/troubleshooting/ANDROID_APK_STARTUP_FIX_V164_AR.md",
+        "docs/ar/troubleshooting/ANDROID_WORKMANAGER_BOOT_FIX_V165_AR.md",
+        "scripts/windows/archive/CAPTURE_ANDROID_CRASH_LOG_WINDOWS.bat",
+        f"docs/ar/releases/current/START_HERE_V{EXPECTED_BUILD}_AR.md",
+        f"docs/ar/deployment/GITHUB_UPLOAD_V{EXPECTED_BUILD}_AR.md",
+        f"releases/manifests/current/RELEASE_MANIFEST_V{EXPECTED_BUILD}.json",
+        f"docs/ar/reports/current/QUALITY_REPORT_V{EXPECTED_BUILD}_AR.md",
+        f"scripts/windows/current/CHECK_V{EXPECTED_BUILD}_WINDOWS.bat",
+        f"scripts/unix/current/check-v{EXPECTED_BUILD}.sh",
+        f"scripts/windows/current/START_WARQNA_V{EXPECTED_BUILD}_WINDOWS.bat",
         "RELEASE_VERSION.json",
         "tools/release_metadata.py",
         "tools/verify_release_versions.py",
@@ -126,6 +126,18 @@ def check_required_files() -> None:
     if missing:
         fail("Missing release files: " + ", ".join(missing))
     print(f"[OK] Required v{EXPECTED_BUILD} release files")
+
+
+def check_clean_root() -> None:
+    allowed = {
+        ".github", ".gitignore", "CHECK_WARQNA_WINDOWS.bat", "README.md",
+        "RELEASE_VERSION.json", "START_HERE_AR.md", "START_WARQNA_WINDOWS.bat",
+        "assets", "backend-laravel", "docs", "flutter_app", "releases", "scripts", "tools",
+    }
+    unexpected = sorted(path.name for path in ROOT.iterdir() if path.name not in allowed)
+    if unexpected:
+        fail("Unexpected files in clean project root: " + ", ".join(unexpected))
+    print("[OK] Clean organized project root")
 
 
 def check_conflicts() -> None:
@@ -761,7 +773,7 @@ def check_v165_android_workmanager_boot_guard() -> None:
             fail(f"v165 WorkManager verifier contract missing: {needle}")
     if workflow.count("configure_android_workmanager_guard.py") < 2:
         fail("Android workflow must apply the WorkManager guard to both safe APK and production AAB")
-    if "FATAL EXCEPTION" not in read("ANDROID_WORKMANAGER_BOOT_FIX_V165_AR.md"):
+    if "FATAL EXCEPTION" not in read("docs/ar/troubleshooting/ANDROID_WORKMANAGER_BOOT_FIX_V165_AR.md"):
         fail("v165 report must document the logcat crash signature")
     print("[OK] v165 Android WorkManager pre-Flutter boot guard")
 
@@ -921,7 +933,7 @@ def check_v166_global_polish() -> None:
     try:
         from PIL import Image
         for name, expected in play_assets.items():
-            path = ROOT / "play_store_assets" / name
+            path = ROOT / "assets/play-store" / name
             if not path.is_file():
                 fail(f"Play Store asset missing: {name}")
             with Image.open(path) as image:
@@ -929,7 +941,7 @@ def check_v166_global_polish() -> None:
                     fail(f"Play Store asset has wrong dimensions: {name}={image.size}, expected={expected}")
     except ImportError:
         for name in play_assets:
-            if not (ROOT / "play_store_assets" / name).is_file():
+            if not (ROOT / "assets/play-store" / name).is_file():
                 fail(f"Play Store asset missing: {name}")
 
     print("[OK] v166 voice, gameplay, social, accessibility, store, push and Play Store polish contracts")
@@ -948,6 +960,7 @@ def check_dart_structure() -> None:
 def main() -> None:
     print(f"Warqna {EXPECTED_VERSION}+{EXPECTED_BUILD} preflight")
     check_required_files()
+    check_clean_root()
     check_conflicts()
     check_text_control_characters()
     check_login_fix()

@@ -1,0 +1,17 @@
+{
+  "release": "Warqna v167",
+  "version": "1.67.0",
+  "build": 167,
+  "base_release": "v166",
+  "focus": [
+    "organized production repository layout",
+    "clean project root",
+    "archived release documentation",
+    "stable CI-compatible application paths"
+  ],
+  "guides": {
+    "start": "docs/ar/releases/current/START_HERE_V167_AR.md",
+    "github": "docs/ar/deployment/GITHUB_UPLOAD_V167_AR.md",
+    "structure": "docs/ar/STRUCTURE_GUIDE_AR.md"
+  }
+}

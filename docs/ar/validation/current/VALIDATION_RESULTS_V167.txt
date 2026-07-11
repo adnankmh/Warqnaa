@@ -1,0 +1,36 @@
+Warqna v167 validation report
+Generated: 2026-07-12
+
+[PASS] Release version contract is consistent: 1.67.0+167
+Warqna 1.67.0+167 preflight
+[OK] Required v167 release files
+[OK] Clean organized project root
+[OK] No Git conflict markers
+[OK] No corrupt control characters in text launchers or source files
+[OK] Merge-safe and analyzer-clean login fallback
+[PASS] Release version contract is consistent: 1.67.0+167
+[OK] JSON syntax (23 files)
+[OK] YAML structural audit (15 files)
+[OK] Robust Flutter pubspec.lock parser and pinned dependencies
+[OK] SQLite :memory: and URI preservation
+[OK] Composer, PHPUnit, migration and Docker CI contracts
+[OK] Laravel HTTP base controller and autoload guards
+[OK] Deterministic duplicate-free card-deal tests
+[OK] Unicode card normalization and Tarneeb state compatibility
+[OK] Versioned/legacy Mobile API and explicit PWA routes
+[OK] Current 12-game, 50-table, 40-card-back product contract
+[OK] Dynamic release gate, Eloquent wallet relation and charset regression guards
+[OK] Android project generation and Java/Gradle CI order
+[OK] v161 voice, Android startup, countries, progression, clubs, designer and social OAuth contracts
+[OK] v162 30-day account cancellation/reactivation and analyzer-only-info handling
+[OK] v163 StorePage controller and account-cancellation validation regressions
+[OK] v164 first-frame boot, AdMob manifest sanitization and safe APK contracts
+[OK] v165 Android WorkManager pre-Flutter boot guard
+[OK] v166 voice, gameplay, social, accessibility, store, push and Play Store polish contracts
+[OK] No runtime secrets or signing files
+[OK] Dart delimiter structure
+[PASS] Warqna v167 source-package preflight completed successfully
+
+[PHP syntax audit]
+[PASS] PHP syntax: 240 files
+[PASS] Shell syntax

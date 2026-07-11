@@ -1,8 +1,8 @@
 {
-  "version": "1.66.0",
-  "build": 166,
-  "full": "1.66.0+166",
-  "release": "v166",
+  "version": "1.67.0",
+  "build": 167,
+  "full": "1.67.0+167",
+  "release": "v167",
   "channel": "production",
-  "codename": "global-voice-social-polish"
+  "codename": "organized-production-layout"
 }
