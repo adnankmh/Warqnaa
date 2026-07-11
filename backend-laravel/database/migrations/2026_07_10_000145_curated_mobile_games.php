@@ -30,9 +30,9 @@ return new class extends Migration {
 
         if (Schema::hasTable('store_items')) {
             $aliases = [
-                ['theme_dark_premium','داكن فاخر','Premium Dark','theme',0,['theme'=>'dark']],
-                ['theme_classic','كلاسيكي فاخر','Luxury Classic','theme',9800,['theme'=>'classic']],
-                ['theme_purple','بنفسجي أسطوري','Legendary Purple','theme',14500,['theme'=>'purple']],
+                ['theme_dark_premium','داكن فاخر','Premium Dark','effect',0,['theme'=>'dark']],
+                ['theme_classic','كلاسيكي فاخر','Luxury Classic','effect',9800,['theme'=>'classic']],
+                ['theme_purple','بنفسجي أسطوري','Legendary Purple','effect',14500,['theme'=>'purple']],
                 ['name_red','أحمر لامع','Bright Red','name_color',6500,['color'=>'#ef4444']],
                 ['name_blue','أزرق ملكي','Royal Blue','name_color',6500,['color'=>'#3b82f6']],
                 ['name_green','أخضر زمردي','Emerald Green','name_color',6500,['color'=>'#22c55e']],

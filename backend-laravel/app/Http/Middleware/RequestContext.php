@@ -14,7 +14,7 @@ class RequestContext
         $request->attributes->set('request_id', mb_substr($requestId, 0, 64));
         $response = $next($request);
         $response->headers->set('X-Request-ID', $request->attributes->get('request_id'));
-        $response->headers->set('X-Warqna-Version', (string) config('warqna.version', '1.55.0'));
+        $response->headers->set('X-Warqna-Version', (string) config('warqna.version', '1.56.0'));
         return $response;
     }
 }

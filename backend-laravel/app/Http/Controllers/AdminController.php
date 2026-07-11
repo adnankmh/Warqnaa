@@ -137,7 +137,7 @@ class AdminController
         return $r->validate([
             'key'=>($create?'nullable':'nullable').'|string|max:120',
             'name_ar'=>'required|string|max:120','name_en'=>'nullable|string|max:120',
-            'category'=>'required|in:name_color,text_color,pasha,xp_booster,table,badge,card_back,name_frame,effect,emoji_pack',
+            'category'=>'required|in:name_color,text_color,pasha,xp_booster,table,badge,card_back,name_frame,effect,emoji_pack,profile_cover',
             'price'=>'required|integer|min:0|max:999999999','duration_days'=>'nullable|integer|min:1|max:3650',
             'active'=>'nullable|boolean','tab'=>'nullable|string|max:50','tier'=>'nullable|string|max:50','preview_icon'=>'nullable|string|max:40','css_class'=>'nullable|string|max:120','color'=>'nullable|regex:/^#?[0-9a-fA-F]{3,8}$/','multiplier'=>'nullable|numeric|min:1|max:20','emojis'=>'nullable|string|max:400','asset'=>'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
         ]);
@@ -156,6 +156,7 @@ class AdminController
             $payload['asset_url']='/uploads/cosmetics/'.$name;
             if($r->input('category')==='table') $payload['table_image']='/uploads/cosmetics/'.$name;
             if($r->input('category')==='card_back') $payload['card_back_image']='/uploads/cosmetics/'.$name;
+            if($r->input('category')==='profile_cover') $payload['cover_image']='/uploads/cosmetics/'.$name;
         }
         if($r->filled('css_class')){
             $css=preg_replace('/[^a-zA-Z0-9_\- ]/','',(string)$r->input('css_class'));
@@ -165,6 +166,7 @@ class AdminController
             elseif($cat==='effect') $payload['effect']=$css;
             elseif($cat==='badge') $payload['badge']=$css;
             elseif($cat==='name_frame') $payload['frame']=$css;
+            elseif($cat==='profile_cover') $payload['cover']=$css;
             else $payload['css']=$css;
         }
         if($r->filled('multiplier')) $payload['multiplier']=(float)$r->input('multiplier');
@@ -323,7 +325,7 @@ class AdminController
 
     private function categoryLabels(): array
     {
-        return ['pasha'=>'الباشا','xp_booster'=>'مسرعات XP','table'=>'الطاولات','card_back'=>'ظهر الورق','text_color'=>'ألوان الكتابة','name_color'=>'ألوان اللاعبين وGlow','emoji_pack'=>'الإيموجي','badge'=>'الشارات','effect'=>'مؤثرات الفوز','name_frame'=>'إطارات الاسم'];
+        return ['pasha'=>'الباشا','xp_booster'=>'مسرعات XP','table'=>'الطاولات','card_back'=>'ظهر الورق','text_color'=>'ألوان الكتابة','name_color'=>'ألوان اللاعبين وGlow','emoji_pack'=>'الإيموجي','badge'=>'الشارات','effect'=>'مؤثرات الفوز','name_frame'=>'إطارات الاسم','profile_cover'=>'أغلفة الملف الشخصي'];
     }
     private function themeOptions(): array
     {

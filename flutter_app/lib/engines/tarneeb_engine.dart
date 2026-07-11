@@ -326,10 +326,21 @@ class TarneebLocalEngine {
   }
 
   void _finishRound() {
-    final biddingSeat = bidWinnerSeat!;
+    final biddingSeat = bidWinnerSeat;
+    final contract = highestBid;
+
+    // A normal round always has a winning bidder and a contract. Tests, restored
+    // sessions, or defensive recovery paths may reach the final trick without
+    // those values. End safely instead of throwing a null-check exception, and
+    // keep lastTrick available so the completed trick remains visible.
+    if (biddingSeat == null || contract == null) {
+      phase = TarneebPhase.roundEnd;
+      messages.add('انتهت الجولة دون بيانات مزايدة مكتملة. تم حفظ آخر لَمّة بأمان.');
+      return;
+    }
+
     final biddingTeam = teamOf(biddingSeat);
     final otherTeam = 1 - biddingTeam;
-    final contract = highestBid!;
     if (roundTricks[biddingTeam] >= contract) {
       scores[biddingTeam] += roundTricks[biddingTeam];
       scores[otherTeam] += roundTricks[otherTeam];

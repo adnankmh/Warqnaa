@@ -8,8 +8,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_VERSION = "1.55.0"
-EXPECTED_BUILD = 155
+EXPECTED_VERSION = "1.56.0"
+EXPECTED_BUILD = 156
 TEXT_SUFFIXES = {
     ".dart", ".php", ".py", ".js", ".ts", ".yml", ".yaml", ".json",
     ".md", ".html", ".css", ".xml", ".gradle", ".properties", ".sh", ".bat",
@@ -133,6 +133,36 @@ def check_ci_hotfixes() -> None:
         fail("A runtime backend-laravel/.env must not be committed")
     print("[OK] Composer strict-validation and Compose CI environment hotfixes")
 
+
+def check_v156_regressions() -> None:
+    engine = (ROOT / "flutter_app/lib/engines/tarneeb_engine.dart").read_text(encoding="utf-8")
+    for needle in [
+        "if (biddingSeat == null || contract == null)",
+        "phase = TarneebPhase.roundEnd;",
+        "تم حفظ آخر لَمّة بأمان",
+    ]:
+        if needle not in engine:
+            fail(f"Tarneeb final-trick guard missing: {needle}")
+
+    migration_144 = (ROOT / "backend-laravel/database/migrations/2026_07_10_000144_expand_store_item_category.php").read_text(encoding="utf-8")
+    for needle in ["category_v156", "dropColumn('category')", "renameColumn('category_v156', 'category')"]:
+        if needle not in migration_144:
+            fail(f"Store category migration is incomplete: {needle}")
+
+    migration_145 = (ROOT / "backend-laravel/database/migrations/2026_07_10_000145_curated_mobile_games.php").read_text(encoding="utf-8")
+    if re.search(r"'Premium (?:Dark|Classic|Purple)'\s*,\s*'theme'", migration_145):
+        fail("Migration 145 still writes unsupported category 'theme'")
+
+    database_config = (ROOT / "backend-laravel/config/database.php").read_text(encoding="utf-8")
+    if "'pgsql' => [" not in database_config:
+        fail("Production PostgreSQL connection is missing from config/database.php")
+
+    store = (ROOT / "backend-laravel/app/Http/Controllers/StoreController.php").read_text(encoding="utf-8")
+    if "profile_cover" not in store or "active_profile_cover" not in store:
+        fail("Profile-cover activation support is incomplete")
+
+    print("[OK] Tarneeb, store migration, profile-cover and PostgreSQL regressions")
+
 def check_required_files() -> None:
     required = [
         "flutter_app/lib/main.dart",
@@ -141,10 +171,11 @@ def check_required_files() -> None:
         "backend-laravel/composer.json",
         ".github/workflows/flutter-web-pages.yml",
         ".github/workflows/flutter-android.yml",
-        "START_HERE_V155_AR.md",
-        "RELEASE_MANIFEST_V155.json",
-        "backend-laravel/database/migrations/2026_07_11_000155_ci_validation_hotfix.php",
-        "GITHUB_UPLOAD_V155_AR.md",
+        "START_HERE_V156_AR.md",
+        "RELEASE_MANIFEST_V156.json",
+        "backend-laravel/database/migrations/2026_07_10_000144_expand_store_item_category.php",
+        "backend-laravel/database/migrations/2026_07_11_000156_tests_migrations_hotfix.php",
+        "GITHUB_UPLOAD_V156_AR.md",
     ]
     missing = [item for item in required if not (ROOT / item).is_file()]
     if missing:
@@ -171,6 +202,7 @@ def main() -> None:
     check_versions()
     check_json()
     check_ci_hotfixes()
+    check_v156_regressions()
     check_secrets()
     check_dart_structure()
     print("[PASS] Source package preflight completed successfully")

@@ -1,29 +1,21 @@
-# Warqna v155 — Global Production CI Hotfix Package
+# Warqna v156 — Flutter Tests & Store Migration Hotfix
 
-حزمة كاملة موحدة لتطبيق **Warqna** مبنية بـFlutter وLaravel، وتحافظ على جميع مزايا v154 السابقة: الحسابات المستقلة، الصور الشخصية لكل لاعب، تحويل التوكنز، الألعاب العادية والصوتية، الغرف، المتجر، الثيمات، اللغات، الإيموجي، الأغلفة، الإدارة، الإعلانات، الخصوصية، الأمان وCI/CD.
-
-يعالج الإصدار v155 خطأَي GitHub Actions التاليين:
-
-- تحذير Composer الخاص بعدم تحديد الترخيص مع `--strict`.
-- غياب `backend-laravel/.env` أثناء فحص `docker compose config`.
+حزمة مصدر كاملة مبنية على v155، وتحافظ على الميزات السابقة مع إصلاح فشل اختبار الطرنيب وفشل ترحيل متجر Laravel.
 
 ابدأ من:
 
-- `START_HERE_V155_AR.md`
-- `GITHUB_UPLOAD_V155_AR.md`
-- `PRODUCTION_DEPLOYMENT_V155_AR.md`
-- `SECURITY_PRIVACY_V155_AR.md`
-- `LAUNCH_CHECKLIST_V155_AR.md`
-- `QUALITY_REPORT_V155_AR.md`
+- `START_HERE_V156_AR.md`
+- `GITHUB_UPLOAD_V156_AR.md`
+- `QUALITY_REPORT_V156_AR.md`
 
-فحص الحزمة على Windows:
+فحص محلي سريع:
 
 ```bat
-CHECK_V155_WINDOWS.bat
+CHECK_V156_WINDOWS.bat
 ```
 
-وعلى Linux/macOS:
+أو:
 
 ```bash
-./check-v155.sh
+./check-v156.sh
 ```

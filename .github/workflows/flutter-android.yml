@@ -180,7 +180,7 @@ jobs:
           API_URL: ${{ vars.WARQNA_API_URL }}
           REWARDED_ID: ${{ vars.ADMOB_REWARDED_ANDROID_ID }}
         run: |
-          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.55.0" "--dart-define=WARQNA_APP_BUILD=155")
+          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.56.0" "--dart-define=WARQNA_APP_BUILD=156")
           if [ -n "$API_URL" ]; then
             EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL" "--dart-define=WARQNA_PRODUCTION_MODE=true")
           else

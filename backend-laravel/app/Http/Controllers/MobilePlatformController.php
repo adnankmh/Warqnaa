@@ -18,8 +18,8 @@ class MobilePlatformController extends Controller
         return response()->json([
             'ok' => true,
             'service' => 'warqna-api',
-            'version' => config('warqna.version', '1.55.0'),
-            'build' => (int) config('warqna.build', 155),
+            'version' => config('warqna.version', '1.56.0'),
+            'build' => (int) config('warqna.build', 156),
             'time' => now()->toIso8601String(),
         ]);
     }

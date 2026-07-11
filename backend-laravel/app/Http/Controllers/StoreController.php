@@ -24,7 +24,7 @@ class StoreController
     public function buy(StoreItem $item, WalletService $wallet)
     {
         if(class_exists('\\App\\Models\\SiteSetting') && !\App\Models\SiteSetting::getValue('store_enabled',true)) return $this->friendlyFail('المتجر متوقف مؤقتًا من الإدارة.');
-        if(!$item->duration_days && in_array($item->category,['badge','table','card_back','name_color','text_color','effect'],true)) {
+        if(!$item->duration_days && in_array($item->category,['badge','table','card_back','name_color','text_color','effect','profile_cover'],true)) {
             if(auth()->user()->inventoryItems()->where('store_item_id',$item->id)->exists()) return $this->friendlyFail('هذا العنصر موجود لديك بالفعل. يمكنك تفعيله من مشترياتي.');
         }
         try {
@@ -51,7 +51,7 @@ class StoreController
         $item=$inventory->storeItem;
         DB::transaction(function() use($inventory,$item){
             // العناصر الشكلية: عنصر واحد مفعل من نفس القسم في نفس الوقت.
-            if(in_array($item->category,['name_color','text_color','badge','table','xp_booster','card_back','name_frame','effect','emoji_pack'],true)) {
+            if(in_array($item->category,['name_color','text_color','badge','table','xp_booster','card_back','name_frame','effect','emoji_pack','profile_cover'],true)) {
                 InventoryItem::where('user_id',auth()->id())->whereHas('storeItem',fn($q)=>$q->where('category',$item->category))->update(['active'=>false]);
             }
             $activeDays = ($item->category==='xp_booster') ? 1 : ($item->duration_days ?: null);
@@ -65,7 +65,8 @@ class StoreController
                 if($item->category==='table') $profile->active_table_skin=$payload['table'] ?? $item->key;
                 if($item->category==='card_back') $profile->active_card_back=$payload['card_back'] ?? $item->key;
                 if($item->category==='name_frame') { $profile->active_name_frame=$payload['frame'] ?? $item->key; if(isset($payload['color'])) $profile->name_color=$payload['color']; }
-                if($item->category==='effect') $profile->active_effect=$payload['effect'] ?? $item->key;
+                if($item->category==='effect') { if(isset($payload['theme'])) $profile->active_site_theme=(string)$payload['theme']; else $profile->active_effect=$payload['effect'] ?? $item->key; }
+                if($item->category==='profile_cover') $profile->active_profile_cover=$payload['cover'] ?? $item->key;
                 if($item->category==='xp_booster') $profile->xp_boost_multiplier=(float)($payload['multiplier'] ?? 1.25);
                 $profile->save();
             }
