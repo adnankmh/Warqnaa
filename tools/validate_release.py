@@ -118,6 +118,7 @@ def check_required_files() -> None:
         "RELEASE_VERSION.json",
         "tools/release_metadata.py",
         "tools/verify_release_versions.py",
+        "tools/test_clean_root_policy.py",
         "backend-laravel/app/Http/Controllers/Controller.php",
         "backend-laravel/tests/Unit/ControllerFoundationTest.php",
         "backend-laravel/tools/verify_http_foundation.php",
@@ -128,16 +129,41 @@ def check_required_files() -> None:
     print(f"[OK] Required v{EXPECTED_BUILD} release files")
 
 
+ROOT_ALLOWED_ENTRIES = {
+    ".github", ".gitignore", "CHECK_WARQNA_WINDOWS.bat", "README.md",
+    "RELEASE_VERSION.json", "START_HERE_AR.md", "START_WARQNA_WINDOWS.bat",
+    "assets", "backend-laravel", "docs", "flutter_app", "releases", "scripts", "tools",
+}
+
+# Repository/runtime metadata is present in CI checkouts but is not shipped project clutter.
+# `.git` may be a directory (normal clone/GitHub Actions) or a file (Git worktree).
+ROOT_IGNORED_METADATA = {
+    ".git", ".gitattributes", ".gitmodules", ".editorconfig",
+    ".DS_Store", "Thumbs.db",
+}
+
+
+def unexpected_root_entries(names) -> list[str]:
+    return sorted(
+        str(name) for name in names
+        if str(name) not in ROOT_ALLOWED_ENTRIES and str(name) not in ROOT_IGNORED_METADATA
+    )
+
+
+def check_clean_root_policy_self_test() -> None:
+    accepted = set(ROOT_ALLOWED_ENTRIES) | {".git", ".gitattributes", ".gitmodules", ".editorconfig"}
+    if unexpected_root_entries(accepted):
+        fail("Clean-root policy rejected standard repository metadata")
+    if unexpected_root_entries({"unexpected.tmp"}) != ["unexpected.tmp"]:
+        fail("Clean-root policy stopped rejecting real unexpected root files")
+    print("[OK] Clean-root policy self-test (Git metadata accepted, clutter rejected)")
+
+
 def check_clean_root() -> None:
-    allowed = {
-        ".github", ".gitignore", "CHECK_WARQNA_WINDOWS.bat", "README.md",
-        "RELEASE_VERSION.json", "START_HERE_AR.md", "START_WARQNA_WINDOWS.bat",
-        "assets", "backend-laravel", "docs", "flutter_app", "releases", "scripts", "tools",
-    }
-    unexpected = sorted(path.name for path in ROOT.iterdir() if path.name not in allowed)
+    unexpected = unexpected_root_entries(path.name for path in ROOT.iterdir())
     if unexpected:
         fail("Unexpected files in clean project root: " + ", ".join(unexpected))
-    print("[OK] Clean organized project root")
+    print("[OK] Clean organized project root (repository metadata ignored)")
 
 
 def check_conflicts() -> None:
@@ -192,6 +218,22 @@ def check_versions() -> None:
     if result.returncode != 0:
         fail("Release version contract failed: " + result.stdout.strip())
     print(result.stdout.strip())
+
+
+def check_root_policy_ci_contract() -> None:
+    workflow = read(".github/workflows/production-release-check.yml")
+    for needle in [
+        "python3 tools/test_clean_root_policy.py",
+        "python3 tools/validate_release.py",
+    ]:
+        if needle not in workflow:
+            fail(f"Production release gate root-policy contract missing: {needle}")
+    require("tools/test_clean_root_policy.py", [
+        '".git"',
+        '"rogue.txt"',
+        "unexpected_root_entries",
+    ])
+    print("[OK] GitHub Actions clean-root regression contract")
 
 
 def check_json() -> None:
@@ -960,11 +1002,13 @@ def check_dart_structure() -> None:
 def main() -> None:
     print(f"Warqna {EXPECTED_VERSION}+{EXPECTED_BUILD} preflight")
     check_required_files()
+    check_clean_root_policy_self_test()
     check_clean_root()
     check_conflicts()
     check_text_control_characters()
     check_login_fix()
     check_versions()
+    check_root_policy_ci_contract()
     check_json()
     check_yaml_basics()
     check_flutter_lock_verification()

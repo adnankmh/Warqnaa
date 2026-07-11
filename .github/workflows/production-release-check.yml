@@ -19,6 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Validate source package and reject merge markers
+        run: python3 tools/test_clean_root_policy.py
+
+      - name: Run source preflight
         run: python3 tools/validate_release.py
       - name: Reject committed secrets and unsafe production defaults
         run: |

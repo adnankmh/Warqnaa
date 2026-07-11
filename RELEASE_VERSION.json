@@ -1,8 +1,8 @@
 {
-  "version": "1.67.0",
-  "build": 167,
-  "full": "1.67.0+167",
-  "release": "v167",
+  "version": "1.68.0",
+  "build": 168,
+  "full": "1.68.0+168",
+  "release": "v168",
   "channel": "production",
-  "codename": "organized-production-layout"
+  "codename": "organized-ci-root-policy-hotfix"
 }

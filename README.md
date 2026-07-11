@@ -1,11 +1,9 @@
-# Warqna v167
+# Warqna v168
 
-مشروع Warqna متعدد المنصات: Flutter للويب وAndroid وiOS، وLaravel للخادم.
+نسخة إنتاجية منظمة مع إصلاح سياسة فحص جذر المستودع في GitHub Actions.
 
-ابدأ من [START_HERE_AR.md](START_HERE_AR.md).
-
-- التطبيق: `flutter_app/`
-- الخادم: `backend-laravel/`
-- الوثائق: `docs/README_AR.md`
-- السكربتات: `scripts/`
-- أصول Google Play: `assets/play-store/`
+- البداية: `START_HERE_AR.md`
+- فهرس الوثائق: `docs/README_AR.md`
+- فحص Windows: `CHECK_WARQNA_WINDOWS.bat`
+- تشغيل Windows: `START_WARQNA_WINDOWS.bat`
+- بيانات الإصدار: `RELEASE_VERSION.json`
