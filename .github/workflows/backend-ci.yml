@@ -48,6 +48,9 @@ jobs:
           test -d tests/Feature
           test -d tests/Unit
           test -f tests/Unit/EnvironmentSanityTest.php
+          test -f tests/Unit/ControllerFoundationTest.php
+      - name: Verify HTTP controller foundation
+        run: php tools/verify_http_foundation.php
       - name: PHP syntax audit
         run: find app config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Run Laravel tests

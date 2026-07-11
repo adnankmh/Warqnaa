@@ -1,0 +1,22 @@
+{
+  "release": "Warqna v159",
+  "version": "1.59.0",
+  "build": 159,
+  "base_release": "v158",
+  "focus": [
+    "restore Laravel HTTP base controller",
+    "stabilize random card-deal tests",
+    "add controller autoload CI guard"
+  ],
+  "required_files": [
+    "backend-laravel/app/Http/Controllers/Controller.php",
+    "backend-laravel/tools/verify_http_foundation.php",
+    "backend-laravel/tests/Unit/ControllerFoundationTest.php"
+  ],
+  "guides": {
+    "arabic": "START_HERE_V159_AR.md",
+    "github": "GITHUB_UPLOAD_V159_AR.md",
+    "windows": "CHECK_V159_WINDOWS.bat",
+    "unix": "check-v159.sh"
+  }
+}

@@ -34,8 +34,8 @@ jobs:
           test -f flutter_app/web/manifest.json -o -f flutter_app/web/manifest.webmanifest
       - name: Verify release version consistency
         run: |
-          grep -q 'version: 1.58.0+158' flutter_app/pubspec.yaml
-          grep -q "'version' => env('WARQNA_VERSION', '1.58.0')" backend-laravel/config/warqna.php
+          grep -q 'version: 1.59.0+159' flutter_app/pubspec.yaml
+          grep -q "'version' => env('WARQNA_VERSION', '1.59.0')" backend-laravel/config/warqna.php
           grep -q 'WARQNA_APP_BUILD=158' .github/workflows/flutter-android.yml
           grep -q '"license": "proprietary"' backend-laravel/composer.json
           grep -q 'cp .env.production.example .env' .github/workflows/backend-ci.yml

@@ -19,8 +19,8 @@ class PlatformHealthService
         $ok = $databaseConnected && $cacheConnected && !in_array(false, $checks, true);
         return [
             'ok' => $ok,
-            'version' => config('warqna.version', '1.58.0'),
-            'build' => (int) config('warqna.build', 158),
+            'version' => config('warqna.version', '1.59.0'),
+            'build' => (int) config('warqna.build', 159),
             'environment' => app()->environment(),
             'database_connected' => $databaseConnected,
             'cache_connected' => $cacheConnected,

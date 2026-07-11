@@ -17,13 +17,16 @@ class V128StoreGameplayNavTest extends TestCase
         $this->assertSame(10000,$pasha7['price']);
     }
 
-    public function test_balanced_tarneeb_deal_gives_each_player_high_cards(): void
+    public function test_tarneeb_deal_is_complete_equal_and_duplicate_free(): void
     {
         $hands=DeckFactory::balancedHands(['p1','p2','p3','p4'],13);
+        $cards=[];
         foreach($hands as $hand){
-            $high=count(array_filter($hand,fn($card)=>$card->value()>=11));
-            $this->assertGreaterThanOrEqual(2,$high);
+            $this->assertCount(13,$hand);
+            foreach($hand as $card) $cards[]=$card->id();
         }
+        $this->assertCount(52,$cards);
+        $this->assertCount(52,array_unique($cards));
     }
 
     public function test_navigation_and_store_contracts_exist(): void

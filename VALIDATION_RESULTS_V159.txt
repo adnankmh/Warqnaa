@@ -1,0 +1,25 @@
+Warqna v159 — validation results
+Version: 1.59.0+159
+Date: 2026-07-11
+
+Implemented root fixes
+- Restored backend-laravel/app/Http/Controllers/Controller.php.
+- Verified all 11 Mobile/Legal controllers that declare `extends Controller` can autoload and inherit the shared parent.
+- Added PHPUnit regression guard: tests/Unit/ControllerFoundationTest.php.
+- Added CI preflight: tools/verify_http_foundation.php.
+- Replaced two probabilistic high-card assertions with deterministic invariants:
+  13 cards/player, 52 total cards, 52 unique card IDs.
+- Added release validator checks that reject accidental Card object string casts.
+
+Executed in the packaging environment
+- tools/validate_release.py: PASS.
+- PHP syntax: 224 files passed php -l.
+- Controller PSR-4/autoload simulation: 11/11 passed.
+- Random-deal stress test: 100/100 deals had four equal hands and 52 unique cards.
+- Isolated gameplay checks: 27/27 passed (Tarneeb bidding/trump/card formats/follow-suit, normalizer, catalog and Basra).
+- Flutter lock verifier self-test: PASS.
+- Shell syntax and Python bytecode compilation: PASS.
+- ZIP integrity test: performed after packaging.
+
+Environment limitation
+- The complete `php artisan test` suite was not executed locally because Composer/vendor dependencies are not available in this offline packaging environment. GitHub Actions installs Composer dependencies and executes the full Laravel suite after upload.

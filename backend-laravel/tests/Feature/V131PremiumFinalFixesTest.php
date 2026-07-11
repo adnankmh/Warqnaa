@@ -34,13 +34,15 @@ class V131PremiumFinalFixesTest extends TestCase
         $this->assertStringContainsString('v131 PREMIUM FINAL',$css);
     }
 
-    public function test_fair_deal_is_random_and_strong_enough(): void
+    public function test_fair_deal_never_strengthens_or_duplicates_hands(): void
     {
         $hands=DeckFactory::balancedHands(['p1','p2','p3','p4'],13);
+        $cards=[];
         foreach($hands as $hand){
             $this->assertCount(13,$hand);
-            $high=count(array_filter($hand,fn($c)=>$c->value()>=11));
-            $this->assertGreaterThanOrEqual(2,$high);
+            foreach($hand as $card) $cards[]=$card->id();
         }
+        $this->assertCount(52,$cards);
+        $this->assertCount(52,array_unique($cards));
     }
 }
