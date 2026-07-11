@@ -21,7 +21,7 @@ type nul > storage\logs\.gitkeep
 
 setlocal EnableExtensions
 cd /d "%~dp0"
-title Warqna Start v154
+title Warqna Start v155
 
 if exist "C:\xampp\php\php.exe" set "PATH=C:\xampp\php;%PATH%"
 

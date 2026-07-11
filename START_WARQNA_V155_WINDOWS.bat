@@ -1,15 +1,15 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title Warqna v154 Launcher
+title Warqna v155 Launcher
 
 echo ==================================================
-echo Warqna v154 - Complete Local Launcher
+echo Warqna v155 - Complete Local Launcher
 echo ==================================================
 
 echo [1/4] Validating source package...
 set "WARQNA_NO_PAUSE=1"
-call CHECK_V154_WINDOWS.bat
+call CHECK_V155_WINDOWS.bat
 if errorlevel 1 (
   set "WARQNA_NO_PAUSE="
   pause
@@ -26,11 +26,11 @@ if not exist "backend-laravel\vendor\autoload.php" (
 )
 
 echo [3/4] Starting Laravel and socket services...
-start "Warqna Backend v154" cmd /k "cd /d ""%~dp0backend-laravel"" && call start-windows.bat"
+start "Warqna Backend v155" cmd /k "cd /d ""%~dp0backend-laravel"" && call start-windows.bat"
 timeout /t 5 /nobreak >nul
 
 echo [4/4] Starting Flutter Web...
-start "Warqna Flutter v154" cmd /k "cd /d ""%~dp0flutter_app"" && call RUN_FLUTTER_WEB.bat"
+start "Warqna Flutter v155" cmd /k "cd /d ""%~dp0flutter_app"" && call RUN_FLUTTER_WEB.bat"
 
 echo.
 echo Warqna launch windows were opened.

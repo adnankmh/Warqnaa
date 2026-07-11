@@ -1,6 +1,7 @@
 {
   "name": "warqna/laravel-platform",
   "description": "Warqna Zone Laravel multiplayer card platform core",
+  "license": "proprietary",
   "type": "project",
   "require": {
     "php": "^8.2",

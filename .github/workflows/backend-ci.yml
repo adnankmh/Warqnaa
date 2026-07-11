@@ -55,11 +55,21 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare temporary Compose environment
+        working-directory: backend-laravel
+        run: |
+          cp .env.production.example .env
+          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=ci-placeholder/' .env
+          sed -i 's/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=ci-placeholder/' .env
+          sed -i 's/^VOICE_TURN_USERNAME=.*/VOICE_TURN_USERNAME=ci-placeholder/' .env
+          sed -i 's/^VOICE_TURN_CREDENTIAL=.*/VOICE_TURN_CREDENTIAL=ci-placeholder/' .env
       - name: Validate production Compose
         working-directory: backend-laravel
-        env:
-          DB_PASSWORD: ci-placeholder
         run: docker compose -f docker-compose.production.yml config >/dev/null
       - name: Build production image
         working-directory: backend-laravel
         run: docker build -t warqna-api:ci .
+      - name: Remove temporary Compose environment
+        if: always()
+        working-directory: backend-laravel
+        run: rm -f .env

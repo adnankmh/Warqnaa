@@ -180,7 +180,7 @@ jobs:
           API_URL: ${{ vars.WARQNA_API_URL }}
           REWARDED_ID: ${{ vars.ADMOB_REWARDED_ANDROID_ID }}
         run: |
-          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.54.0" "--dart-define=WARQNA_APP_BUILD=154")
+          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.55.0" "--dart-define=WARQNA_APP_BUILD=155")
           if [ -n "$API_URL" ]; then
             EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL" "--dart-define=WARQNA_PRODUCTION_MODE=true")
           else
@@ -203,7 +203,7 @@ jobs:
       - name: Upload APK and AAB
         uses: actions/upload-artifact@v4
         with:
-          name: warqna-v154-android
+          name: warqna-v155-android
           if-no-files-found: error
           retention-days: 14
           path: |

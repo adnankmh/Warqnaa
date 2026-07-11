@@ -8,8 +8,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_VERSION = "1.54.0"
-EXPECTED_BUILD = 154
+EXPECTED_VERSION = "1.55.0"
+EXPECTED_BUILD = 155
 TEXT_SUFFIXES = {
     ".dart", ".php", ".py", ".js", ".ts", ".yml", ".yaml", ".json",
     ".md", ".html", ".css", ".xml", ".gradle", ".properties", ".sh", ".bat",
@@ -110,6 +110,29 @@ def check_secrets() -> None:
     print("[OK] No committed runtime secrets or signing files")
 
 
+
+def check_ci_hotfixes() -> None:
+    composer_path = ROOT / "backend-laravel/composer.json"
+    composer = json.loads(composer_path.read_text(encoding="utf-8"))
+    if composer.get("license") != "proprietary":
+        fail('composer.json must declare license "proprietary" for strict validation')
+
+    workflow_path = ROOT / ".github/workflows/backend-ci.yml"
+    workflow = workflow_path.read_text(encoding="utf-8")
+    required = [
+        "composer validate --no-check-lock --strict",
+        "cp .env.production.example .env",
+        "DB_PASSWORD=ci-placeholder",
+        "docker compose -f docker-compose.production.yml config",
+        "rm -f .env",
+    ]
+    for needle in required:
+        if needle not in workflow:
+            fail(f"Backend CI hotfix is incomplete: {needle}")
+    if (ROOT / "backend-laravel/.env").exists():
+        fail("A runtime backend-laravel/.env must not be committed")
+    print("[OK] Composer strict-validation and Compose CI environment hotfixes")
+
 def check_required_files() -> None:
     required = [
         "flutter_app/lib/main.dart",
@@ -118,8 +141,10 @@ def check_required_files() -> None:
         "backend-laravel/composer.json",
         ".github/workflows/flutter-web-pages.yml",
         ".github/workflows/flutter-android.yml",
-        "START_HERE_V154_AR.md",
-        "RELEASE_MANIFEST_V154.json",
+        "START_HERE_V155_AR.md",
+        "RELEASE_MANIFEST_V155.json",
+        "backend-laravel/database/migrations/2026_07_11_000155_ci_validation_hotfix.php",
+        "GITHUB_UPLOAD_V155_AR.md",
     ]
     missing = [item for item in required if not (ROOT / item).is_file()]
     if missing:
@@ -145,6 +170,7 @@ def main() -> None:
     check_login_fix()
     check_versions()
     check_json()
+    check_ci_hotfixes()
     check_secrets()
     check_dart_structure()
     print("[PASS] Source package preflight completed successfully")
