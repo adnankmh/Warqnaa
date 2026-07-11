@@ -1,0 +1,42 @@
+{
+  "name": "Warqna",
+  "version": "1.53.0",
+  "build": 153,
+  "release": "global-production-launch-foundation",
+  "preserves": "all-v152-features",
+  "room_modes": ["normal", "voice"],
+  "platforms": ["web", "android", "ios"],
+  "backend": {
+    "framework": "Laravel 11",
+    "auth": "Sanctum",
+    "database_production": "PostgreSQL",
+    "cache_queue_sessions": "Redis",
+    "containerized": true,
+    "health_checks": true,
+    "feature_flags": true,
+    "release_management": true,
+    "audit_logs": true,
+    "safety_reports": true,
+    "account_export": true,
+    "account_deletion_requests": true,
+    "password_recovery": true,
+    "email_verification": true
+  },
+  "frontend": {
+    "framework": "Flutter",
+    "pwa": true,
+    "production_mode": true,
+    "local_demo_preview_only": true,
+    "voice_webrtc": true,
+    "languages": ["ar", "en", "de", "tr", "fr", "es"]
+  },
+  "workflows": [
+    "flutter-web-pages",
+    "flutter-android",
+    "flutter-ios",
+    "backend-ci",
+    "production-release-check",
+    "deploy-staging",
+    "deploy-production"
+  ]
+}

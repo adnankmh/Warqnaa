@@ -1,6 +1,6 @@
 <?php
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\{HomeController,AuthController,GameController,RoomController,StoreController,ProfileController,FriendController,ClubController,TournamentController,AdminController,WalletController,NotificationController,PageController,ChatController,RealtimeController,EconomyController,AdminMonitorController,EconomyAdminController,GameLibraryController,RewardController,InteractionController,ProAdminController,EngineAuditController};
+use App\Http\Controllers\{HomeController,AuthController,GameController,RoomController,StoreController,ProfileController,FriendController,ClubController,TournamentController,AdminController,WalletController,NotificationController,PageController,ChatController,RealtimeController,EconomyController,AdminMonitorController,EconomyAdminController,GameLibraryController,RewardController,InteractionController,ProAdminController,EngineAuditController,LegalPageController,MobileAuthRecoveryController};
 Route::get('/', [HomeController::class,'index'])->name('home');
 
 Route::get('/health', function(\App\Services\Platform\PlatformHealthService $health){ return response()->json($health->snapshot()); })->name('warqna.health');
@@ -37,6 +37,21 @@ Route::get('/sitemap.xml', function(){
     $xml.='</urlset>';
     return response($xml,200)->header('Content-Type','application/xml');
 });
+
+
+Route::get('/password/reset', [MobileAuthRecoveryController::class, 'showResetForm'])->name('password.reset.form');
+Route::post('/password/reset', [MobileAuthRecoveryController::class, 'resetFromWeb'])->middleware('throttle:warqna-auth')->name('password.reset.web');
+
+Route::get('/email/verify/{id}/{hash}', [MobileAuthRecoveryController::class, 'verify'])->middleware('signed')->name('verification.verify.mobile');
+
+Route::get('/legal/{page}', [LegalPageController::class, 'show'])
+    ->whereIn('page', ['privacy','terms','community-guidelines','account-deletion','competition-rules','support'])
+    ->name('legal.show');
+
+Route::get('/ready', function(\App\Services\Platform\PlatformHealthService $health){
+    $snapshot=$health->snapshot();
+    return response()->json($snapshot, !empty($snapshot['ok']) ? 200 : 503);
+})->name('warqna.ready');
 
 Route::get('/login',[AuthController::class,'showLogin'])->name('login'); Route::post('/login',[AuthController::class,'login']);
 Route::get('/register',[AuthController::class,'showRegister'])->name('register'); Route::post('/register',[AuthController::class,'register']); Route::post('/logout',[AuthController::class,'logout'])->name('logout');

@@ -1,0 +1,35 @@
+name: Production Release Gate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main, master]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+jobs:
+  secrets-and-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject committed secrets and unsafe production defaults
+        run: |
+          if find . -path './.git' -prune -o -name '.env' -print | grep -q .; then
+            echo 'A real .env file must not be committed.'; exit 1
+          fi
+          if grep -R --exclude='*.md' --exclude='*.example' --exclude='*.yml' --exclude='*.yaml' -nE '(AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY)' .; then
+            echo 'Possible secret detected.'; exit 1
+          fi
+          test -f backend-laravel/.env.production.example
+          test -f backend-laravel/docker-compose.production.yml
+          test -f backend-laravel/scripts/backup-production.sh
+          test -f flutter_app/web/manifest.json -o -f flutter_app/web/manifest.webmanifest
+      - name: Verify release version consistency
+        run: |
+          grep -q 'version: 1.53.0+153' flutter_app/pubspec.yaml
+          grep -q "'version' => env('WARQNA_VERSION', '1.53.0')" backend-laravel/config/warqna.php
+          grep -q 'WARQNA_APP_BUILD=153' .github/workflows/flutter-android.yml

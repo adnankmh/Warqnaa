@@ -1,0 +1,19 @@
+{
+  "name": "Warqna",
+  "version": "1.52.0+152",
+  "release": "v152-normal-voice-rooms",
+  "flutter": true,
+  "laravel": true,
+  "features": {
+    "normal_rooms": true,
+    "voice_rooms": true,
+    "webrtc": true,
+    "room_list": true,
+    "join_by_code": true,
+    "private_password": true,
+    "turn_speeds": [5, 7, 10],
+    "voice_fee_tokens": 0,
+    "android_microphone_permissions": true,
+    "ios_microphone_usage_description": true
+  }
+}

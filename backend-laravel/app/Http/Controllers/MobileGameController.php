@@ -7,6 +7,7 @@ use App\Services\GameEngine\{EngineRegistry,GameFactory,GameRuleContract};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{DB,Hash};
 use Illuminate\Support\Str;
+use App\Services\Platform\ProductionConfigService;
 
 class MobileGameController extends Controller
 {
@@ -41,16 +42,112 @@ class MobileGameController extends Controller
         return response()->json(['ok' => true, 'key' => $gameKey, 'game' => $meta]);
     }
 
-    public function create(Request $request)
+    public function rooms(Request $request, string $gameKey)
+    {
+        $game = Game::where('key', $gameKey)->first();
+        if (!$game) return response()->json(['ok' => true, 'rooms' => []]);
+
+        $rooms = Room::query()
+            ->with(['players.user.profile', 'game'])
+            ->where('game_id', $game->id)
+            ->whereIn('status', ['waiting', 'bidding', 'playing'])
+            ->where('visibility', '!=', 'private')
+            ->latest('updated_at')
+            ->limit(30)
+            ->get()
+            ->filter(fn (Room $room) => $room->players->where('is_bot', false)->where('connected', true)->count() > 0)
+            ->map(function (Room $room) {
+                $state = $room->state ?: [];
+                $realPlayers = $room->players->where('is_bot', false)->count();
+                return [
+                    'code' => $room->code,
+                    'name' => $state['room_name'] ?? ($room->game?->name . ' Room'),
+                    'voice_enabled' => (bool) ($state['voice_enabled'] ?? $state['voice_room'] ?? false),
+                    'visibility' => $room->visibility,
+                    'players' => $realPlayers,
+                    'max_players' => $room->max_players,
+                    'turn_seconds' => (int) ($state['turn_seconds'] ?? 10),
+                    'owner' => $room->owner?->username,
+                ];
+            })->values();
+
+        return response()->json(['ok' => true, 'rooms' => $rooms]);
+    }
+
+    public function join(Request $request, Room $room)
+    {
+        $data = $request->validate(['password' => 'nullable|string|max:40']);
+        $room->loadMissing(['game', 'players.user.profile']);
+        abort_if(in_array($room->status, ['closed', 'finished'], true), 410, 'الغرفة مغلقة.');
+
+        if ($room->visibility === 'private') {
+            abort_unless($room->password && Hash::check((string) ($data['password'] ?? ''), $room->password), 403, 'كلمة سر الغرفة غير صحيحة.');
+        }
+
+        $user = $request->user();
+        $otherRoom = RoomPlayer::query()
+            ->where('user_id', $user->id)
+            ->where('connected', true)
+            ->where('room_id', '!=', $room->id)
+            ->whereHas('room', fn ($query) => $query->whereNotIn('status', ['closed', 'finished']))
+            ->exists();
+        abort_if($otherRoom, 409, 'أنت داخل لعبة أخرى. غادرها أولاً.');
+
+        $existing = $room->players()->where('user_id', $user->id)->first();
+        if ($existing) {
+            $existing->update(['connected' => true, 'missed_turns' => 0]);
+            return response()->json(['ok' => true, 'message' => 'عدت إلى مقعدك.', 'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $user->id)]);
+        }
+
+        $botSeat = $room->players()->where('is_bot', true)->orderBy('seat')->first();
+        abort_unless($botSeat, 422, 'الغرفة ممتلئة ولا يوجد مقعد متاح.');
+
+        DB::transaction(function () use ($room, $botSeat, $user) {
+            $oldKey = 'bot:' . ($botSeat->bot_key ?: $botSeat->id);
+            $newKey = 'user:' . $user->id;
+            $state = $this->replacePlayerKey($room->state ?: [], $oldKey, $newKey);
+            $state['messages'][] = '👤 انضم ' . $user->username . ' إلى المقعد ' . ((int) $botSeat->seat + 1) . '.';
+            $room->update(['state' => $state]);
+            $botSeat->update([
+                'user_id' => $user->id,
+                'bot_key' => null,
+                'is_bot' => false,
+                'connected' => true,
+                'missed_turns' => 0,
+            ]);
+        });
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'تم الانضمام إلى الغرفة.',
+            'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $user->id),
+        ], 201);
+    }
+
+    public function create(Request $request, ProductionConfigService $productionConfig)
     {
         $data = $request->validate([
             'game' => 'required|string|max:80',
             'target' => 'nullable|integer|min:1|max:10000',
-            'turn_seconds' => 'nullable|integer|min:5|max:60',
+            'turn_seconds' => 'nullable|integer|in:5,7,10',
             'visibility' => 'nullable|in:public,friends,private',
             'password' => 'nullable|string|min:3|max:40',
             'bots' => 'nullable|integer|min:0|max:7',
+            'voice_enabled' => 'nullable|boolean',
+            'room_name' => 'nullable|string|max:60',
         ]);
+        if (!empty($data['voice_enabled']) && !$productionConfig->enabled('voice_rooms', true)) {
+            return response()->json(['ok'=>false,'message'=>'الغرف الصوتية متوقفة مؤقتًا.'], 503);
+        }
+        $visibility = $data['visibility'] ?? 'private';
+        if ($visibility === 'private' && empty($data['password'])) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'كلمة السر مطلوبة عند إنشاء غرفة خاصة.',
+                'errors' => ['password' => ['كلمة السر مطلوبة عند إنشاء غرفة خاصة.']],
+            ], 422);
+        }
+
         $meta = EngineRegistry::get($data['game']);
         abort_unless($meta, 422, 'محرك اللعبة غير مدعوم');
 
@@ -81,19 +178,26 @@ class MobileGameController extends Controller
         $engine = GameFactory::make($data['game']);
         $state = $engine->initialState($playerKeys, [
             'target' => $target,
-            'turn_seconds' => (int) ($data['turn_seconds'] ?? 20),
+            'turn_seconds' => (int) ($data['turn_seconds'] ?? 10),
             'partners' => (bool) $game->partnership,
         ]);
         $state['game'] = $data['game'];
         $state['mobile_api'] = true;
         $state['free_play'] = true;
         $state['entry_fee'] = 0;
+        $state['room_name'] = trim((string) ($data['room_name'] ?? ($meta['name'] . ' • ' . $user->username)));
+        $state['voice_enabled'] = (bool) ($data['voice_enabled'] ?? false);
+        $state['voice_room'] = $state['voice_enabled'];
+        $state['voice_fee'] = 0;
+        $state['turn_seconds'] = (int) ($data['turn_seconds'] ?? 10);
         $state['messages'] = array_values(array_merge($state['messages'] ?? [], [
             '🎮 تم إنشاء غرفة مجانية. لا يتم خصم أي توكنز أثناء اللعب.',
             '🛡️ جميع الحركات تُراجع من المحرك على الخادم قبل اعتمادها.',
+            !empty($state['voice_enabled'])
+                ? '🎙️ هذه غرفة صوتية. يتم طلب إذن الميكروفون فقط بعد دخولها ويمكن لكل لاعب الكتم محليًا.'
+                : '🃏 هذه غرفة عادية بدون محادثة صوتية.',
         ]));
 
-        $visibility = $data['visibility'] ?? 'private';
         $room = DB::transaction(function () use ($game, $user, $visibility, $data, $maxPlayers, $target, $state, $playerKeys) {
             $room = Room::create([
                 'code' => $this->uniqueCode(),
@@ -272,6 +376,9 @@ class MobileGameController extends Controller
             'status' => $room->status,
             'visibility' => $room->visibility,
             'entry_fee' => 0,
+            'room_name' => $state['room_name'] ?? ($room->game?->name ?? 'غرفة ورقنا'),
+            'voice_enabled' => (bool) ($state['voice_enabled'] ?? $state['voice_room'] ?? false),
+            'turn_seconds' => (int) ($state['turn_seconds'] ?? 10),
             'players' => $room->players->map(function (RoomPlayer $player) {
                 return [
                     'key' => $player->is_bot ? 'bot:' . ($player->bot_key ?: $player->id) : 'user:' . $player->user_id,
@@ -279,6 +386,8 @@ class MobileGameController extends Controller
                     'seat' => (int) $player->seat,
                     'bot' => (bool) $player->is_bot,
                     'connected' => (bool) $player->connected,
+                    'voice_muted' => (bool) ($player->voice_muted ?? false),
+                    'voice_deafened' => (bool) ($player->voice_deafened ?? false),
                     'avatar' => $player->user?->profile?->avatar,
                     'badge' => $player->user?->profile?->badge,
                 ];
@@ -422,6 +531,23 @@ class MobileGameController extends Controller
         }
 
         return $state;
+    }
+
+    /** @param array<string,mixed> $state @return array<string,mixed> */
+    private function replacePlayerKey(array $state, string $oldKey, string $newKey): array
+    {
+        $replace = function ($value) use (&$replace, $oldKey, $newKey) {
+            if (is_array($value)) {
+                $next = [];
+                foreach ($value as $key => $item) {
+                    $mappedKey = is_string($key) && $key === $oldKey ? $newKey : $key;
+                    $next[$mappedKey] = $replace($item);
+                }
+                return $next;
+            }
+            return is_string($value) && $value === $oldKey ? $newKey : $value;
+        };
+        return $replace($state);
     }
 
     private function authorizeRoom(Request $request, Room $room): void

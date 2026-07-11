@@ -1,0 +1,65 @@
+name: Backend CI and Security Foundation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'backend-laravel/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'backend-laravel/**'
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  laravel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend-laravel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, pdo_sqlite, sqlite3, bcmath
+          coverage: none
+          tools: composer:v2
+      - name: Validate Composer definition
+        run: composer validate --no-check-lock --strict
+      - name: Install backend dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          touch database/database.sqlite
+          php artisan migrate:fresh --seed --force
+      - name: PHP syntax audit
+        run: find app config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Run Laravel tests
+        run: php artisan test
+      - name: Production preflight in non-strict mode
+        run: php artisan warqna:production-check
+
+  docker-definition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate production Compose
+        working-directory: backend-laravel
+        env:
+          DB_PASSWORD: ci-placeholder
+        run: docker compose -f docker-compose.production.yml config >/dev/null
+      - name: Build production image
+        working-directory: backend-laravel
+        run: docker build -t warqna-api:ci .

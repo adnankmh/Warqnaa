@@ -14,9 +14,12 @@ import 'engines/tarneeb_engine.dart';
 import 'engines/local_game_engine.dart';
 import 'services/api_client.dart';
 import 'services/rewarded_ads.dart';
+import 'services/voice_room_service.dart';
+import 'models/room_launch_options.dart';
 import 'premium_v149.dart';
 
 part 'premium_v151.dart';
+part 'production_v153.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -442,7 +445,7 @@ class AppController extends ChangeNotifier {
         api.token = null;
       }
     }
-    if (!isAuthenticated && offlineLoggedIn) {
+    if (!isAuthenticated && offlineLoggedIn && !warqnaProductionMode) {
       username = prefs.getString('username') ?? username;
       displayName = prefs.getString('displayName') ?? username;
       email = prefs.getString('email') ?? email;
@@ -537,9 +540,10 @@ class AppController extends ChangeNotifier {
   Future<String?> login(String login, String password, {bool offline = false}) async {
     if (login.trim().isEmpty || password.isEmpty) return 'أدخل اسم المستخدم وكلمة المرور.';
     final loopbackApi = api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost');
-    if (!offline && kIsWeb && loopbackApi) {
+    if (!offline && kIsWeb && loopbackApi && !warqnaProductionMode) {
       return login(login, password, offline: true);
     }
+    if (offline && warqnaProductionMode) return 'وضع الدخول المحلي معطل في نسخة الإنتاج.';
     if (offline) {
       final normalized = login.trim().toLowerCase();
       var user = demoAccounts[normalized];
@@ -605,6 +609,7 @@ class AppController extends ChangeNotifier {
       notifyListeners();
       return null;
     } on ApiException catch (e) {
+      if (warqnaProductionMode) return e.message;
       final fallback = await login(login, password, offline: true);
       if (fallback == null) {
         notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
@@ -612,6 +617,7 @@ class AppController extends ChangeNotifier {
       }
       return e.message;
     } catch (_) {
+      if (warqnaProductionMode) return 'تعذر الاتصال بخادم Warqna. تحقق من الإنترنت وحاول مجددًا.';
       final fallback = await login(login, password, offline: true);
       if (fallback == null) {
         notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
@@ -623,7 +629,8 @@ class AppController extends ChangeNotifier {
 
   Future<String?> register(String user, String mail, String password) async {
     final loopbackApi = api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost');
-    if (kIsWeb && loopbackApi) return _registerLocal(user, mail, password);
+    if (kIsWeb && loopbackApi && !warqnaProductionMode) return _registerLocal(user, mail, password);
+    if (warqnaProductionMode && loopbackApi) return 'يجب ضبط رابط الخادم الحقيقي قبل تشغيل نسخة الإنتاج.';
     try {
       final data = await api.register(username: user.trim(), email: mail.trim(), password: password);
       authToken = data['token']?.toString();
@@ -634,9 +641,11 @@ class AppController extends ChangeNotifier {
       await _save();
       notifyListeners();
       return null;
-    } on ApiException catch (_) {
+    } on ApiException catch (e) {
+      if (warqnaProductionMode) return e.message;
       return _registerLocal(user, mail, password);
     } catch (_) {
+      if (warqnaProductionMode) return 'تعذر إنشاء الحساب بسبب عدم توفر الخادم.';
       return _registerLocal(user, mail, password);
     }
   }
@@ -1482,6 +1491,35 @@ class L {
       'transactions': 'سجل التوكنز',
       'inventory': 'مقتنياتي',
       'createRoom': 'إنشاء غرفة',
+      'chooseGameMode': 'اختر نوع اللعبة',
+      'chooseGameModeHint': 'ابدأ لعبة عادية أو أنشئ غرفة صوتية مع تحكم كامل بالميكروفون.',
+      'normalGame': 'لعبة عادية',
+      'normalGameHint': 'لعب سريع بدون محادثة صوتية.',
+      'voiceGame': 'لعبة صوتية',
+      'voiceGameHint': 'تحدث مع اللاعبين أثناء اللعب مع كتم فردي.',
+      'roomModeDescription': 'حدد نوع الغرفة وخصوصيتها وسرعة الدور قبل بدء اللعب.',
+      'roomName': 'اسم الغرفة',
+      'roomVisibility': 'خصوصية الغرفة',
+      'publicRoom': 'غرفة عامة',
+      'friendsRoom': 'للأصدقاء فقط',
+      'privateRoom': 'غرفة خاصة',
+      'turnSpeed': 'سرعة الدور',
+      'voicePrivacyHint': 'يُطلب إذن الميكروفون فقط عند دخول غرفة صوتية، ويمكنك كتم صوتك أو أي لاعب في أي وقت.',
+      'enterRoomName': 'أدخل اسمًا للغرفة.',
+      'enterRoomPassword': 'أدخل كلمة سر من 3 أحرف على الأقل.',
+      'createVoiceRoom': 'إنشاء غرفة صوتية',
+      'createNormalRoom': 'إنشاء غرفة عادية',
+      'openRooms': 'الغرف المفتوحة',
+      'openRoomsHint': 'انضم إلى غرفة عادية أو صوتية أنشأها لاعب آخر.',
+      'noOpenRooms': 'لا توجد غرف مفتوحة الآن.',
+      'serverRoomsNeedBackend': 'الغرف بين اللاعبين تحتاج ربط التطبيق بخادم Laravel المنشور.',
+      'roomsLoadFailed': 'تعذر تحميل الغرف المفتوحة.',
+      'joinByCode': 'دخول برمز',
+      'joinByCodeHint': 'أدخل رمز الغرفة الذي أرسله لك صديقك.',
+      'roomCode': 'رمز الغرفة',
+      'optional': 'اختياري',
+      'enterRoomCode': 'أدخل رمز غرفة صحيحًا.',
+      'joinRoom': 'دخول الغرفة',
       'search': 'ابحث عن لعبة',
       'members': 'عضو',
       'treasury': 'الخزينة',
@@ -1546,6 +1584,35 @@ class L {
       'transactions': 'Token History',
       'inventory': 'Inventory',
       'createRoom': 'Create Room',
+      'chooseGameMode': 'Choose game mode',
+      'chooseGameModeHint': 'Start a normal match or create a voice room with full microphone controls.',
+      'normalGame': 'Normal game',
+      'normalGameHint': 'Fast play without voice chat.',
+      'voiceGame': 'Voice game',
+      'voiceGameHint': 'Talk to players while playing with individual mute controls.',
+      'roomModeDescription': 'Choose room type, privacy, and turn speed before playing.',
+      'roomName': 'Room name',
+      'roomVisibility': 'Room privacy',
+      'publicRoom': 'Public room',
+      'friendsRoom': 'Friends only',
+      'privateRoom': 'Private room',
+      'turnSpeed': 'Turn speed',
+      'voicePrivacyHint': 'Microphone permission is requested only for voice rooms. You can mute yourself or any player at any time.',
+      'enterRoomName': 'Enter a room name.',
+      'enterRoomPassword': 'Enter a password of at least 3 characters.',
+      'createVoiceRoom': 'Create voice room',
+      'createNormalRoom': 'Create normal room',
+      'openRooms': 'Open rooms',
+      'openRoomsHint': 'Join a normal or voice room created by another player.',
+      'noOpenRooms': 'No open rooms right now.',
+      'serverRoomsNeedBackend': 'Multiplayer rooms require the published Laravel server.',
+      'roomsLoadFailed': 'Could not load open rooms.',
+      'joinByCode': 'Join by code',
+      'joinByCodeHint': 'Enter the room code shared by your friend.',
+      'roomCode': 'Room code',
+      'optional': 'optional',
+      'enterRoomCode': 'Enter a valid room code.',
+      'joinRoom': 'Join room',
       'search': 'Search games',
       'members': 'members',
       'treasury': 'Treasury',
@@ -1610,6 +1677,35 @@ class L {
       'transactions': 'Token-Verlauf',
       'inventory': 'Inventar',
       'createRoom': 'Raum erstellen',
+      'chooseGameMode': 'Spielmodus wählen',
+      'chooseGameModeHint': 'Starte ein normales Spiel oder erstelle einen Sprachraum mit Mikrofonsteuerung.',
+      'normalGame': 'Normales Spiel',
+      'normalGameHint': 'Schnelles Spiel ohne Sprachchat.',
+      'voiceGame': 'Sprachspiel',
+      'voiceGameHint': 'Sprich während des Spiels mit den Spielern und schalte einzelne stumm.',
+      'roomModeDescription': 'Wähle Raumtyp, Privatsphäre und Zugzeit.',
+      'roomName': 'Raumname',
+      'roomVisibility': 'Raumsichtbarkeit',
+      'publicRoom': 'Öffentlicher Raum',
+      'friendsRoom': 'Nur Freunde',
+      'privateRoom': 'Privater Raum',
+      'turnSpeed': 'Zugzeit',
+      'voicePrivacyHint': 'Die Mikrofonberechtigung wird nur in Sprachräumen angefordert.',
+      'enterRoomName': 'Bitte einen Raumnamen eingeben.',
+      'enterRoomPassword': 'Passwort mit mindestens 3 Zeichen eingeben.',
+      'createVoiceRoom': 'Sprachraum erstellen',
+      'createNormalRoom': 'Normalen Raum erstellen',
+      'openRooms': 'Offene Räume',
+      'openRoomsHint': 'Tritt einem normalen oder Sprachraum bei.',
+      'noOpenRooms': 'Zurzeit keine offenen Räume.',
+      'serverRoomsNeedBackend': 'Mehrspielerräume benötigen den veröffentlichten Laravel-Server.',
+      'roomsLoadFailed': 'Offene Räume konnten nicht geladen werden.',
+      'joinByCode': 'Mit Code beitreten',
+      'joinByCodeHint': 'Gib den Raumcode deines Freundes ein.',
+      'roomCode': 'Raumcode',
+      'optional': 'optional',
+      'enterRoomCode': 'Gültigen Raumcode eingeben.',
+      'joinRoom': 'Raum beitreten',
       'search': 'Spiel suchen',
       'members': 'Mitglieder',
       'treasury': 'Kasse',
@@ -1674,6 +1770,35 @@ class L {
       'transactions': 'Jeton Geçmişi',
       'inventory': 'Envanter',
       'createRoom': 'Oda Oluştur',
+      'chooseGameMode': 'Oyun modunu seç',
+      'chooseGameModeHint': 'Normal oyun başlat veya mikrofon kontrollü sesli oda oluştur.',
+      'normalGame': 'Normal oyun',
+      'normalGameHint': 'Sesli sohbet olmadan hızlı oyun.',
+      'voiceGame': 'Sesli oyun',
+      'voiceGameHint': 'Oynarken konuş ve oyuncuları ayrı ayrı sustur.',
+      'roomModeDescription': 'Oda türünü, gizliliği ve tur süresini seç.',
+      'roomName': 'Oda adı',
+      'roomVisibility': 'Oda gizliliği',
+      'publicRoom': 'Herkese açık',
+      'friendsRoom': 'Sadece arkadaşlar',
+      'privateRoom': 'Özel oda',
+      'turnSpeed': 'Tur süresi',
+      'voicePrivacyHint': 'Mikrofon izni yalnızca sesli odalarda istenir.',
+      'enterRoomName': 'Oda adı girin.',
+      'enterRoomPassword': 'En az 3 karakterlik şifre girin.',
+      'createVoiceRoom': 'Sesli oda oluştur',
+      'createNormalRoom': 'Normal oda oluştur',
+      'openRooms': 'Açık odalar',
+      'openRoomsHint': 'Başka bir oyuncunun normal veya sesli odasına katıl.',
+      'noOpenRooms': 'Şu anda açık oda yok.',
+      'serverRoomsNeedBackend': 'Çok oyunculu odalar yayınlanmış Laravel sunucusu gerektirir.',
+      'roomsLoadFailed': 'Açık odalar yüklenemedi.',
+      'joinByCode': 'Kodla katıl',
+      'joinByCodeHint': 'Arkadaşının paylaştığı oda kodunu gir.',
+      'roomCode': 'Oda kodu',
+      'optional': 'isteğe bağlı',
+      'enterRoomCode': 'Geçerli oda kodu girin.',
+      'joinRoom': 'Odaya katıl',
       'search': 'Oyun ara',
       'members': 'üye',
       'treasury': 'Kasa',
@@ -1738,6 +1863,35 @@ class L {
       'transactions': 'Historique des jetons',
       'inventory': 'Inventaire',
       'createRoom': 'Créer une salle',
+      'chooseGameMode': 'Choisir le mode',
+      'chooseGameModeHint': 'Lancez une partie normale ou créez une salle vocale avec contrôle du micro.',
+      'normalGame': 'Partie normale',
+      'normalGameHint': 'Jeu rapide sans discussion vocale.',
+      'voiceGame': 'Partie vocale',
+      'voiceGameHint': 'Parlez pendant la partie et coupez chaque joueur individuellement.',
+      'roomModeDescription': 'Choisissez le type, la confidentialité et la durée du tour.',
+      'roomName': 'Nom de la salle',
+      'roomVisibility': 'Confidentialité',
+      'publicRoom': 'Salle publique',
+      'friendsRoom': 'Amis uniquement',
+      'privateRoom': 'Salle privée',
+      'turnSpeed': 'Durée du tour',
+      'voicePrivacyHint': 'Le micro est demandé uniquement dans les salles vocales.',
+      'enterRoomName': 'Saisissez un nom de salle.',
+      'enterRoomPassword': 'Saisissez un mot de passe de 3 caractères minimum.',
+      'createVoiceRoom': 'Créer une salle vocale',
+      'createNormalRoom': 'Créer une salle normale',
+      'openRooms': 'Salles ouvertes',
+      'openRoomsHint': 'Rejoignez une salle normale ou vocale créée par un autre joueur.',
+      'noOpenRooms': 'Aucune salle ouverte actuellement.',
+      'serverRoomsNeedBackend': 'Les salles multijoueurs nécessitent le serveur Laravel publié.',
+      'roomsLoadFailed': 'Impossible de charger les salles.',
+      'joinByCode': 'Rejoindre par code',
+      'joinByCodeHint': 'Saisissez le code partagé par votre ami.',
+      'roomCode': 'Code de salle',
+      'optional': 'facultatif',
+      'enterRoomCode': 'Saisissez un code valide.',
+      'joinRoom': 'Rejoindre la salle',
       'search': 'Rechercher un jeu',
       'members': 'membres',
       'treasury': 'Trésorerie',
@@ -1802,6 +1956,35 @@ class L {
       'transactions': 'Historial de fichas',
       'inventory': 'Inventario',
       'createRoom': 'Crear sala',
+      'chooseGameMode': 'Elegir modo de juego',
+      'chooseGameModeHint': 'Inicia una partida normal o crea una sala de voz con controles de micrófono.',
+      'normalGame': 'Partida normal',
+      'normalGameHint': 'Juego rápido sin chat de voz.',
+      'voiceGame': 'Partida de voz',
+      'voiceGameHint': 'Habla durante la partida y silencia jugadores individualmente.',
+      'roomModeDescription': 'Elige tipo de sala, privacidad y tiempo de turno.',
+      'roomName': 'Nombre de la sala',
+      'roomVisibility': 'Privacidad',
+      'publicRoom': 'Sala pública',
+      'friendsRoom': 'Solo amigos',
+      'privateRoom': 'Sala privada',
+      'turnSpeed': 'Tiempo de turno',
+      'voicePrivacyHint': 'El permiso del micrófono se solicita solo en salas de voz.',
+      'enterRoomName': 'Escribe un nombre de sala.',
+      'enterRoomPassword': 'Escribe una contraseña de al menos 3 caracteres.',
+      'createVoiceRoom': 'Crear sala de voz',
+      'createNormalRoom': 'Crear sala normal',
+      'openRooms': 'Salas abiertas',
+      'openRoomsHint': 'Únete a una sala normal o de voz creada por otro jugador.',
+      'noOpenRooms': 'No hay salas abiertas ahora.',
+      'serverRoomsNeedBackend': 'Las salas multijugador requieren el servidor Laravel publicado.',
+      'roomsLoadFailed': 'No se pudieron cargar las salas.',
+      'joinByCode': 'Entrar con código',
+      'joinByCodeHint': 'Introduce el código compartido por tu amigo.',
+      'roomCode': 'Código de sala',
+      'optional': 'opcional',
+      'enterRoomCode': 'Introduce un código válido.',
+      'joinRoom': 'Entrar a la sala',
       'search': 'Buscar juego',
       'members': 'miembros',
       'treasury': 'Tesorería',
@@ -2252,6 +2435,45 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() { busy = false; error = result; });
   }
 
+  Future<void> forgotPassword() async {
+    final email = TextEditingController(text: emailController.text.trim());
+    final sent = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(widget.controller.localeCode == 'ar' ? 'استعادة كلمة المرور' : 'Reset password'),
+        content: TextField(
+          controller: email,
+          keyboardType: TextInputType.emailAddress,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: authTextV151(widget.controller.localeCode, 'email'),
+            prefixIcon: const Icon(Icons.alternate_email_rounded),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(widget.controller.localeCode == 'ar' ? 'إلغاء' : 'Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(widget.controller.localeCode == 'ar' ? 'إرسال الرابط' : 'Send link')),
+        ],
+      ),
+    ) ?? false;
+    if (!sent) { email.dispose(); return; }
+    final value = email.text.trim();
+    email.dispose();
+    if (value.isEmpty || !value.contains('@')) {
+      if (mounted) showToast(context, widget.controller.localeCode == 'ar' ? 'أدخل بريدًا إلكترونيًا صحيحًا.' : 'Enter a valid email address.');
+      return;
+    }
+    setState(() { busy = true; error = null; });
+    try {
+      final result = await widget.controller.api.forgotPassword(value);
+      if (mounted) showToast(context, result['message']?.toString() ?? 'تم إرسال التعليمات.');
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   Future<void> chooseDemoAccount() async {
     const accounts = <(String, String, String)>[
       ('Adnan', 'Adnan123', 'مدير • 1,000,000,000,000,000,000 توكن'),
@@ -2381,6 +2603,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 suffixIcon: IconButton(onPressed: () => setState(() => obscure = !obscure), icon: Icon(obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined)),
                               ),
                             ),
+                            if (!registerMode) Align(
+                              alignment: AlignmentDirectional.centerEnd,
+                              child: TextButton.icon(
+                                onPressed: busy ? null : forgotPassword,
+                                icon: const Icon(Icons.key_rounded, size: 17),
+                                label: Text(lang == 'ar' ? 'نسيت كلمة المرور؟' : 'Forgot password?'),
+                              ),
+                            ),
                             if (error != null) ...[
                               const SizedBox(height: 12),
                               Container(
@@ -2399,7 +2629,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (!registerMode) ...[
                               const SizedBox(height: 10),
                               OutlinedButton.icon(
-                                onPressed: busy ? null : chooseDemoAccount,
+                                onPressed: busy || warqnaProductionMode ? null : chooseDemoAccount,
                                 icon: const Icon(Icons.groups_2_outlined),
                                 label: Text(authTextV151(lang, 'chooseDemo')),
                                 style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
@@ -2415,7 +2645,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Expanded(child: OutlinedButton.icon(onPressed: busy ? null : () => showToast(context, 'تسجيل Facebook جاهز للربط بعد إضافة App ID وSecret.'), icon: const Text('f', style: TextStyle(fontWeight: FontWeight.w900)), label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Facebook', maxLines: 1, softWrap: false, style: TextStyle(fontSize: 9))))),
                               ]),
                               const SizedBox(height: 7),
-                              FilledButton.tonalIcon(onPressed: busy ? null : widget.controller.loginAsGuest, icon: const Icon(Icons.person_outline_rounded), label: Text(authTextV151(lang, 'guest'))) ,
+                              FilledButton.tonalIcon(onPressed: busy || warqnaProductionMode ? null : widget.controller.loginAsGuest, icon: const Icon(Icons.person_outline_rounded), label: Text(authTextV151(lang, 'guest'))) ,
                               const SizedBox(height: 5),
                               Text(authTextV151(lang, 'providerNote'), textAlign: TextAlign.center, style: TextStyle(color: palette.gold.withOpacity(.9), fontSize: 9, height: 1.5)),
                             ],
@@ -2428,7 +2658,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text('حسابات مستقلة • حفظ محلي آمن للتجربة • مزامنة عند ربط الخادم', textAlign: TextAlign.center, style: TextStyle(color: Colors.white30, fontSize: 9)),
+                      Text(warqnaProductionMode ? 'حسابات خادم حقيقية • جلسات آمنة • حماية واستعادة للحساب' : 'حسابات مستقلة • حفظ محلي آمن للتجربة • مزامنة عند ربط الخادم', textAlign: TextAlign.center, style: TextStyle(color: Colors.white30, fontSize: 9)),
                     ],
                   ),
                 ),
@@ -3373,15 +3603,18 @@ class ProductCard extends StatelessWidget {
 class GameRoomPage extends StatelessWidget {
   final AppController controller;
   final GameInfo game;
+  final RoomLaunchOptions options;
 
-  const GameRoomPage({super.key, required this.controller, required this.game});
+  const GameRoomPage({super.key, required this.controller, required this.game, this.options = const RoomLaunchOptions()});
 
   @override
   Widget build(BuildContext context) {
-    if (game.id == 'tarneeb') {
+    // Voice rooms are server-backed so real players can exchange audio.
+    // Normal Tarneeb retains the dedicated premium table UI.
+    if (game.id == 'tarneeb' && !options.voiceEnabled && !options.joiningExisting && !controller.serverConnected) {
       return TarneebRoomPage(controller: controller, game: game);
     }
-    return ServerEngineRoomPage(controller: controller, game: game);
+    return ServerEngineRoomPage(controller: controller, game: game, options: options);
   }
 }
 
@@ -4093,7 +4326,8 @@ class _TablePatternPainter extends CustomPainter {
 class ServerEngineRoomPage extends StatefulWidget {
   final AppController controller;
   final GameInfo game;
-  const ServerEngineRoomPage({super.key, required this.controller, required this.game});
+  final RoomLaunchOptions options;
+  const ServerEngineRoomPage({super.key, required this.controller, required this.game, this.options = const RoomLaunchOptions()});
 
   @override
   State<ServerEngineRoomPage> createState() => _ServerEngineRoomPageState();
@@ -4117,6 +4351,8 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
   int chatPoll = 0;
   final serverChatController = TextEditingController();
   final List<ChatMessage> serverMessages = [];
+  VoiceRoomService? voiceRoom;
+  bool voicePanelExpanded = true;
 
   @override
   void initState() {
@@ -4128,55 +4364,92 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
   @override
   void dispose() {
     timer?.cancel();
+    voiceRoom?.removeListener(_onVoiceChanged);
+    voiceRoom?.dispose();
     serverChatController.dispose();
     super.dispose();
   }
 
+  Future<void> _startVoiceIfNeeded() async {
+    if (!isVoiceRoom || room == null || roomCode.isEmpty) return;
+    voiceRoom?.removeListener(_onVoiceChanged);
+    voiceRoom?.dispose();
+    final service = VoiceRoomService(api: widget.controller.api, serverConnected: widget.controller.serverConnected);
+    service.addListener(_onVoiceChanged);
+    voiceRoom = service;
+    if (mounted) setState(() {});
+    await service.join(roomCode);
+  }
+
+  void _onVoiceChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _openLocalRoom([String? reason]) async {
+    localSession = LocalGameSession(gameId: widget.game.id, humanName: widget.controller.displayName, difficulty: widget.controller.botDifficultyCode);
+    if (!mounted) return;
+    setState(() {
+      room = localSession!.room();
+      loading = false;
+      error = null;
+      seconds = widget.options.turnSeconds;
+    });
+    serverMessages
+      ..clear()
+      ..addAll([
+        ChatMessage('النظام', reason ?? 'بدأت جلسة محلية كاملة. عند ربط Laravel تتحول الجلسة تلقائياً إلى لعب متزامن بين الأجهزة.', false, 'الآن'),
+        ChatMessage('سامر', 'بالتوفيق! 👋', false, 'الآن'),
+      ]);
+    await _startVoiceIfNeeded();
+  }
+
   Future<void> _create() async {
     if (!widget.controller.serverConnected) {
-      localSession = LocalGameSession(gameId: widget.game.id, humanName: widget.controller.displayName, difficulty: widget.controller.botDifficultyCode);
-      if (!mounted) return;
-      setState(() {
-        room = localSession!.room();
-        loading = false;
-        error = null;
-        seconds = 10;
-      });
-      serverMessages
-        ..clear()
-        ..addAll([
-          ChatMessage('النظام', 'بدأت جلسة محلية كاملة. عند ربط Laravel تتحول الجلسة تلقائياً إلى لعب متزامن بين الأجهزة.', false, 'الآن'),
-          ChatMessage('سامر', 'بالتوفيق! 👋', false, 'الآن'),
-        ]);
+      await _openLocalRoom();
       return;
     }
     try {
       localSession = null;
-      final data = await widget.controller.api.createGame(game: widget.game.id, bots: _playersFor(widget.game.id) - 1);
+      final data = widget.options.joiningExisting
+          ? await widget.controller.api.joinGame(widget.options.roomCode!.trim().toUpperCase(), password: widget.options.password)
+          : await widget.controller.api.createGame(
+              game: widget.game.id,
+              bots: _playersFor(widget.game.id) - 1,
+              visibility: widget.options.visibility,
+              turnSeconds: widget.options.turnSeconds,
+              voiceEnabled: widget.options.voiceEnabled,
+              roomName: widget.options.roomName,
+              password: widget.options.password,
+            );
       if (!mounted) return;
       setState(() {
         room = Map<String, dynamic>.from(data['room'] as Map);
         loading = false;
-        seconds = 10;
+        error = null;
+        seconds = int.tryParse(room?['turn_seconds']?.toString() ?? '') ?? widget.options.turnSeconds;
       });
       await _loadRoomChat();
+      await _startVoiceIfNeeded();
+    } on ApiException catch (e) {
+      if (widget.options.joiningExisting) {
+        if (!mounted) return;
+        setState(() {
+          loading = false;
+          error = e.message;
+        });
+        return;
+      }
+      await _openLocalRoom('الخادم غير متاح؛ تم تشغيل المحرك المحلي تلقائياً دون تعطيل اللعبة.');
     } catch (_) {
-      // GitHub Pages cannot run PHP. If the published Laravel API is not
-      // reachable, open the same game immediately with the bundled engine.
-      localSession = LocalGameSession(gameId: widget.game.id, humanName: widget.controller.displayName, difficulty: widget.controller.botDifficultyCode);
-      if (!mounted) return;
-      setState(() {
-        room = localSession!.room();
-        loading = false;
-        error = null;
-        seconds = 10;
-      });
-      serverMessages
-        ..clear()
-        ..addAll([
-          ChatMessage('النظام', 'الخادم غير متاح؛ تم تشغيل المحرك المحلي تلقائياً دون تعطيل اللعبة.', false, 'الآن'),
-          ChatMessage('ليلى', 'الجلسة جاهزة، لنبدأ 🎮', false, 'الآن'),
-        ]);
+      if (widget.options.joiningExisting) {
+        if (!mounted) return;
+        setState(() {
+          loading = false;
+          error = 'تعذر الانضمام إلى الغرفة. تحقق من الرمز والاتصال بالخادم.';
+        });
+        return;
+      }
+      await _openLocalRoom('الخادم غير متاح؛ تم تشغيل المحرك المحلي تلقائياً دون تعطيل اللعبة.');
     }
   }
 
@@ -4195,6 +4468,8 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
       .toList();
   String get enginePhase => state['engine_phase']?.toString() ?? state['phase']?.toString() ?? 'playing';
   String get roomCode => room?['code']?.toString() ?? '';
+  bool get isVoiceRoom => widget.options.voiceEnabled || room?['voice_enabled'] == true || state['voice_enabled'] == true || state['voice_room'] == true;
+  int get turnDuration => int.tryParse(room?['turn_seconds']?.toString() ?? '') ?? widget.options.turnSeconds;
 
   void _tick() {
     if (!mounted || loading || room == null || sending) return;
@@ -4214,10 +4489,10 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
     try {
       if (localSession != null) {
         final updated = localSession!.timeout();
-        if (mounted) setState(() { room = Map<String, dynamic>.from(updated); seconds = 10; selectedCard = null; });
+        if (mounted) setState(() { room = Map<String, dynamic>.from(updated); seconds = turnDuration; selectedCard = null; });
       } else {
         final data = await widget.controller.api.gameTimeout(roomCode);
-        if (mounted) setState(() { room = Map<String, dynamic>.from(data['room'] as Map); seconds = 10; selectedCard = null; });
+        if (mounted) setState(() { room = Map<String, dynamic>.from(data['room'] as Map); seconds = turnDuration; selectedCard = null; });
       }
       if (awayMode) {
         autoPlayedTurns += 1;
@@ -4232,7 +4507,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
         }
       }
     } catch (_) {
-      if (mounted) setState(() => seconds = 10);
+      if (mounted) setState(() => seconds = turnDuration);
     }
     sending = false;
   }
@@ -4251,7 +4526,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
       if (!mounted) return;
       setState(() {
         room = updated;
-        seconds = 10;
+        seconds = turnDuration;
         selectedCard = null;
         sending = false;
         autoPlayedTurns = 0;
@@ -4329,11 +4604,17 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
         title: Column(
           children: [
             Text(L.t(widget.controller.localeCode, widget.game.id), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
-            Text(room == null ? 'محرك لعب احترافي' : '${localSession != null ? 'محلي ذكي' : 'خادم موثوق'} • غرفة $roomCode • لعب مجاني', style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.primary)),
+            Text(room == null ? 'محرك لعب احترافي' : '${localSession != null ? 'محلي ذكي' : 'خادم موثوق'} • غرفة $roomCode • ${isVoiceRoom ? 'صوتية' : 'عادية'} • لعب مجاني', style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.primary)),
           ],
         ),
         centerTitle: true,
         actions: [
+          if (isVoiceRoom)
+            IconButton(
+              tooltip: voiceRoom?.micEnabled == false ? 'تشغيل الميكروفون' : 'كتم الميكروفون',
+              onPressed: voiceRoom == null ? null : () => voiceRoom!.setMicEnabled(!voiceRoom!.micEnabled),
+              icon: Icon(voiceRoom?.micEnabled == false ? Icons.mic_off_rounded : Icons.mic_rounded, color: voiceRoom?.micEnabled == false ? Colors.redAccent : Colors.greenAccent),
+            ),
           if (widget.controller.vipDays > 0)
             IconButton(tooltip: awayMode ? 'العودة للعب' : 'وضع غائب', onPressed: () => setState(() { awayMode = !awayMode; widget.controller.setAwayMode(awayMode); }), icon: Icon(awayMode ? Icons.play_circle_fill_rounded : Icons.pause_circle_outline_rounded, color: awayMode ? Colors.amber : null)),
           IconButton(onPressed: () => inviteFriendsToRoomV151(context, widget.controller, widget.game.id), tooltip: 'دعوة الأصدقاء', icon: const Icon(Icons.person_add_alt_1_rounded)),
@@ -4347,12 +4628,112 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
             ? const Center(child: CircularProgressIndicator())
             : error != null
                 ? _errorView(context)
-                : OrientationBuilder(builder: (context, orientation) {
-                    final landscape = widget.controller.landscapeMode || orientation == Orientation.landscape;
-                    return landscape
-                        ? Row(children: [Expanded(flex: 7, child: _engineBoard(context)), if (chatOpen) SizedBox(width: 285 * widget.controller.uiChatScale, child: _engineChat())])
-                        : Column(children: [Expanded(child: _engineBoard(context)), if (chatOpen) SizedBox(height: 165 * widget.controller.uiChatScale, child: _engineChat())]);
-                  }),
+                : Column(
+                    children: [
+                      if (isVoiceRoom) _voicePanel(context),
+                      Expanded(
+                        child: OrientationBuilder(builder: (context, orientation) {
+                          final landscape = widget.controller.landscapeMode || orientation == Orientation.landscape;
+                          return landscape
+                              ? Row(children: [Expanded(flex: 7, child: _engineBoard(context)), if (chatOpen) SizedBox(width: 285 * widget.controller.uiChatScale, child: _engineChat())])
+                              : Column(children: [Expanded(child: _engineBoard(context)), if (chatOpen) SizedBox(height: 165 * widget.controller.uiChatScale, child: _engineChat())]);
+                        }),
+                      ),
+                    ],
+                  ),
+      ),
+    );
+  }
+
+  Widget _voicePanel(BuildContext context) {
+    final service = voiceRoom;
+    final participants = service?.participants ?? const <VoiceParticipant>[];
+    final primary = Theme.of(context).colorScheme.primary;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      margin: const EdgeInsets.fromLTRB(8, 5, 8, 2),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: .96),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: primary.withValues(alpha: .32)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.graphic_eq_rounded, color: service?.joined == true ? Colors.greenAccent : Colors.amber, size: 20),
+              const SizedBox(width: 6),
+              Expanded(child: Text(service?.status ?? 'تهيئة الغرفة الصوتية…', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12))),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: service?.micEnabled == false ? 'تشغيل الميكروفون' : 'كتم الميكروفون',
+                onPressed: service == null ? null : () => service.setMicEnabled(!service.micEnabled),
+                icon: Icon(service?.micEnabled == false ? Icons.mic_off_rounded : Icons.mic_rounded, size: 20, color: service?.micEnabled == false ? Colors.redAccent : Colors.greenAccent),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: service?.deafened == true ? 'تشغيل صوت اللاعبين' : 'كتم سماع اللاعبين',
+                onPressed: service == null ? null : () => service.setDeafened(!service.deafened),
+                icon: Icon(service?.deafened == true ? Icons.headset_off_rounded : Icons.headphones_rounded, size: 20, color: service?.deafened == true ? Colors.redAccent : null),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: voicePanelExpanded ? 'تصغير لوحة الصوت' : 'إظهار اللاعبين',
+                onPressed: () => setState(() => voicePanelExpanded = !voicePanelExpanded),
+                icon: Icon(voicePanelExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded, size: 20),
+              ),
+            ],
+          ),
+          if (voicePanelExpanded) ...[
+            const SizedBox(height: 4),
+            if (service?.localPreview == true)
+              const Align(alignment: AlignmentDirectional.centerStart, child: Text('المعاينة المحلية تختبر الميكروفون فقط. الصوت بين الأجهزة يبدأ بعد نشر Laravel وربط TURN.', style: TextStyle(fontSize: 10, color: Colors.white60)))
+            else if (participants.isEmpty)
+              const Align(alignment: AlignmentDirectional.centerStart, child: Text('بانتظار انضمام لاعبين حقيقيين للصوت…', style: TextStyle(fontSize: 10, color: Colors.white60)))
+            else
+              SizedBox(
+                height: 48,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: participants.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemBuilder: (_, index) {
+                    final participant = participants[index];
+                    final locallyMuted = service?.isPeerMuted(participant.userId) == true;
+                    final avatarText = participant.avatar?.isNotEmpty == true
+                        ? participant.avatar!
+                        : (participant.name.trim().isEmpty ? '?' : participant.name.trim().substring(0, 1));
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(13),
+                      onTap: participant.self || service == null ? null : () => service.togglePeerMute(participant.userId),
+                      child: Container(
+                        width: 118,
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: .045),
+                          borderRadius: BorderRadius.circular(13),
+                          border: Border.all(color: participant.online ? Colors.greenAccent.withValues(alpha: .28) : Colors.white12),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(radius: 15, child: Text(avatarText, style: const TextStyle(fontSize: 12))),
+                            const SizedBox(width: 6),
+                            Expanded(child: Text(participant.self ? '${participant.name} • أنت' : participant.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800))),
+                            Icon(participant.muted || locallyMuted ? Icons.mic_off_rounded : Icons.mic_rounded, size: 14, color: participant.muted || locallyMuted ? Colors.redAccent : Colors.greenAccent),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            if (service?.error != null) ...[
+              const SizedBox(height: 3),
+              Align(alignment: AlignmentDirectional.centerStart, child: Text(service!.error!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 9.5, color: Colors.orangeAccent))),
+            ],
+          ],
+        ],
       ),
     );
   }
@@ -5826,6 +6207,7 @@ void showSettings(BuildContext context, AppController controller) {
           ),
           ListTile(leading: const Icon(Icons.tune_rounded), title: Text(L.t(controller.localeCode, 'noCode')), subtitle: const Text('حجم الأزرار والخط والحواف والمؤثرات مع معاينة فورية'), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(context); showNoCodeDesignerSheet(context, controller); }),
           ListTile(leading: const Icon(Icons.install_mobile_rounded), title: const Text('تثبيت التطبيق على الهاتف'), subtitle: const Text('استخدم زر التثبيت أو إضافة إلى الشاشة الرئيسية من المتصفح.')),
+          ListTile(leading: const Icon(Icons.security_rounded, color: Colors.lightBlueAccent), title: Text(v153Text(controller.localeCode, 'productionCenter')), subtitle: Text(v153Text(controller.localeCode, 'productionCenterHint')), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(context); openProductionCenterV153(context, controller); }),
           const ListTile(leading: Icon(Icons.history_toggle_off_rounded), title: Text('الحساب غير النشط'), subtitle: Text('يُحذف الحساب غير الإداري بعد 30 يوماً دون فتحه عند تشغيل Scheduler.')),
           const Divider(),
           if (!controller.isAdmin) OutlinedButton.icon(onPressed: () => showDeleteAccountDialog(context, controller), icon: const Icon(Icons.delete_forever, color: Colors.redAccent), label: Text(L.t(controller.localeCode, 'deleteAccount'), style: const TextStyle(color: Colors.redAccent))),
@@ -5943,7 +6325,7 @@ void showClubChallenges(BuildContext context, AppController controller, String c
   ]));
 }
 
-Future<void> openGameRoom(BuildContext context, AppController controller, GameInfo game) async {
+Future<void> openGameRoom(BuildContext context, AppController controller, GameInfo game, {RoomLaunchOptions options = const RoomLaunchOptions()}) async {
   if (!controller.canEnterGame(game.id)) {
     showToast(context, 'وصلت إلى 3 مغادرات لهذه اللعبة، ولا يمكنك العودة إلى الجلسة نفسها.');
     return;
@@ -5955,7 +6337,7 @@ Future<void> openGameRoom(BuildContext context, AppController controller, GameIn
   final previousLandscape = controller.landscapeMode;
   await controller.setLandscapeMode(true);
   if (!context.mounted) return;
-  await Navigator.push(context, MaterialPageRoute(builder: (_) => GameRoomPage(controller: controller, game: game)));
+  await Navigator.push(context, MaterialPageRoute(builder: (_) => GameRoomPage(controller: controller, game: game, options: options)));
   controller.leaveGame(game.id);
   if (!previousLandscape) await controller.setLandscapeMode(false);
 }
@@ -5972,7 +6354,7 @@ void showChallenges(BuildContext context, AppController controller) {
     const SizedBox(height: 4),
     const Text('اختر تحدياً. الفوز يمنحك توكنز وXP ويرفع طريق الهدايا، بدون رسوم دخول.', style: TextStyle(color: Colors.white60, height: 1.5)),
     const SizedBox(height: 10),
-    ...challenges.map((entry) => Padding(padding: const EdgeInsets.only(bottom: 9), child: PremiumListTile(icon: entry.$2, title: entry.$3, subtitle: '${L.t(controller.localeCode, entry.$4)} • مكافأة ${formatNumber(entry.$5)}', action: FilledButton(onPressed: () async { if (!controller.joinChallenge(entry.$1)) { showToast(context, 'غادر التحدي الحالي أولاً.'); return; } final game = gamesCatalog.firstWhere((g) => g.id == entry.$4); Navigator.pop(context); await openGameRoom(context, controller, game); controller.leaveChallenge(); }, child: const Text('تحدَّ الآن'))))),
+    ...challenges.map((entry) => Padding(padding: const EdgeInsets.only(bottom: 9), child: PremiumListTile(icon: entry.$2, title: entry.$3, subtitle: '${L.t(controller.localeCode, entry.$4)} • مكافأة ${formatNumber(entry.$5)}', action: FilledButton(onPressed: () async { if (!controller.joinChallenge(entry.$1)) { showToast(context, 'غادر التحدي الحالي أولاً.'); return; } final game = gamesCatalog.firstWhere((g) => g.id == entry.$4); Navigator.pop(context); showCreateRoom(context, controller, game); controller.leaveChallenge(); }, child: const Text('تحدَّ الآن'))))),
   ]));
 }
 
@@ -6010,19 +6392,24 @@ void showGameLobby(BuildContext context, AppController controller, GameInfo game
         const SizedBox(height: 15),
         Row(
           children: [
-            Expanded(child: FilledButton.icon(onPressed: () async { Navigator.pop(context); await openGameRoom(context, controller, game); }, icon: const Icon(Icons.play_arrow), label: Text(L.t(controller.localeCode, 'friendly')))),
+            Expanded(child: FilledButton.icon(onPressed: () { Navigator.pop(context); showPlayModePicker(context, controller, game); }, icon: const Icon(Icons.play_arrow), label: Text(L.t(controller.localeCode, 'friendly')))),
             const SizedBox(width: 8),
             Expanded(child: FilledButton.tonalIcon(onPressed: () => showCompetitions(context, controller), icon: const Icon(Icons.emoji_events), label: Text(L.t(controller.localeCode, 'competitions')))),
           ],
         ),
         const SizedBox(height: 10),
         PremiumPanel(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          child: Wrap(
+            alignment: WrapAlignment.spaceAround,
+            runAlignment: WrapAlignment.center,
+            spacing: 4,
+            runSpacing: 6,
             children: [
               QuickButton(icon: '📖', label: L.t(controller.localeCode, 'rules'), onTap: () => showRules(context, controller.localeCode, game.id)),
               QuickButton(icon: '📊', label: L.t(controller.localeCode, 'leaderboard'), onTap: () => showLeaderboard(context)),
-              QuickButton(icon: '🔒', label: L.t(controller.localeCode, 'createRoom'), onTap: () => showCreateRoom(context, controller, game)),
+              QuickButton(icon: '➕', label: L.t(controller.localeCode, 'createRoom'), onTap: () => showCreateRoom(context, controller, game)),
+              QuickButton(icon: '🌐', label: L.t(controller.localeCode, 'openRooms'), onTap: () => showAvailableRooms(context, controller, game)),
+              QuickButton(icon: '🔑', label: L.t(controller.localeCode, 'joinByCode'), onTap: () => showJoinRoomByCode(context, controller, game)),
               QuickButton(icon: '👥', label: L.t(controller.localeCode, 'friends'), onTap: () => showFriends(context, controller)),
             ],
           ),
@@ -6032,30 +6419,257 @@ void showGameLobby(BuildContext context, AppController controller, GameInfo game
   );
 }
 
-void showCreateRoom(BuildContext context, AppController controller, GameInfo game) {
-  final nameController = TextEditingController(text: 'غرفة أحمد');
-  final passwordController = TextEditingController(text: '2468');
-  bool private = false;
+Future<void> showAvailableRooms(BuildContext context, AppController controller, GameInfo game) async {
+  if (!controller.serverConnected) {
+    showToast(context, L.t(controller.localeCode, 'serverRoomsNeedBackend'));
+    return;
+  }
+  try {
+    final data = await controller.api.availableRooms(game.id);
+    final rooms = data['rooms'] is List ? data['rooms'] as List : const [];
+    if (!context.mounted) return;
+    showPremiumSheet(
+      context,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(L.t(controller.localeCode, 'openRooms'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 5),
+          Text(L.t(controller.localeCode, 'openRoomsHint'), style: const TextStyle(color: Colors.white60)),
+          const SizedBox(height: 12),
+          if (rooms.isEmpty)
+            Padding(padding: const EdgeInsets.symmetric(vertical: 28), child: Center(child: Text(L.t(controller.localeCode, 'noOpenRooms'), style: const TextStyle(color: Colors.white60))))
+          else
+            ...rooms.map((raw) {
+              final room = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+              final voice = room['voice_enabled'] == true || room['voice_enabled'] == 1;
+              final code = room['code']?.toString() ?? '';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: PremiumListTile(
+                  icon: voice ? '🎙️' : '🃏',
+                  title: room['name']?.toString() ?? code,
+                  subtitle: '${voice ? L.t(controller.localeCode, 'voiceGame') : L.t(controller.localeCode, 'normalGame')} • ${room['players'] ?? 1}/${room['max_players'] ?? 4} • ${room['turn_seconds'] ?? 10}s • $code',
+                  action: FilledButton(
+                    onPressed: code.isEmpty ? null : () async {
+                      Navigator.pop(context);
+                      await openGameRoom(context, controller, game, options: RoomLaunchOptions(roomCode: code, voiceEnabled: voice));
+                    },
+                    child: Text(L.t(controller.localeCode, 'join')),
+                  ),
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  } on ApiException catch (e) {
+    if (context.mounted) showToast(context, e.message);
+  } catch (_) {
+    if (context.mounted) showToast(context, L.t(controller.localeCode, 'roomsLoadFailed'));
+  }
+}
+
+void showJoinRoomByCode(BuildContext context, AppController controller, GameInfo game) {
+  final codeController = TextEditingController();
+  final passwordController = TextEditingController();
+  showPremiumSheet(
+    context,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(L.t(controller.localeCode, 'joinByCode'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 7),
+        Text(L.t(controller.localeCode, 'joinByCodeHint'), style: const TextStyle(color: Colors.white60, height: 1.45)),
+        const SizedBox(height: 12),
+        TextField(controller: codeController, textCapitalization: TextCapitalization.characters, decoration: InputDecoration(labelText: L.t(controller.localeCode, 'roomCode'), prefixIcon: const Icon(Icons.tag_rounded))),
+        const SizedBox(height: 9),
+        TextField(controller: passwordController, obscureText: true, decoration: InputDecoration(labelText: '${L.t(controller.localeCode, 'password')} (${L.t(controller.localeCode, 'optional')})', prefixIcon: const Icon(Icons.lock_outline_rounded))),
+        const SizedBox(height: 14),
+        FilledButton.icon(
+          onPressed: () async {
+            final code = codeController.text.trim().toUpperCase();
+            if (code.length < 4) {
+              showToast(context, L.t(controller.localeCode, 'enterRoomCode'));
+              return;
+            }
+            Navigator.pop(context);
+            await openGameRoom(context, controller, game, options: RoomLaunchOptions(roomCode: code, password: passwordController.text.trim()));
+          },
+          icon: const Icon(Icons.login_rounded),
+          label: Text(L.t(controller.localeCode, 'joinRoom')),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+        ),
+      ],
+    ),
+  );
+}
+
+void showPlayModePicker(BuildContext context, AppController controller, GameInfo game) {
+  showPremiumSheet(
+    context,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(L.t(controller.localeCode, 'chooseGameMode'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 6),
+        Text(L.t(controller.localeCode, 'chooseGameModeHint'), style: const TextStyle(color: Colors.white60, height: 1.5)),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: _GameModeCard(
+                icon: Icons.style_rounded,
+                title: L.t(controller.localeCode, 'normalGame'),
+                subtitle: L.t(controller.localeCode, 'normalGameHint'),
+                color: Theme.of(context).colorScheme.primary,
+                onTap: () {
+                  Navigator.pop(context);
+                  showCreateRoom(context, controller, game);
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _GameModeCard(
+                icon: Icons.mic_rounded,
+                title: L.t(controller.localeCode, 'voiceGame'),
+                subtitle: L.t(controller.localeCode, 'voiceGameHint'),
+                color: Colors.greenAccent,
+                onTap: () {
+                  Navigator.pop(context);
+                  showCreateRoom(context, controller, game, initialVoice: true);
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class _GameModeCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+  const _GameModeCard({required this.icon, required this.title, required this.subtitle, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 160),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: .35)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(width: 54, height: 54, decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: .16)), child: Icon(icon, color: color, size: 29)),
+            const SizedBox(height: 10),
+            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 5),
+            Text(subtitle, maxLines: 3, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, height: 1.4, color: Colors.white60)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void showCreateRoom(BuildContext context, AppController controller, GameInfo game, {bool initialVoice = false}) {
+  final nameController = TextEditingController(text: '${L.t(controller.localeCode, game.id)} • ${controller.displayName}');
+  final passwordController = TextEditingController();
+  var visibility = 'public';
+  var voiceEnabled = initialVoice;
+  var turnSeconds = 10;
   showPremiumSheet(
     context,
     child: StatefulBuilder(
       builder: (context, setLocalState) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(L.t(controller.localeCode, 'createRoom'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+          Text(L.t(controller.localeCode, 'createRoom'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 5),
+          Text(L.t(controller.localeCode, 'roomModeDescription'), style: const TextStyle(color: Colors.white60, height: 1.45)),
+          const SizedBox(height: 12),
+          TextField(controller: nameController, decoration: InputDecoration(labelText: L.t(controller.localeCode, 'roomName'), prefixIcon: const Icon(Icons.meeting_room_outlined))),
           const SizedBox(height: 10),
-          TextField(controller: nameController, decoration: const InputDecoration(labelText: 'اسم الغرفة')),
-          const SizedBox(height: 9),
-          SwitchListTile(value: private, onChanged: (v) => setLocalState(() => private = v), title: const Text('غرفة خاصة')),
-          if (private) TextField(controller: passwordController, decoration: const InputDecoration(labelText: 'كلمة السر')),
+          SegmentedButton<bool>(
+            segments: [
+              ButtonSegment(value: false, icon: const Icon(Icons.style_rounded), label: Text(L.t(controller.localeCode, 'normalGame'))),
+              ButtonSegment(value: true, icon: const Icon(Icons.mic_rounded), label: Text(L.t(controller.localeCode, 'voiceGame'))),
+            ],
+            selected: {voiceEnabled},
+            onSelectionChanged: (values) => setLocalState(() => voiceEnabled = values.first),
+            showSelectedIcon: true,
+          ),
+          if (voiceEnabled) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.greenAccent.withValues(alpha: .07), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.greenAccent.withValues(alpha: .25))),
+              child: Row(children: [const Icon(Icons.verified_user_outlined, color: Colors.greenAccent), const SizedBox(width: 8), Expanded(child: Text(L.t(controller.localeCode, 'voicePrivacyHint'), style: const TextStyle(fontSize: 11, height: 1.45)))]),
+            ),
+          ],
           const SizedBox(height: 10),
-          FilledButton(
+          DropdownButtonFormField<String>(
+            value: visibility,
+            decoration: InputDecoration(labelText: L.t(controller.localeCode, 'roomVisibility'), prefixIcon: const Icon(Icons.public_rounded)),
+            items: [
+              DropdownMenuItem(value: 'public', child: Text(L.t(controller.localeCode, 'publicRoom'))),
+              DropdownMenuItem(value: 'friends', child: Text(L.t(controller.localeCode, 'friendsRoom'))),
+              DropdownMenuItem(value: 'private', child: Text(L.t(controller.localeCode, 'privateRoom'))),
+            ],
+            onChanged: (value) => setLocalState(() => visibility = value ?? 'public'),
+          ),
+          if (visibility == 'private') ...[
+            const SizedBox(height: 9),
+            TextField(controller: passwordController, obscureText: true, decoration: InputDecoration(labelText: L.t(controller.localeCode, 'password'), prefixIcon: const Icon(Icons.lock_outline_rounded))),
+          ],
+          const SizedBox(height: 10),
+          DropdownButtonFormField<int>(
+            value: turnSeconds,
+            decoration: InputDecoration(labelText: L.t(controller.localeCode, 'turnSpeed'), prefixIcon: const Icon(Icons.timer_outlined)),
+            items: const [
+              DropdownMenuItem(value: 5, child: Text('5 ثوانٍ • سريعة')),
+              DropdownMenuItem(value: 7, child: Text('7 ثوانٍ • متوسطة')),
+              DropdownMenuItem(value: 10, child: Text('10 ثوانٍ • هادئة')),
+            ],
+            onChanged: (value) => setLocalState(() => turnSeconds = value ?? 10),
+          ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
             onPressed: () async {
+              if (nameController.text.trim().isEmpty) {
+                showToast(context, L.t(controller.localeCode, 'enterRoomName'));
+                return;
+              }
+              if (visibility == 'private' && passwordController.text.trim().length < 3) {
+                showToast(context, L.t(controller.localeCode, 'enterRoomPassword'));
+                return;
+              }
+              final options = RoomLaunchOptions(
+                roomName: nameController.text.trim(),
+                voiceEnabled: voiceEnabled,
+                visibility: visibility,
+                password: visibility == 'private' ? passwordController.text.trim() : null,
+                turnSeconds: turnSeconds,
+              );
               Navigator.pop(context);
-              showToast(context, private ? 'تم إنشاء غرفة خاصة — كلمة السر ${passwordController.text}' : 'تم إنشاء غرفة عامة');
-              await openGameRoom(context, controller, game);
+              await openGameRoom(context, controller, game, options: options);
             },
-            child: const Text('إنشاء وبدء اللعب'),
+            icon: Icon(voiceEnabled ? Icons.mic_rounded : Icons.play_arrow_rounded),
+            label: Text(voiceEnabled ? L.t(controller.localeCode, 'createVoiceRoom') : L.t(controller.localeCode, 'createNormalRoom')),
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
           ),
         ],
       ),

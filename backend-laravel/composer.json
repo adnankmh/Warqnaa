@@ -9,7 +9,9 @@
   },
   "require-dev": {
     "fakerphp/faker": "^1.23",
-    "nunomaduro/collision": "^8.0"
+    "nunomaduro/collision": "^8.0",
+    "phpunit/phpunit": "^11.0",
+    "mockery/mockery": "^1.6"
   },
   "autoload": {
     "psr-4": {
@@ -27,13 +29,23 @@
     "post-create-project-cmd": [
       "@php artisan key:generate --ansi"
     ],
-    "post-autoload-dump": []
+    "post-autoload-dump": [],
+    "test": "@php artisan test",
+    "quality": [
+      "@php artisan warqna:production-check",
+      "@php artisan test"
+    ]
   },
   "minimum-stability": "stable",
   "prefer-stable": true,
   "config": {
     "audit": {
       "block-insecure": false
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
     }
   }
 }

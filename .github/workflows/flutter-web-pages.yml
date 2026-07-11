@@ -68,9 +68,11 @@ jobs:
         working-directory: flutter_app
         run: |
           API_URL="${{ vars.WARQNA_API_URL }}"
-          EXTRA_ARGS=()
+          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.53.0" "--dart-define=WARQNA_APP_BUILD=153")
           if [ -n "$API_URL" ]; then
-            EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL")
+            EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL" "--dart-define=WARQNA_PRODUCTION_MODE=true")
+          else
+            EXTRA_ARGS+=("--dart-define=WARQNA_PRODUCTION_MODE=false")
           fi
           flutter build web \
             --release \

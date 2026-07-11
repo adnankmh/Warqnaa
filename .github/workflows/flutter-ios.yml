@@ -31,6 +31,26 @@ jobs:
           flutter create . --platforms=ios --project-name warqna_mobile --org com.warqna --no-pub
           if [ -f test/widget_test.dart ] && grep -q "MyApp" test/widget_test.dart; then rm test/widget_test.dart; fi
 
+      - name: Configure microphone permission and WebRTC build settings
+        working-directory: flutter_app
+        run: |
+          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string Warqna uses the microphone only when you enter a voice game." ios/Runner/Info.plist 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :NSMicrophoneUsageDescription Warqna uses the microphone only when you enter a voice game." ios/Runner/Info.plist
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          podfile = Path('ios/Podfile')
+          text = podfile.read_text(encoding='utf-8')
+          marker = "post_install do |installer|"
+          if marker in text and "ONLY_ACTIVE_ARCH" not in text:
+              text = text.replace(
+                  "flutter_additional_ios_build_settings(target)",
+                  "flutter_additional_ios_build_settings(target)\n"
+                  "      target.build_configurations.each do |config|\n"
+                  "        config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'\n"
+                  "      end",
+              )
+          podfile.write_text(text, encoding='utf-8')
+          PYCODE
+
       - name: Resolve Flutter packages
         working-directory: flutter_app
         run: flutter pub get
@@ -48,8 +68,12 @@ jobs:
           API_URL: ${{ vars.WARQNA_API_URL }}
           REWARDED_ID: ${{ vars.ADMOB_REWARDED_IOS_ID }}
         run: |
-          EXTRA_ARGS=()
-          if [ -n "$API_URL" ]; then EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL"); fi
+          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.53.0" "--dart-define=WARQNA_APP_BUILD=153")
+          if [ -n "$API_URL" ]; then
+            EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL" "--dart-define=WARQNA_PRODUCTION_MODE=true")
+          else
+            EXTRA_ARGS+=("--dart-define=WARQNA_PRODUCTION_MODE=false")
+          fi
           if [ -z "$REWARDED_ID" ]; then REWARDED_ID="ca-app-pub-3940256099942544/1712485313"; fi
           EXTRA_ARGS+=("--dart-define=ADMOB_REWARDED_IOS_ID=$REWARDED_ID")
           flutter analyze --no-fatal-infos --no-fatal-warnings
@@ -59,7 +83,7 @@ jobs:
       - name: Upload unsigned iOS app
         uses: actions/upload-artifact@v4
         with:
-          name: warqna-v151-ios-unsigned
+          name: warqna-v153-ios-unsigned
           if-no-files-found: error
           retention-days: 14
           path: flutter_app/build/ios/iphoneos/Runner.app

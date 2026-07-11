@@ -1,0 +1,57 @@
+name: Deploy Laravel to Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DEPLOY-STAGING to continue'
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    if: ${{ inputs.confirm == 'DEPLOY-STAGING' }}
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate required staging secrets
+        env:
+          HOST: ${{ secrets.STAGING_SSH_HOST }}
+          USER: ${{ secrets.STAGING_SSH_USER }}
+          KEY: ${{ secrets.STAGING_SSH_KEY }}
+          PATH_ON_SERVER: ${{ secrets.STAGING_APP_PATH }}
+        run: |
+          test -n "$HOST" && test -n "$USER" && test -n "$KEY" && test -n "$PATH_ON_SERVER"
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+      - name: Upload backend release
+        env:
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          APP_PATH: ${{ secrets.STAGING_APP_PATH }}
+        run: |
+          rsync -az --delete \
+            --exclude='.env' --exclude='vendor' --exclude='storage/logs/*' \
+            backend-laravel/ "$SSH_USER@$SSH_HOST:$APP_PATH/"
+      - name: Run remote deployment and health check
+        env:
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          APP_PATH: ${{ secrets.STAGING_APP_PATH }}
+          STAGING_URL: ${{ vars.STAGING_API_URL }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" "cd '$APP_PATH' && bash scripts/deploy-production.sh"
+          curl --fail --retry 8 --retry-delay 5 "$STAGING_URL/ready"

@@ -62,6 +62,7 @@ jobs:
         working-directory: flutter_app
         env:
           ADMOB_APP_ID: ${{ vars.ADMOB_ANDROID_APP_ID }}
+          API_URL: ${{ vars.WARQNA_API_URL }}
         run: |
           python3 - <<'PYCODE'
           import os
@@ -71,22 +72,35 @@ jobs:
           text = manifest.read_text(encoding='utf-8')
           newline = '\n'
 
-          if 'android.permission.INTERNET' not in text:
-              text = text.replace(
-                  '<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
-                  '<manifest xmlns:android="http://schemas.android.com/apk/res/android">' + newline +
-                  '    <uses-permission android:name="android.permission.INTERNET"/>'
-              )
+          permissions = [
+              'android.permission.INTERNET',
+              'android.permission.RECORD_AUDIO',
+              'android.permission.MODIFY_AUDIO_SETTINGS',
+              'android.permission.BLUETOOTH_CONNECT',
+          ]
+          manifest_tag = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
+          permission_lines = []
+          for permission in permissions:
+              if permission not in text:
+                  permission_lines.append(f'    <uses-permission android:name="{permission}"/>')
+          if 'android.hardware.microphone' not in text:
+              permission_lines.append('    <uses-feature android:name="android.hardware.microphone" android:required="false"/>')
+          if permission_lines:
+              text = text.replace(manifest_tag, manifest_tag + newline + newline.join(permission_lines), 1)
 
           text = text.replace('android:label="warqna_mobile"', 'android:label="Warqna"')
           app_id = os.environ.get('ADMOB_APP_ID', '').strip() or 'ca-app-pub-3940256099942544~3347511713'
 
+          cleartext = 'true' if os.environ.get('API_URL', '').strip().lower().startswith('http://') else 'false'
           if 'android:usesCleartextTraffic' not in text:
               text = text.replace(
                   '<application',
-                  '<application' + newline + '        android:usesCleartextTraffic="true"',
+                  '<application' + newline + f'        android:usesCleartextTraffic="{cleartext}"',
                   1,
               )
+          else:
+              import re
+              text = re.sub(r'android:usesCleartextTraffic="(?:true|false)"', f'android:usesCleartextTraffic="{cleartext}"', text)
 
           if 'com.google.android.gms.ads.APPLICATION_ID' not in text:
               meta = (
@@ -125,6 +139,31 @@ jobs:
             echo "Expected google_mobile_ads 7.0.0, but a different version was resolved."
             exit 1
           fi
+          if ! grep -A2 '^  flutter_webrtc:' pubspec.lock | grep -q 'version: "1.4.0"'; then
+            echo "Expected flutter_webrtc 1.4.0, but a different version was resolved."
+            exit 1
+          fi
+
+      - name: Configure optional Google Play upload signing
+        working-directory: flutter_app
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "Play signing secrets are not configured; producing a test-signed release artifact."
+            exit 0
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+          python3 ../.github/scripts/configure_android_signing.py
 
       - name: Analyze and test
         working-directory: flutter_app
@@ -138,9 +177,11 @@ jobs:
           API_URL: ${{ vars.WARQNA_API_URL }}
           REWARDED_ID: ${{ vars.ADMOB_REWARDED_ANDROID_ID }}
         run: |
-          EXTRA_ARGS=()
+          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.53.0" "--dart-define=WARQNA_APP_BUILD=153")
           if [ -n "$API_URL" ]; then
-            EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL")
+            EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL" "--dart-define=WARQNA_PRODUCTION_MODE=true")
+          else
+            EXTRA_ARGS+=("--dart-define=WARQNA_PRODUCTION_MODE=false")
           fi
           if [ -z "$REWARDED_ID" ]; then
             REWARDED_ID="ca-app-pub-3940256099942544/5224354917"
@@ -150,12 +191,20 @@ jobs:
           flutter build apk --release "${EXTRA_ARGS[@]}"
           flutter build appbundle --release "${EXTRA_ARGS[@]}"
 
+      - name: Generate Android checksums
+        working-directory: flutter_app
+        run: |
+          sha256sum build/app/outputs/flutter-apk/app-release.apk > build/app/outputs/flutter-apk/app-release.apk.sha256
+          sha256sum build/app/outputs/bundle/release/app-release.aab > build/app/outputs/bundle/release/app-release.aab.sha256
+
       - name: Upload APK and AAB
         uses: actions/upload-artifact@v4
         with:
-          name: warqna-v151-android
+          name: warqna-v153-android
           if-no-files-found: error
           retention-days: 14
           path: |
             flutter_app/build/app/outputs/flutter-apk/app-release.apk
+            flutter_app/build/app/outputs/flutter-apk/app-release.apk.sha256
             flutter_app/build/app/outputs/bundle/release/app-release.aab
+            flutter_app/build/app/outputs/bundle/release/app-release.aab.sha256

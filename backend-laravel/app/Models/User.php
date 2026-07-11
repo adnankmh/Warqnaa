@@ -9,12 +9,14 @@ class User extends Authenticatable
 {
     use HasApiTokens, Notifiable;
 
-    protected $fillable = ['username','email','password','is_admin','is_banned','last_seen_at'];
+    protected $fillable = ['username','email','password','is_admin','is_banned','last_seen_at','email_verified_at','deletion_requested_at','last_login_ip','last_login_user_agent'];
     protected $hidden = ['password','remember_token'];
     protected $casts = [
         'is_admin' => 'boolean',
         'is_banned' => 'boolean',
         'last_seen_at' => 'datetime',
+        'email_verified_at' => 'datetime',
+        'deletion_requested_at' => 'datetime',
     ];
 
     public function profile(){ return $this->hasOne(Profile::class); }
@@ -25,6 +27,9 @@ class User extends Authenticatable
     public function friendships(){ return $this->hasMany(Friendship::class,'requester_id'); }
     public function sentMessages(){ return $this->hasMany(Message::class,'sender_id'); }
     public function receivedMessages(){ return $this->hasMany(Message::class,'receiver_id'); }
+    public function reportsMade(){ return $this->hasMany(UserReport::class,'reporter_id'); }
+    public function reportsReceived(){ return $this->hasMany(UserReport::class,'reported_user_id'); }
+    public function deletionRequests(){ return $this->hasMany(AccountDeletionRequest::class); }
 
     public function publicProfile(): array
     {
@@ -51,6 +56,8 @@ class User extends Authenticatable
             'win_rates'=>[],
             'is_admin'=>(bool)$this->is_admin,
             'is_banned'=>(bool)$this->is_banned,
+            'email_verified'=>(bool)$this->email_verified_at,
+            'deletion_requested_at'=>$this->deletion_requested_at?->toIso8601String(),
             'pasha_days'=>(int)($p?->pasha_days ?? 0),
             'chat_color'=>$p?->chat_color,
             'active_table_skin'=>$p?->active_table_skin,

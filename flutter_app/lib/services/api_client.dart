@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiException implements Exception {
@@ -13,6 +14,10 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.53.0');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 153);
+
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})
       : baseUrl = (baseUrl ?? const String.fromEnvironment(
@@ -24,11 +29,51 @@ class WarqnaApiClient {
   final String baseUrl;
   String? token;
 
+  String get platform => kIsWeb
+      ? 'web'
+      : switch (defaultTargetPlatform) {
+          TargetPlatform.iOS => 'ios',
+          _ => 'android',
+        };
+
   Map<String, String> get _headers => {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
+        'X-Warqna-Platform': platform,
+        'X-Warqna-Version': warqnaAppVersion,
+        'X-Warqna-Build': '$warqnaAppBuild',
+        'X-Request-ID': 'app-${DateTime.now().microsecondsSinceEpoch}',
         if (token != null && token!.isNotEmpty) 'Authorization': 'Bearer $token',
       };
+
+  Future<Map<String, dynamic>> platformConfig() => get('/app-config?platform=$platform', authenticated: false);
+  Future<Map<String, dynamic>> exportAccount() => get('/account/export');
+  Future<Map<String, dynamic>> sessions() => get('/account/sessions');
+  Future<Map<String, dynamic>> revokeSession(int tokenId) => delete('/account/sessions/$tokenId');
+  Future<Map<String, dynamic>> requestDeletion(String password, {String? reason}) =>
+      post('/account/deletion-request', {'password': password, if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim()});
+  Future<Map<String, dynamic>> cancelDeletionRequest() => delete('/account/deletion-request');
+  Future<Map<String, dynamic>> submitReport({int? reportedUserId, String? roomCode, int? messageId, required String category, String? details}) =>
+      post('/safety/reports', {
+        if (reportedUserId != null) 'reported_user_id': reportedUserId,
+        if (roomCode != null && roomCode.isNotEmpty) 'room_code': roomCode,
+        if (messageId != null) 'message_id': messageId,
+        'category': category,
+        if (details != null && details.trim().isNotEmpty) 'details': details.trim(),
+      });
+  Future<Map<String, dynamic>> myReports() => get('/safety/reports');
+
+  Future<Map<String, dynamic>> forgotPassword(String email) =>
+      post('/password/forgot', {'email': email}, authenticated: false);
+  Future<Map<String, dynamic>> resetPassword({required String email, required String resetToken, required String password}) =>
+      post('/password/reset', {
+        'email': email,
+        'token': resetToken,
+        'password': password,
+        'password_confirmation': password,
+      }, authenticated: false);
+  Future<Map<String, dynamic>> sendEmailVerification() =>
+      post('/email/verification-notification', const {});
 
   Future<Map<String, dynamic>> login(String login, String password) =>
       post('/login', {'login': login, 'password': password}, authenticated: false);
@@ -77,21 +122,37 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> createGame({
     required String game,
     int bots = 3,
-    String visibility = 'private',
-    int turnSeconds = 20,
+    String visibility = 'public',
+    int turnSeconds = 10,
+    bool voiceEnabled = false,
+    String? roomName,
+    String? password,
   }) =>
       post('/games/session', {
         'game': game,
         'bots': bots,
         'visibility': visibility,
         'turn_seconds': turnSeconds,
+        'voice_enabled': voiceEnabled,
+        if (roomName != null && roomName.trim().isNotEmpty) 'room_name': roomName.trim(),
+        if (visibility == 'private' && password != null && password.isNotEmpty) 'password': password,
       });
+  Future<Map<String, dynamic>> availableRooms(String game) => get('/games/$game/rooms');
+  Future<Map<String, dynamic>> joinGame(String code, {String? password}) =>
+      post('/games/session/$code/join', {if (password != null && password.isNotEmpty) 'password': password});
   Future<Map<String, dynamic>> gameAction(String code, String action, [Map<String, dynamic>? payload]) =>
       post('/games/session/$code/action', {'action': action, 'payload': payload ?? const {}});
   Future<Map<String, dynamic>> gameTimeout(String code) => post('/games/session/$code/timeout', const {});
   Future<Map<String, dynamic>> leaveGame(String code) => post('/games/session/$code/leave', const {});
   Future<Map<String, dynamic>> roomChat(String code) => get('/games/session/$code/chat');
   Future<Map<String, dynamic>> sendRoomChat(String code, String body) => post('/games/session/$code/chat', {'body': body});
+  Future<Map<String, dynamic>> voiceJoin(String code) => post('/games/session/$code/voice/join', const {});
+  Future<Map<String, dynamic>> voicePoll(String code) => get('/games/session/$code/voice/poll');
+  Future<Map<String, dynamic>> voiceSignal(String code, int recipientId, String type, Map<String, dynamic> payload) =>
+      post('/games/session/$code/voice/signal', {'recipient_id': recipientId, 'type': type, 'payload': payload});
+  Future<Map<String, dynamic>> voiceControls(String code, {required bool muted, required bool deafened}) =>
+      patch('/games/session/$code/voice/controls', {'muted': muted, 'deafened': deafened});
+  Future<Map<String, dynamic>> voiceLeave(String code) => post('/games/session/$code/voice/leave', const {});
   Future<Map<String, dynamic>> adminDashboard() => get('/admin/dashboard');
   Future<Map<String, dynamic>> adminUserAction(int userId, String action, {String? amount}) =>
       post('/admin/users/$userId/action', {

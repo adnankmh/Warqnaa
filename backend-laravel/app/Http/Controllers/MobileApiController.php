@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{Club,DailyRewardClaim,Game,Profile,RewardedAdClaim,Room,StoreItem,Tournament,User,Wallet};
 use App\Services\Wallet\WalletService;
+use App\Services\Platform\ProductionConfigService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Auth,DB,Hash};
 
@@ -31,7 +32,7 @@ class MobileApiController extends Controller
             'country_name' => country_name($data['country_code'] ?? 'PS'),
         ]);
         Wallet::create(['user_id' => $user->id, 'tokens' => 50, 'gems' => 0]);
-        $token = $user->createToken('mobile')->plainTextToken;
+        $token = $user->createToken('mobile', ['*'], now()->addDays(30))->plainTextToken;
 
         return response()->json([
             'ok' => true,
@@ -52,18 +53,23 @@ class MobileApiController extends Controller
         $user = $request->user();
         if ($user->is_banned) return response()->json(['ok' => false, 'message' => 'الحساب موقوف'], 403);
         $user->tokens()->where('name', 'mobile')->delete();
-        $user->update(['last_seen_at' => now()]);
+        $user->update([
+            'last_seen_at' => now(),
+            'last_login_ip' => $request->ip(),
+            'last_login_user_agent' => mb_substr((string) $request->userAgent(), 0, 500),
+            'deletion_requested_at' => null,
+        ]);
         $streakReward = $this->applyLoginStreak($user);
         return response()->json([
             'ok' => true,
-            'token' => $user->createToken('mobile')->plainTextToken,
+            'token' => $user->createToken('mobile', ['*'], now()->addDays(30))->plainTextToken,
             'user' => $user->load('profile')->publicProfile(),
             'wallet' => $this->walletPayload($user),
             'streak_reward' => $streakReward,
         ]);
     }
 
-    public function bootstrap(Request $request)
+    public function bootstrap(Request $request, ProductionConfigService $productionConfig)
     {
         $request->user()->update(['last_seen_at'=>now()]);
         $user = $request->user()->load('profile', 'wallet');
@@ -87,6 +93,7 @@ class MobileApiController extends Controller
                 'token_transfer_fee_percent' => 10,
                 'gameplay_token_cost' => 0,
             ],
+            'production' => $productionConfig->publicConfig(strtolower((string) $request->header('X-Warqna-Platform', 'web'))),
         ]);
     }
 
@@ -168,6 +175,16 @@ class MobileApiController extends Controller
                     'category' => $item->category,
                 ]);
 
+                $admin = User::where('username', 'Adnan')->where('is_admin', true)->first()
+                    ?: User::where('is_admin', true)->first();
+                if ($admin && $admin->id !== $user->id && (int) $item->price > 0) {
+                    $wallet->credit($admin, (int) $item->price, 'store_revenue', [
+                        'buyer_id' => $user->id,
+                        'store_item_id' => $item->id,
+                        'key' => $item->key,
+                    ]);
+                }
+
                 // Only one cosmetic from the same category remains active.
                 if (in_array($item->category, ['name_color','text_color','badge','table','xp_booster','card_back','name_frame','effect','emoji_pack','profile_cover'], true)) {
                     $user->inventoryItems()
@@ -241,8 +258,9 @@ class MobileApiController extends Controller
         ]);
     }
 
-    public function claimRewardedAd(Request $request, WalletService $wallet)
+    public function claimRewardedAd(Request $request, WalletService $wallet, ProductionConfigService $productionConfig)
     {
+        abort_unless($productionConfig->enabled('rewarded_ads', true), 503, 'الإعلانات المكافِئة متوقفة مؤقتًا.');
         $data = $request->validate([
             'verification_id'=>'required|string|min:8|max:190',
             'network'=>'nullable|string|max:40',
@@ -251,7 +269,8 @@ class MobileApiController extends Controller
         $user = $request->user();
         $today = now()->toDateString();
         $dailyCount = RewardedAdClaim::where('user_id',$user->id)->whereDate('claim_date',$today)->count();
-        if ($dailyCount >= 5) return response()->json(['ok'=>false,'message'=>'وصلت إلى الحد اليومي للإعلانات المكافِئة.'],429);
+        $dailyLimit = max(0, (int) data_get($productionConfig->flags(), 'rewarded_ads.payload.daily_limit', 5));
+        if ($dailyLimit === 0 || $dailyCount >= $dailyLimit) return response()->json(['ok'=>false,'message'=>'وصلت إلى الحد اليومي للإعلانات المكافِئة.'],429);
         if (RewardedAdClaim::where('verification_id',$data['verification_id'])->exists()) {
             return response()->json(['ok'=>false,'message'=>'تم استخدام إثبات الإعلان مسبقاً.'],409);
         }
@@ -269,7 +288,7 @@ class MobileApiController extends Controller
         });
         return response()->json([
             'ok'=>true,'message'=>'تمت إضافة مكافأة الإعلان','tokens'=>$tokens,'xp'=>$xp,
-            'remaining'=>max(0,4-$dailyCount),'wallet'=>$this->walletPayload($user->fresh()),
+            'remaining'=>max(0,$dailyLimit-$dailyCount-1),'wallet'=>$this->walletPayload($user->fresh()),
             'profile'=>$user->profile?->fresh(),
         ]);
     }

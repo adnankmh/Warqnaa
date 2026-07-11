@@ -1,0 +1,86 @@
+name: Deploy Laravel Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_migrations:
+        description: Run database migrations
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify production secrets
+        env:
+          HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          PATH_ON_SERVER: ${{ secrets.PRODUCTION_APP_PATH }}
+          HEALTH_URL: ${{ secrets.PRODUCTION_HEALTH_URL }}
+        run: |
+          for value in HOST USER KEY PATH_ON_SERVER HEALTH_URL; do
+            if [ -z "${!value}" ]; then echo "Missing production secret: $value"; exit 1; fi
+          done
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload backend release
+        env:
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          APP_PATH: ${{ secrets.PRODUCTION_APP_PATH }}
+        run: |
+          rsync -az --delete \
+            --exclude='.env' \
+            --exclude='storage/logs/*' \
+            --exclude='storage/framework/cache/*' \
+            --exclude='storage/framework/sessions/*' \
+            --exclude='vendor' \
+            backend-laravel/ "$SSH_USER@$SSH_HOST:$APP_PATH/"
+
+      - name: Deploy containers and run preflight
+        env:
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          APP_PATH: ${{ secrets.PRODUCTION_APP_PATH }}
+          RUN_MIGRATIONS: ${{ inputs.run_migrations }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" "cd '$APP_PATH' && \
+            docker compose -f docker-compose.production.yml build --pull && \
+            docker compose -f docker-compose.production.yml up -d && \
+            if [ '$RUN_MIGRATIONS' = 'true' ]; then docker compose -f docker-compose.production.yml exec -T app php artisan migrate --force; fi && \
+            docker compose -f docker-compose.production.yml exec -T app php artisan optimize && \
+            docker compose -f docker-compose.production.yml exec -T app php artisan warqna:production-check --strict"
+
+      - name: Verify production health
+        env:
+          HEALTH_URL: ${{ secrets.PRODUCTION_HEALTH_URL }}
+        run: |
+          for i in {1..12}; do
+            if curl --fail --silent --show-error "$HEALTH_URL"; then exit 0; fi
+            sleep 10
+          done
+          echo "Production health check failed."
+          exit 1

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{Friendship,Message,Notification,User};
 use App\Services\Wallet\WalletService;
+use App\Services\Platform\ProductionConfigService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -145,23 +146,25 @@ class MobileSocialController extends Controller
         return response()->json(['ok' => true, 'message' => ['id' => $message->id, 'mine' => true, 'body' => $message->body, 'time' => $message->created_at?->format('H:i')]], 201);
     }
 
-    public function transfer(Request $request, WalletService $wallet)
+    public function transfer(Request $request, WalletService $wallet, ProductionConfigService $productionConfig)
     {
+        abort_unless($productionConfig->enabled('token_transfers', true), 503, 'تحويل التوكنز متوقف مؤقتًا.');
         $data = $request->validate(['receiver' => 'required|string|max:120', 'amount' => 'required|integer|min:1|max:1000000000000']);
         $sender = $request->user();
         $receiver = User::where('username', $data['receiver'])->orWhere('email', $data['receiver'])->first();
         abort_unless($receiver, 404, 'لم يتم العثور على المستلم');
         abort_if($receiver->id === $sender->id, 422, 'لا يمكنك التحويل لنفسك');
-        $fee = (int) ceil(((int) $data['amount']) * 0.10);
+        $feePercent = max(0, min(100, (int) data_get($productionConfig->flags(), 'token_transfers.payload.fee_percent', config('warqna.token_transfer_fee_percent', 10))));
+        $fee = (int) ceil(((int) $data['amount']) * ($feePercent / 100));
         $total = (int) $data['amount'] + $fee;
 
         try {
-            DB::transaction(function () use ($wallet, $sender, $receiver, $data, $fee) {
-                $wallet->debit($sender, (int) $data['amount'] + $fee, 'transfer_sent', ['to' => $receiver->id, 'fee_percent' => 10, 'fee' => $fee]);
+            DB::transaction(function () use ($wallet, $sender, $receiver, $data, $fee, $feePercent) {
+                $wallet->debit($sender, (int) $data['amount'] + $fee, 'transfer_sent', ['to' => $receiver->id, 'fee_percent' => $feePercent, 'fee' => $fee]);
                 $wallet->credit($receiver, (int) $data['amount'], 'transfer_received', ['from' => $sender->id]);
                 $admin = User::where('username', 'Adnan')->where('is_admin', true)->first() ?: User::where('is_admin', true)->first();
                 if ($admin && $fee > 0) {
-                    $wallet->credit($admin, $fee, 'transfer_fee', ['from' => $sender->id, 'to' => $receiver->id, 'fee_percent' => 10]);
+                    $wallet->credit($admin, $fee, 'transfer_fee', ['from' => $sender->id, 'to' => $receiver->id, 'fee_percent' => $feePercent]);
                 }
             });
         } catch (\Throwable) {
@@ -170,7 +173,7 @@ class MobileSocialController extends Controller
 
         return response()->json([
             'ok' => true,
-            'message' => 'تم إرسال ' . number_format((int) $data['amount']) . ' توكنز، وخصم عمولة إدارة 10% بقيمة ' . number_format($fee) . '.',
+            'message' => 'تم إرسال ' . number_format((int) $data['amount']) . ' توكنز، وخصم عمولة إدارة ' . $feePercent . '% بقيمة ' . number_format($fee) . '.',
             'amount' => (int) $data['amount'],
             'fee' => $fee,
             'total_debited' => $total,

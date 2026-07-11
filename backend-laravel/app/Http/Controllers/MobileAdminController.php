@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Game,Room,StoreItem,User};
+use App\Models\{AdminAuditLog,AppRelease,FeatureFlag,Game,Room,StoreItem,User,UserReport};
 use App\Services\GameEngine\EngineRegistry;
+use App\Services\Platform\{AdminAuditService,ProductionConfigService};
 use Illuminate\Http\Request;
 
 class MobileAdminController extends Controller
@@ -24,6 +25,7 @@ class MobileAdminController extends Controller
                 'games' => Game::where('active', true)->count(),
                 'rooms' => Room::whereIn('status', ['waiting', 'bidding', 'playing'])->count(),
                 'store_items' => StoreItem::where('active', true)->count(),
+                'open_reports' => UserReport::whereIn('status', ['open','reviewing'])->count(),
             ],
             'users' => User::with('profile', 'wallet')->latest()->limit(100)->get()->map(fn ($user) => [
                 'id' => $user->id,
@@ -38,10 +40,14 @@ class MobileAdminController extends Controller
             'store' => StoreItem::orderBy('category')->orderBy('price')->get(),
             'rooms' => Room::with('game')->latest()->limit(100)->get(),
             'engine_registry' => EngineRegistry::all(),
+            'feature_flags' => FeatureFlag::orderBy('key')->get(),
+            'app_releases' => AppRelease::latest('build_number')->limit(30)->get(),
+            'moderation_reports' => UserReport::with(['reporter.profile','reportedUser.profile'])->latest()->limit(30)->get(),
+            'audit_logs' => AdminAuditLog::with('admin.profile')->latest()->limit(50)->get(),
         ]);
     }
 
-    public function updateGame(Request $request, Game $game)
+    public function updateGame(Request $request, Game $game, AdminAuditService $audit)
     {
         $this->guard($request);
         $data = $request->validate([
@@ -52,11 +58,13 @@ class MobileAdminController extends Controller
             'name' => 'nullable|array',
             'rules' => 'nullable|array',
         ]);
+        $before = $game->toArray();
         $game->update($data);
+        $audit->record($request, 'admin.game.update', $game, $before, $game->fresh()->toArray());
         return response()->json(['ok' => true, 'message' => 'تم تحديث اللعبة', 'game' => $game->fresh()]);
     }
 
-    public function updateStore(Request $request, StoreItem $item)
+    public function updateStore(Request $request, StoreItem $item, AdminAuditService $audit)
     {
         $this->guard($request);
         $data = $request->validate([
@@ -66,11 +74,13 @@ class MobileAdminController extends Controller
             'name' => 'nullable|array',
             'payload' => 'nullable|array',
         ]);
+        $before = $item->toArray();
         $item->update($data);
+        $audit->record($request, 'admin.store.update', $item, $before, $item->fresh()->toArray());
         return response()->json(['ok' => true, 'message' => 'تم تحديث عنصر المتجر', 'item' => $item->fresh()]);
     }
 
-    public function userAction(Request $request, User $user)
+    public function userAction(Request $request, User $user, AdminAuditService $audit)
     {
         $this->guard($request);
         $data = $request->validate([
@@ -78,12 +88,50 @@ class MobileAdminController extends Controller
             'amount' => 'nullable|integer|min:0|max:1000000000000',
             'level' => 'nullable|integer|min:1|max:999',
         ]);
+        $before = $user->load('profile','wallet')->toArray();
         match ($data['action']) {
             'ban' => $user->update(['is_banned' => true]),
             'unban' => $user->update(['is_banned' => false]),
             'grant_tokens' => $user->wallet()->firstOrCreate(['user_id' => $user->id], ['tokens' => 50])->increment('tokens', (int) ($data['amount'] ?? 0)),
             'set_level' => $user->profile?->update(['level' => (int) ($data['level'] ?? 1)]),
         };
+        $audit->record($request, 'admin.user.' . $data['action'], $user, $before, $user->fresh()->load('profile','wallet')->toArray());
         return response()->json(['ok' => true, 'message' => 'تم تنفيذ الإجراء']);
     }
+
+    public function updateFeatureFlag(Request $request, FeatureFlag $flag, AdminAuditService $audit, ProductionConfigService $config)
+    {
+        $this->guard($request);
+        $data = $request->validate([
+            'enabled' => 'required|boolean',
+            'payload' => 'nullable|array',
+            'environment' => 'nullable|in:all,local,testing,staging,production',
+        ]);
+        $before = $flag->toArray();
+        $flag->update($data);
+        $config->forget();
+        $audit->record($request, 'admin.feature_flag.update', $flag, $before, $flag->fresh()->toArray());
+        return response()->json(['ok'=>true,'message'=>'تم تحديث ميزة المنصة','flag'=>$flag->fresh()]);
+    }
+
+    public function createRelease(Request $request, AdminAuditService $audit)
+    {
+        $this->guard($request);
+        $data = $request->validate([
+            'platform'=>'required|in:web,android,ios',
+            'version'=>'required|string|max:40',
+            'build_number'=>'required|integer|min:1|max:999999',
+            'required'=>'nullable|boolean',
+            'active'=>'nullable|boolean',
+            'notes'=>'nullable|string|max:5000',
+            'download_url'=>'nullable|url|max:500',
+        ]);
+        $release = AppRelease::updateOrCreate(
+            ['platform'=>$data['platform'],'version'=>$data['version'],'build_number'=>$data['build_number']],
+            $data
+        );
+        $audit->record($request, 'admin.release.upsert', $release, null, $release->toArray());
+        return response()->json(['ok'=>true,'message'=>'تم حفظ إصدار التطبيق','release'=>$release]);
+    }
+
 }
