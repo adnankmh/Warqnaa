@@ -537,15 +537,15 @@ class AppController extends ChangeNotifier {
     await _saveAccountState(prefs);
   }
 
-  Future<String?> login(String login, String password, {bool offline = false}) async {
-    if (login.trim().isEmpty || password.isEmpty) return 'أدخل اسم المستخدم وكلمة المرور.';
+  Future<String?> login(String loginId, String password, {bool offline = false}) async {
+    if (loginId.trim().isEmpty || password.isEmpty) return 'أدخل اسم المستخدم وكلمة المرور.';
     final loopbackApi = api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost');
-    if (!offline && kIsWeb && loopbackApi) {
-      return this.login(login, password, offline: true);
+    if (!offline && kIsWeb && loopbackApi && !warqnaProductionMode) {
+      return this.login(loginId, password, offline: true);
     }
     if (offline && warqnaProductionMode) return 'وضع الدخول المحلي معطل في نسخة الإنتاج.';
     if (offline) {
-      final normalized = login.trim().toLowerCase();
+      final normalized = loginId.trim().toLowerCase();
       var user = demoAccounts[normalized];
       final prefs = await SharedPreferences.getInstance();
       if (user == null && (prefs.getBool('warqna.account.$normalized.initialized') ?? false)) {
@@ -553,7 +553,7 @@ class AppController extends ChangeNotifier {
         if (stored == base64Encode(utf8.encode(password))) {
           user = <String, Object>{
             'password': password,
-            'name': prefs.getString('warqna.account.$normalized.displayName') ?? login.trim(),
+            'name': prefs.getString('warqna.account.$normalized.displayName') ?? loginId.trim(),
             'coins': prefs.getString('warqna.account.$normalized.coins') ?? '1500',
             'admin': false,
             'level': prefs.getInt('warqna.account.$normalized.level') ?? 1,
@@ -563,7 +563,7 @@ class AppController extends ChangeNotifier {
       if (user == null || user['password'] != password) {
         return 'بيانات الدخول المحلي غير صحيحة. استخدم أحد حسابات التجربة المرفقة.';
       }
-      username = login.trim();
+      username = loginId.trim();
       displayName = user['name']!.toString();
       email = '$normalized@warqna.local';
       isAdmin = user['admin'] == true;
@@ -593,7 +593,7 @@ class AppController extends ChangeNotifier {
       return null;
     }
     try {
-      final data = await api.login(login.trim(), password);
+      final data = await api.login(loginId.trim(), password);
       authToken = data['token']?.toString();
       api.token = authToken;
       _applySession(data);
@@ -609,14 +609,16 @@ class AppController extends ChangeNotifier {
       notifyListeners();
       return null;
     } on ApiException catch (e) {
-      final fallback = await this.login(login, password, offline: true);
+      if (warqnaProductionMode) return e.message;
+      final fallback = await this.login(loginId, password, offline: true);
       if (fallback == null) {
         notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
         return null;
       }
       return e.message;
     } catch (_) {
-      final fallback = await this.login(login, password, offline: true);
+      if (warqnaProductionMode) return 'تعذر الاتصال بخادم Warqna. تحقق من الإنترنت وحاول مجددًا.';
+      final fallback = await this.login(loginId, password, offline: true);
       if (fallback == null) {
         notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
         return null;

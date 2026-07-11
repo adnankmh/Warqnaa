@@ -21,10 +21,10 @@ type nul > storage\logs\.gitkeep
 
 setlocal EnableExtensions
 cd /d "%~dp0"
-title Warqna Setup v142
+title Warqna Setup v154
 
 echo ==================================================
-echo Warqna Laravel Platform v142 - Safe Windows Setup
+echo Warqna Laravel Platform v154 - Safe Windows Setup
 echo ==================================================
 echo Folder: %CD%
 echo.

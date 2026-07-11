@@ -1,0 +1,16 @@
+{
+  "name": "Warqna",
+  "version": "1.54.0",
+  "build": 154,
+  "channel": "production-foundation",
+  "package_type": "full-source-merge-safe",
+  "preserves_previous_features": true,
+  "primary_fix": "Resolved Flutter main.dart Git merge conflicts and login method shadowing",
+  "platforms": ["web", "android", "ios", "laravel-api"],
+  "entrypoints": {
+    "arabic_guide": "START_HERE_V154_AR.md",
+    "merge_recovery": "GITHUB_MERGE_RECOVERY_V154_AR.md",
+    "windows_validation": "CHECK_V154_WINDOWS.bat",
+    "unix_validation": "check-v154.sh"
+  }
+}
