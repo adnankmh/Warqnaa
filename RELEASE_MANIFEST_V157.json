@@ -1,0 +1,28 @@
+{
+  "name": "Warqna",
+  "version": "1.57.0",
+  "build": 157,
+  "channel": "production-ci-android-phpunit-hotfix",
+  "package_type": "full-source-ci-validated",
+  "base_release": "1.56.0+156",
+  "preserves_previous_features": true,
+  "hotfixes": [
+    "phpunit-unit-suite-directory",
+    "android-setup-java-gradle-cache-order",
+    "node24-official-actions",
+    "android-artifact-action-v6",
+    "version-build-consistency"
+  ],
+  "platforms": [
+    "web",
+    "android",
+    "ios",
+    "laravel-api"
+  ],
+  "entrypoints": {
+    "arabic_guide": "START_HERE_V157_AR.md",
+    "github_upload": "GITHUB_UPLOAD_V157_AR.md",
+    "windows_validation": "CHECK_V157_WINDOWS.bat",
+    "unix_validation": "check-v157.sh"
+  }
+}

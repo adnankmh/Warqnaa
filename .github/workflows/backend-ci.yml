@@ -25,7 +25,7 @@ jobs:
       run:
         working-directory: backend-laravel
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
@@ -43,6 +43,11 @@ jobs:
           php artisan key:generate
           touch database/database.sqlite
           php artisan migrate:fresh --seed --force
+      - name: Verify PHPUnit test suites
+        run: |
+          test -d tests/Feature
+          test -d tests/Unit
+          test -f tests/Unit/EnvironmentSanityTest.php
       - name: PHP syntax audit
         run: find app config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Run Laravel tests
@@ -54,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Prepare temporary Compose environment
         working-directory: backend-laravel
         run: |

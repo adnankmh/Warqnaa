@@ -8,8 +8,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_VERSION = "1.56.0"
-EXPECTED_BUILD = 156
+EXPECTED_VERSION = "1.57.0"
+EXPECTED_BUILD = 157
 TEXT_SUFFIXES = {
     ".dart", ".php", ".py", ".js", ".ts", ".yml", ".yaml", ".json",
     ".md", ".html", ".css", ".xml", ".gradle", ".properties", ".sh", ".bat",
@@ -163,6 +163,36 @@ def check_v156_regressions() -> None:
 
     print("[OK] Tarneeb, store migration, profile-cover and PostgreSQL regressions")
 
+
+def check_v157_ci_regressions() -> None:
+    phpunit = (ROOT / "backend-laravel/phpunit.xml").read_text(encoding="utf-8")
+    if "<directory>tests/Unit</directory>" not in phpunit:
+        fail("PHPUnit Unit suite is not configured")
+
+    unit_test = ROOT / "backend-laravel/tests/Unit/EnvironmentSanityTest.php"
+    if not unit_test.is_file():
+        fail("Configured PHPUnit Unit directory has no committed sanity test")
+
+    backend_ci = (ROOT / ".github/workflows/backend-ci.yml").read_text(encoding="utf-8")
+    for needle in ["test -d tests/Feature", "test -d tests/Unit", "php artisan test"]:
+        if needle not in backend_ci:
+            fail(f"Backend PHPUnit CI guard is incomplete: {needle}")
+
+    android = (ROOT / ".github/workflows/flutter-android.yml").read_text(encoding="utf-8")
+    for needle in ["actions/checkout@v5", "actions/setup-java@v5", "actions/upload-artifact@v6", "name: warqna-v157-android"]:
+        if needle not in android:
+            fail(f"Android CI hotfix is incomplete: {needle}")
+    java_block = android.split("- name: Set up Java 17", 1)[1].split("- name:", 1)[0]
+    if "cache: gradle" in java_block:
+        fail("setup-java still enables Gradle caching before the generated Android project exists")
+
+    api = (ROOT / "flutter_app/lib/services/api_client.dart").read_text(encoding="utf-8")
+    if "defaultValue: 157" not in api:
+        fail("Flutter API build fallback is not aligned to build 157")
+
+    print("[OK] PHPUnit suite and Android setup-java/Gradle CI regressions")
+
+
 def check_required_files() -> None:
     required = [
         "flutter_app/lib/main.dart",
@@ -171,11 +201,13 @@ def check_required_files() -> None:
         "backend-laravel/composer.json",
         ".github/workflows/flutter-web-pages.yml",
         ".github/workflows/flutter-android.yml",
-        "START_HERE_V156_AR.md",
-        "RELEASE_MANIFEST_V156.json",
+        "START_HERE_V157_AR.md",
+        "RELEASE_MANIFEST_V157.json",
         "backend-laravel/database/migrations/2026_07_10_000144_expand_store_item_category.php",
         "backend-laravel/database/migrations/2026_07_11_000156_tests_migrations_hotfix.php",
-        "GITHUB_UPLOAD_V156_AR.md",
+        "backend-laravel/database/migrations/2026_07_11_000157_ci_android_phpunit_hotfix.php",
+        "backend-laravel/tests/Unit/EnvironmentSanityTest.php",
+        "GITHUB_UPLOAD_V157_AR.md",
     ]
     missing = [item for item in required if not (ROOT / item).is_file()]
     if missing:
@@ -203,6 +235,7 @@ def main() -> None:
     check_json()
     check_ci_hotfixes()
     check_v156_regressions()
+    check_v157_ci_regressions()
     check_secrets()
     check_dart_structure()
     print("[PASS] Source package preflight completed successfully")

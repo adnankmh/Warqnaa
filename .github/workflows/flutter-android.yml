@@ -16,17 +16,16 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Validate source package and reject merge markers
         run: python3 tools/validate_release.py
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
 
       - name: Install pinned Flutter SDK
         uses: subosito/flutter-action@v2
@@ -180,7 +179,7 @@ jobs:
           API_URL: ${{ vars.WARQNA_API_URL }}
           REWARDED_ID: ${{ vars.ADMOB_REWARDED_ANDROID_ID }}
         run: |
-          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.56.0" "--dart-define=WARQNA_APP_BUILD=156")
+          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.57.0" "--dart-define=WARQNA_APP_BUILD=157")
           if [ -n "$API_URL" ]; then
             EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL" "--dart-define=WARQNA_PRODUCTION_MODE=true")
           else
@@ -201,9 +200,9 @@ jobs:
           sha256sum build/app/outputs/bundle/release/app-release.aab > build/app/outputs/bundle/release/app-release.aab.sha256
 
       - name: Upload APK and AAB
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: warqna-v155-android
+          name: warqna-v157-android
           if-no-files-found: error
           retention-days: 14
           path: |

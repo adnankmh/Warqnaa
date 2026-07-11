@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title Warqna Flutter v156
+title Warqna Flutter v157
 
 where flutter >nul 2>nul
 if %errorlevel% neq 0 (
@@ -27,6 +27,6 @@ echo Starting Warqna Flutter Web with API: %API_URL%
 call flutter run -d chrome ^
   --dart-define=WARQNA_API_URL=%API_URL% ^
   --dart-define=WARQNA_PRODUCTION_MODE=false ^
-  --dart-define=WARQNA_APP_VERSION=1.56.0 ^
-  --dart-define=WARQNA_APP_BUILD=156
+  --dart-define=WARQNA_APP_VERSION=1.57.0 ^
+  --dart-define=WARQNA_APP_BUILD=157
 pause
