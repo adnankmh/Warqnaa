@@ -89,7 +89,9 @@ def check_required_files() -> None:
         "tools/verify_flutter_lock.py",
         "tools/configure_android_startup.py",
         "tools/verify_android_startup.py",
+        "tools/configure_android_workmanager_guard.py",
         "ANDROID_APK_STARTUP_FIX_V164_AR.md",
+        "ANDROID_WORKMANAGER_BOOT_FIX_V165_AR.md",
         "CAPTURE_ANDROID_CRASH_LOG_WINDOWS.bat",
         f"START_HERE_V{EXPECTED_BUILD}_AR.md",
         f"GITHUB_UPLOAD_V{EXPECTED_BUILD}_AR.md",
@@ -715,6 +717,38 @@ def check_v164_android_startup_safety() -> None:
         fail("Unvalidated direct AdMob App ID injection returned")
     print("[OK] v164 first-frame boot, AdMob manifest sanitization and safe APK contracts")
 
+
+def check_v165_android_workmanager_boot_guard() -> None:
+    configure = read("tools/configure_android_workmanager_guard.py")
+    verify = read("tools/verify_android_startup.py")
+    workflow = read(".github/workflows/flutter-android.yml")
+    for needle in [
+        "androidx.work.WorkManagerInitializer",
+        "tools:node=merge",
+        "tools:node=remove",
+        "WarqnaApplication.java",
+        "androidx.work:work-runtime",
+        "isMinifyEnabled = false",
+        "isShrinkResources = false",
+        "WorkManager startup guard installed",
+    ]:
+        if needle not in configure:
+            fail(f"v165 WorkManager guard contract missing: {needle}")
+    for needle in [
+        "WarqnaApplication is not registered",
+        "WorkManagerInitializer is not removed",
+        "Direct WorkManager runtime dependency is missing",
+        "Release minification is not explicitly disabled",
+        "Release resource shrinking is not explicitly disabled",
+    ]:
+        if needle not in verify:
+            fail(f"v165 WorkManager verifier contract missing: {needle}")
+    if workflow.count("configure_android_workmanager_guard.py") < 2:
+        fail("Android workflow must apply the WorkManager guard to both safe APK and production AAB")
+    if "FATAL EXCEPTION" not in read("ANDROID_WORKMANAGER_BOOT_FIX_V165_AR.md"):
+        fail("v165 report must document the logcat crash signature")
+    print("[OK] v165 Android WorkManager pre-Flutter boot guard")
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -748,6 +782,7 @@ def main() -> None:
     check_v162_account_cancellation_and_analyzer()
     check_v163_ci_regressions()
     check_v164_android_startup_safety()
+    check_v165_android_workmanager_boot_guard()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

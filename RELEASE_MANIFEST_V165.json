@@ -1,0 +1,14 @@
+{
+  "release": "v165",
+  "version": "1.65.0",
+  "build": 165,
+  "full": "1.65.0+165",
+  "channel": "production",
+  "codename": "android-workmanager-boot-fix",
+  "focus": [
+    "Disable eager AndroidX WorkManager startup before Flutter first frame",
+    "Add WarqnaApplication Configuration.Provider for lazy WorkManager initialization",
+    "Disable release minification/resource shrinking that can break Room-generated WorkDatabase implementation",
+    "Keep all v164 features and launch-safe AdMob handling"
+  ]
+}

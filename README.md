@@ -1,17 +1,7 @@
-# Warqna v164 — 1.64.0+164
+# Warqna v165
 
-منصة ألعاب ورق اجتماعية متعددة المنصات مبنية باستخدام Flutter وLaravel.
+Warqna production source package, version `1.65.0+165`.
 
-هذا الإصدار مخصص لمعالجة انهيار Android قبل ظهور أول شاشة، مع الحفاظ على ميزات الويب والصوت والنقاط والنوادي والمتجر وإلغاء الحساب خلال مهلة 30 يوماً.
+This release fixes the Android APK startup crash proven by Logcat: AndroidX WorkManager attempted to create `WorkDatabase` before Flutter opened the first frame.
 
-ابدأ من:
-
-```text
-START_HERE_V164_AR.md
-```
-
-وشغّل قبل الرفع:
-
-```text
-CHECK_V164_WINDOWS.bat
-```
+Start with `START_HERE_V165_AR.md`.

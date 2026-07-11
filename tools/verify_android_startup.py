@@ -8,7 +8,9 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ANDROID_NS = "http://schemas.android.com/apk/res/android"
+TOOLS_NS = "http://schemas.android.com/tools"
 A = f"{{{ANDROID_NS}}}"
+T = f"{{{TOOLS_NS}}}"
 APP_ID_RE = re.compile(r"^ca-app-pub-\d{16}~\d{10}$")
 REQUIRED_PERMISSIONS = {
     "android.permission.INTERNET",
@@ -57,13 +59,44 @@ def main() -> None:
     if launcher is None or launcher.get(A + "exported") != "true":
         fail("MainActivity is missing or not exported")
 
+    if application.get(A + "name") != ".WarqnaApplication":
+        fail("WarqnaApplication is not registered as the Android application class")
+
+    provider = next(
+        (node for node in application.findall("provider") if node.get(A + "name") == "androidx.startup.InitializationProvider"),
+        None,
+    )
+    if provider is None:
+        fail("AndroidX Startup provider override is missing")
+    if provider.get(T + "node") != "merge":
+        fail("AndroidX Startup provider must use tools:node=merge")
+    work_meta = next(
+        (node for node in provider.findall("meta-data") if node.get(A + "name") == "androidx.work.WorkManagerInitializer"),
+        None,
+    )
+    if work_meta is None or work_meta.get(T + "node") != "remove":
+        fail("WorkManagerInitializer is not removed from AndroidX Startup")
+
+    app_java = manifest.parent / "java"
+    if not list(app_java.rglob("WarqnaApplication.java")):
+        fail("WarqnaApplication.java is missing")
+
     gradle_text = gradle.read_text(encoding="utf-8")
     if not re.search(r"minSdk\s*=\s*24|minSdkVersion\s+24", gradle_text):
         fail("Android minSdk is not 24")
     if not re.search(r"compileSdk\s*=\s*36|compileSdkVersion\s+36", gradle_text):
         fail("Android compileSdk is not 36")
+    if "androidx.work:work-runtime" not in gradle_text:
+        fail("Direct WorkManager runtime dependency is missing")
+    if not re.search(r"isMinifyEnabled\s*=\s*false|minifyEnabled\s+false", gradle_text):
+        fail("Release minification is not explicitly disabled")
+    if not re.search(r"isShrinkResources\s*=\s*false|shrinkResources\s+false", gradle_text):
+        fail("Release resource shrinking is not explicitly disabled")
 
-    print(f"[PASS] Android startup contract: valid App ID {app_id}, launcher, permissions and SDK levels")
+    print(
+        "[PASS] Android startup contract: valid App ID, launcher, permissions, "
+        "SDK levels and WorkManager pre-Flutter guard"
+    )
 
 
 if __name__ == "__main__":
