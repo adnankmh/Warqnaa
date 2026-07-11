@@ -73,5 +73,28 @@ void main() {
 
       expect(engine.legalCards(0), hasLength(2));
     });
+
+
+    test('keeps the completed trick visible until the next lead', () {
+      final engine = TarneebLocalEngine(random: math.Random(151));
+      engine.phase = TarneebPhase.playing;
+      engine.currentSeat = 0;
+      engine.trump = 'H';
+      engine.trick.clear();
+      engine.lastTrick.clear();
+      engine.hands[0]..clear()..add(const TarneebCard('A', 'C'));
+      engine.hands[1]..clear()..add(const TarneebCard('K', 'C'));
+      engine.hands[2]..clear()..add(const TarneebCard('Q', 'C'));
+      engine.hands[3]..clear()..add(const TarneebCard('J', 'C'));
+
+      engine.playCard(0, const TarneebCard('A', 'C'));
+      engine.playCard(1, const TarneebCard('K', 'C'));
+      engine.playCard(2, const TarneebCard('Q', 'C'));
+      engine.playCard(3, const TarneebCard('J', 'C'));
+
+      expect(engine.trick, isEmpty);
+      expect(engine.lastTrick, hasLength(4));
+      expect(engine.lastTrickWinner, 0);
+    });
   });
 }

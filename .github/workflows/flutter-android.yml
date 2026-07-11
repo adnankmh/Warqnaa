@@ -1,22 +1,63 @@
 name: Build Android APK and AAB
+
 on:
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   android:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Install pinned Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
           channel: stable
           cache: true
-      - name: Create Android platform
+
+      - name: Show toolchain versions
+        run: |
+          flutter --version
+          dart --version
+          java -version
+
+      - name: Create a clean Android platform
         working-directory: flutter_app
         run: |
-          flutter create . --platforms=android --project-name warqna_mobile --org com.warqna
-          if [ -f test/widget_test.dart ] && grep -q "MyApp" test/widget_test.dart; then rm test/widget_test.dart; fi
-      - run: flutter pub get
-        working-directory: flutter_app
+          rm -rf android
+          flutter create . \
+            --platforms=android \
+            --project-name warqna_mobile \
+            --org com.warqna \
+            --no-pub
+          if [ -f test/widget_test.dart ] && grep -q "MyApp" test/widget_test.dart; then
+            rm test/widget_test.dart
+          fi
+
+      - name: Install Android SDK 36
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-36" \
+            "build-tools;36.0.0"
+
       - name: Configure Android application and AdMob
         working-directory: flutter_app
         env:
@@ -25,36 +66,96 @@ jobs:
           python3 - <<'PYCODE'
           import os
           from pathlib import Path
+
           manifest = Path('android/app/src/main/AndroidManifest.xml')
-          text = manifest.read_text()
-          newline = chr(10)
+          text = manifest.read_text(encoding='utf-8')
+          newline = '\n'
+
           if 'android.permission.INTERNET' not in text:
-              text = text.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">', '<manifest xmlns:android="http://schemas.android.com/apk/res/android">' + newline + '    <uses-permission android:name="android.permission.INTERNET"/>')
+              text = text.replace(
+                  '<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
+                  '<manifest xmlns:android="http://schemas.android.com/apk/res/android">' + newline +
+                  '    <uses-permission android:name="android.permission.INTERNET"/>'
+              )
+
           text = text.replace('android:label="warqna_mobile"', 'android:label="Warqna"')
-          app_id = os.environ.get('ADMOB_APP_ID','').strip() or 'ca-app-pub-3940256099942544~3347511713'
+          app_id = os.environ.get('ADMOB_APP_ID', '').strip() or 'ca-app-pub-3940256099942544~3347511713'
+
           if 'android:usesCleartextTraffic' not in text:
-              text = text.replace('<application', '<application' + newline + '        android:usesCleartextTraffic="true"', 1)
+              text = text.replace(
+                  '<application',
+                  '<application' + newline + '        android:usesCleartextTraffic="true"',
+                  1,
+              )
+
           if 'com.google.android.gms.ads.APPLICATION_ID' not in text:
-              meta = '        <meta-data' + newline + '            android:name="com.google.android.gms.ads.APPLICATION_ID"' + newline + f'            android:value="{app_id}"/>' + newline
+              meta = (
+                  '        <meta-data' + newline +
+                  '            android:name="com.google.android.gms.ads.APPLICATION_ID"' + newline +
+                  f'            android:value="{app_id}"/>' + newline
+              )
               text = text.replace('</application>', meta + '</application>')
-          manifest.write_text(text)
+
+          manifest.write_text(text, encoding='utf-8')
+
+          # Keep the generated Android project aligned with the current Flutter/AdMob toolchain.
+          kotlin_gradle = Path('android/app/build.gradle.kts')
+          groovy_gradle = Path('android/app/build.gradle')
+
+          if kotlin_gradle.exists():
+              gradle = kotlin_gradle.read_text(encoding='utf-8')
+              gradle = gradle.replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 36')
+              gradle = gradle.replace('minSdk = flutter.minSdkVersion', 'minSdk = 24')
+              kotlin_gradle.write_text(gradle, encoding='utf-8')
+
+          if groovy_gradle.exists():
+              gradle = groovy_gradle.read_text(encoding='utf-8')
+              gradle = gradle.replace('compileSdkVersion flutter.compileSdkVersion', 'compileSdkVersion 36')
+              gradle = gradle.replace('minSdkVersion flutter.minSdkVersion', 'minSdkVersion 24')
+              groovy_gradle.write_text(gradle, encoding='utf-8')
           PYCODE
-      - name: Analyze and build APK
+
+      - name: Resolve Flutter packages
         working-directory: flutter_app
         run: |
-          API_URL="${{ vars.WARQNA_API_URL }}"
-          EXTRA=""
-          if [ -n "$API_URL" ]; then EXTRA="$EXTRA --dart-define=WARQNA_API_URL=$API_URL"; fi
-          REWARDED_ID="${{ vars.ADMOB_REWARDED_ANDROID_ID }}"
-          if [ -z "$REWARDED_ID" ]; then REWARDED_ID="ca-app-pub-3940256099942544/5224354917"; fi
-          EXTRA="$EXTRA --dart-define=ADMOB_REWARDED_ANDROID_ID=$REWARDED_ID"
+          flutter clean
+          flutter pub get
+          grep -A2 '^  google_mobile_ads:' pubspec.lock || true
+          if ! grep -A2 '^  google_mobile_ads:' pubspec.lock | grep -q 'version: "7.0.0"'; then
+            echo "Expected google_mobile_ads 7.0.0, but a different version was resolved."
+            exit 1
+          fi
+
+      - name: Analyze and test
+        working-directory: flutter_app
+        run: |
           flutter analyze --no-fatal-infos --no-fatal-warnings
           flutter test
-          flutter build apk --release $EXTRA
-          flutter build appbundle --release $EXTRA
-      - uses: actions/upload-artifact@v4
+
+      - name: Build release APK and AAB
+        working-directory: flutter_app
+        env:
+          API_URL: ${{ vars.WARQNA_API_URL }}
+          REWARDED_ID: ${{ vars.ADMOB_REWARDED_ANDROID_ID }}
+        run: |
+          EXTRA_ARGS=()
+          if [ -n "$API_URL" ]; then
+            EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL")
+          fi
+          if [ -z "$REWARDED_ID" ]; then
+            REWARDED_ID="ca-app-pub-3940256099942544/5224354917"
+          fi
+          EXTRA_ARGS+=("--dart-define=ADMOB_REWARDED_ANDROID_ID=$REWARDED_ID")
+
+          flutter build apk --release "${EXTRA_ARGS[@]}"
+          flutter build appbundle --release "${EXTRA_ARGS[@]}"
+
+      - name: Upload APK and AAB
+        uses: actions/upload-artifact@v4
         with:
-          name: warqna-v149-android
+          name: warqna-v151-android
+          if-no-files-found: error
+          retention-days: 14
           path: |
             flutter_app/build/app/outputs/flutter-apk/app-release.apk
             flutter_app/build/app/outputs/bundle/release/app-release.aab

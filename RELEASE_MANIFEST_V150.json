@@ -1,0 +1,47 @@
+{
+  "release": "v150",
+  "name": "Global Legendary Ten-Stage Edition — Android Build Fix",
+  "flutter_version": "1.50.0+150",
+  "languages": [
+    "ar",
+    "en",
+    "de",
+    "tr",
+    "fr",
+    "es"
+  ],
+  "bot_difficulties": [
+    "easy",
+    "normal",
+    "pro",
+    "master"
+  ],
+  "reaction_count": 48,
+  "profile_cover_count": 12,
+  "theme_count": 13,
+  "daily_reward_tokens": 100,
+  "rewarded_ad_tokens": 50,
+  "challenge_rewards": [
+    50,
+    100,
+    200
+  ],
+  "admin": {
+    "username": "Adnan",
+    "level_min": 90,
+    "pasha_days_min": 1000
+  },
+  "platforms": [
+    "web-pwa",
+    "android",
+    "ios",
+    "windows-web-preview"
+  ],
+  "android_build_fix": {
+    "google_mobile_ads": "7.0.0",
+    "flutter": "3.44.0",
+    "java": "17",
+    "compile_sdk": 36,
+    "min_sdk": 24
+  }
+}

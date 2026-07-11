@@ -4,16 +4,16 @@ use Illuminate\Database\Seeder; use Illuminate\Support\Facades\{Hash,DB}; use Ap
 class DatabaseSeeder extends Seeder { public function run(): void {
  // v136: country_name() now returns a scalar string, so Seeder can use it directly without helper variables.
  $admin=User::updateOrCreate(['email'=>env('ADMIN_EMAIL','adnanasd63@gmail.com')],['username'=>env('ADMIN_USERNAME','Adnan'),'password'=>Hash::make(env('ADMIN_PASSWORD','Adnan123')),'is_admin'=>true]);
- Profile::updateOrCreate(['user_id'=>$admin->id],['display_name'=>'Adnan','country_code'=>'PS','country_name'=>'Palestine','level'=>90,'xp'=>9000000,'games_played'=>20000,'wins'=>15000,'name_color'=>'#facc15','chat_color'=>'#facc15','pasha_days'=>1000,'badge'=>'king']);
+ Profile::updateOrCreate(['user_id'=>$admin->id],['display_name'=>'Adnan','avatar'=>'🦁','country_code'=>'PS','country_name'=>'Palestine','level'=>90,'xp'=>9000000,'games_played'=>20000,'wins'=>15000,'name_color'=>'#facc15','chat_color'=>'#facc15','pasha_days'=>1000,'badge'=>'king']);
  Wallet::updateOrCreate(['user_id'=>$admin->id],['tokens'=>1000000000000000000,'gems'=>100000]);
  // v107 demo users: 3 ready test users
  foreach ([
-   ['Kareem','kareem@warqna.local','Kareem123','#38bdf8','JO',42,250000],
-   ['Rami','rami@warqna.local','Rami12345','#22c55e','PS',35,180000],
-   ['Lina','lina@warqna.local','Lina12345','#ec4899','EG',28,120000],
- ] as [$username,$email,$password,$color,$country,$level,$tokens]) {
+   ['Kareem','kareem@warqna.local','Kareem123','#38bdf8','JO',42,250000,'🦅'],
+   ['Rami','rami@warqna.local','Rami12345','#22c55e','PS',35,180000,'🐺'],
+   ['Lina','lina@warqna.local','Lina12345','#ec4899','EG',28,120000,'🌹'],
+ ] as [$username,$email,$password,$color,$country,$level,$tokens,$avatar]) {
    $u=User::updateOrCreate(['email'=>$email],['username'=>$username,'password'=>Hash::make($password),'is_admin'=>false,'is_banned'=>false]);
-   Profile::updateOrCreate(['user_id'=>$u->id],['display_name'=>$username,'country_code'=>$country,'country_name'=>country_name($country),'level'=>$level,'xp'=>$level*1200,'games_played'=>$level*15,'wins'=>$level*7,'name_color'=>$color,'chat_color'=>$color,'pasha_days'=>0,'badge'=>'pro']);
+   Profile::updateOrCreate(['user_id'=>$u->id],['display_name'=>$username,'avatar'=>$avatar,'country_code'=>$country,'country_name'=>country_name($country),'level'=>$level,'xp'=>$level*1200,'games_played'=>$level*15,'wins'=>$level*7,'name_color'=>$color,'chat_color'=>$color,'pasha_days'=>0,'badge'=>'pro']);
    Wallet::updateOrCreate(['user_id'=>$u->id],['tokens'=>$tokens,'gems'=>0]);
  }
 
@@ -372,16 +372,16 @@ foreach($tables as [$key,$ar,$en,$css,$tier,$price,$days]) DB::table('store_item
    DB::table('games')->where('key','basra')->update(['name'=>json_encode(['ar'=>'باصرة','en'=>'Basra'],JSON_UNESCAPED_UNICODE),'updated_at'=>now()]);
  }
  foreach ([
-   ['Samar','samar@warqna.local','Samar12345','#f97316','PS',24,95000],
-   ['Layla','layla@warqna.local','Layla12345','#c084fc','JO',31,110000],
-   ['Jameel','jameel@warqna.local','Jameel12345','#22d3ee','PS',22,88000],
-   ['Nour','nour@warqna.local','Nour12345','#f472b6','EG',19,76000],
-   ['Yaser','yaser@warqna.local','Yaser12345','#a3e635','SA',27,130000],
-   ['Omar','omar@warqna.local','Omar12345','#60a5fa','PS',32,90000],
-   ['Sara','sara@warqna.local','Sara12345','#f472b6','JO',29,85000],
-   ['Basel','basel@warqna.local','Basel12345','#34d399','PS',38,120000],
-   ['Hala','hala@warqna.local','Hala12345','#c084fc','EG',26,78000],
-   ['Yazan','yazan@warqna.local','Yazan12345','#f59e0b','SA',41,150000],
+   ['Samar','samar@warqna.local','Samar12345','#f97316','PS',24,95000,'🦋'],
+   ['Layla','layla@warqna.local','Layla12345','#c084fc','JO',31,110000,'🌙'],
+   ['Jameel','jameel@warqna.local','Jameel12345','#22d3ee','PS',22,88000,'🐯'],
+   ['Nour','nour@warqna.local','Nour12345','#f472b6','EG',19,76000,'⭐'],
+   ['Yaser','yaser@warqna.local','Yaser12345','#a3e635','SA',27,130000,'🦅'],
+   ['Omar','omar@warqna.local','Omar12345','#60a5fa','PS',32,90000,'🛡️'],
+   ['Sara','sara@warqna.local','Sara12345','#f472b6','JO',29,85000,'👑'],
+   ['Basel','basel@warqna.local','Basel12345','#34d399','PS',38,120000,'🔥'],
+   ['Hala','hala@warqna.local','Hala12345','#c084fc','EG',26,78000,'💎'],
+   ['Yazan','yazan@warqna.local','Yazan12345','#f59e0b','SA',41,150000,'⚡'],
  ] as [$username,$email,$password,$color,$country,$level,$tokens]) {
    $u=User::updateOrCreate(['email'=>$email],['username'=>$username,'password'=>Hash::make($password),'is_admin'=>false,'is_banned'=>false]);
    Profile::updateOrCreate(['user_id'=>$u->id],['display_name'=>$username,'country_code'=>$country,'country_name'=>country_name($country),'level'=>$level,'xp'=>$level*1200,'games_played'=>$level*15,'wins'=>$level*7,'name_color'=>$color,'chat_color'=>$color,'pasha_days'=>0,'badge'=>'pro']);

@@ -80,6 +80,8 @@ class TarneebLocalEngine {
   final List<TarneebBid> bids = <TarneebBid>[];
   final List<List<TarneebCard>> hands = List.generate(4, (_) => <TarneebCard>[]);
   final List<TarneebPlay> trick = <TarneebPlay>[];
+  final List<TarneebPlay> lastTrick = <TarneebPlay>[];
+  int? lastTrickWinner;
   final List<List<TarneebPlay>> completedTricks = <List<TarneebPlay>>[];
   final List<int> scores = [0, 0];
   final List<int> roundTricks = [0, 0];
@@ -111,6 +113,8 @@ class TarneebLocalEngine {
     passedSeats.clear();
     bids.clear();
     trick.clear();
+    lastTrick.clear();
+    lastTrickWinner = null;
     completedTricks.clear();
     roundTricks[0] = 0;
     roundTricks[1] = 0;
@@ -189,6 +193,11 @@ class TarneebLocalEngine {
     if (handIndex < 0) throw StateError('الورقة ليست في يد اللاعب');
     if (!legalCards(seat).any((c) => c.code == card.code)) throw StateError('يجب اتباع نوع الورقة المتصدرة');
 
+    if (trick.isEmpty) {
+      lastTrick.clear();
+      lastTrickWinner = null;
+    }
+
     final played = hands[seat].removeAt(handIndex);
     trick.add(TarneebPlay(seat, played));
     messages.add('${playerNames[seat]} رمى ${played.label}');
@@ -201,6 +210,10 @@ class TarneebLocalEngine {
     final winner = _trickWinner(trick);
     final captured = List<TarneebPlay>.from(trick);
     completedTricks.add(captured);
+    lastTrick
+      ..clear()
+      ..addAll(captured);
+    lastTrickWinner = winner;
     trick.clear();
     roundTricks[teamOf(winner)] += 1;
     currentSeat = winner;

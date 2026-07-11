@@ -5,6 +5,9 @@ on:
   push:
     branches: [main, master]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: read
   pages: write
@@ -21,9 +24,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Flutter
+      - name: Install pinned Flutter SDK
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.44.0'
           channel: stable
           cache: true
 

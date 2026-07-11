@@ -289,6 +289,18 @@ const reactionCatalog = <ReactionItem>[
   ReactionItem('sparkles', '✨', 'pasha', 'بريق', 'Sparkles', animated: true),
   ReactionItem('check', '✅', 'friendly', 'تمام', 'Done', animated: true),
   ReactionItem('magic', '🪄', 'victory', 'لمسة سحرية', 'Magic move', animated: true),
+  ReactionItem('smile_hearts', '🥰', 'friendly', 'محبة كبيرة', 'Lots of love', animated: true),
+  ReactionItem('salute', '🤠', 'friendly', 'تحية', 'Salute'),
+  ReactionItem('tears_joy', '🥹', 'mood', 'تأثر', 'Touched', animated: true),
+  ReactionItem('exploding', '🤯', 'fun', 'مذهل', 'Mind blown', animated: true),
+  ReactionItem('ghost', '👻', 'fun', 'مفاجأة', 'Boo', animated: true),
+  ReactionItem('tornado', '🌪️', 'power', 'عاصفة', 'Tornado', animated: true),
+  ReactionItem('meteor', '☄️', 'power', 'نيزك', 'Meteor', animated: true),
+  ReactionItem('gold_medal', '🏅', 'victory', 'وسام', 'Medal', animated: true),
+  ReactionItem('drum', '🥁', 'victory', 'طبول الفوز', 'Victory drum', animated: true),
+  ReactionItem('rage', '🤬', 'mood', 'غضب', 'Rage', animated: true),
+  ReactionItem('broken_heart', '💔', 'mood', 'قلب مكسور', 'Broken heart', animated: true),
+  ReactionItem('red_hat', '🧢', 'pasha', 'طربوش الباشا', 'Pasha hat', animated: true),
 ];
 
 class ReactionDock extends StatefulWidget {
@@ -435,6 +447,16 @@ const coverStyles = <CoverStyle>[
   CoverStyle('cover_pasha', 'قصر الباشا', 'Pasha Palace', [Color(0xff3f0a0a), Color(0xffb91c1c), Color(0xfff59e0b)], Icons.account_balance_rounded),
   CoverStyle('cover_cosmic', 'المجرة', 'Cosmic', [Color(0xff12033a), Color(0xff7c3aed), Color(0xff06b6d4)], Icons.public_rounded),
   CoverStyle('cover_elite', 'النخبة البيضاء', 'White Elite', [Color(0xff334155), Color(0xffe2e8f0), Color(0xff64748b)], Icons.shield_rounded),
+  CoverStyle('cover_phoenix', 'العنقاء الذهبية', 'Golden Phoenix', [Color(0xff3b0a08), Color(0xfff97316), Color(0xffffd166)], Icons.local_fire_department_rounded),
+  CoverStyle('cover_ocean', 'موج المحيط', 'Ocean Wave', [Color(0xff021b36), Color(0xff0369a1), Color(0xff22d3ee)], Icons.waves_rounded),
+  CoverStyle('cover_neon', 'مدينة النيون', 'Neon City', [Color(0xff090217), Color(0xff7c3aed), Color(0xffec4899)], Icons.location_city_rounded),
+  CoverStyle('cover_forest', 'الغابة الملكية', 'Royal Forest', [Color(0xff032018), Color(0xff15803d), Color(0xff84cc16)], Icons.forest_rounded),
+  CoverStyle('cover_sunset', 'غروب فاخر', 'Luxury Sunset', [Color(0xff431407), Color(0xffea580c), Color(0xfffbbf24)], Icons.wb_twilight_rounded),
+  CoverStyle('cover_ice', 'الكريستال الجليدي', 'Ice Crystal', [Color(0xff082f49), Color(0xff38bdf8), Color(0xffe0f2fe)], Icons.ac_unit_rounded),
+  CoverStyle('cover_tiger', 'هيبة النمر', 'Tiger Prestige', [Color(0xff1c1005), Color(0xffb45309), Color(0xffffd166)], Icons.pets_rounded),
+  CoverStyle('cover_eagle', 'جناح النسر', 'Eagle Wing', [Color(0xff0f172a), Color(0xff475569), Color(0xfff8fafc)], Icons.flight_rounded),
+  CoverStyle('cover_lava', 'حمم أسطورية', 'Legendary Lava', [Color(0xff260303), Color(0xff991b1b), Color(0xffff6b00)], Icons.volcano_rounded),
+  CoverStyle('cover_pearl', 'لؤلؤة القصر', 'Palace Pearl', [Color(0xff312e3b), Color(0xffc4b5fd), Color(0xfffffbeb)], Icons.diamond_rounded),
 ];
 
 CoverStyle coverById(String id) => coverStyles.firstWhere((item) => item.id == id, orElse: () => coverStyles.first);
@@ -444,8 +466,9 @@ class ProfileCover extends StatelessWidget {
   final double height;
   final Widget? child;
   final bool animated;
+  final List<Color>? colors;
 
-  const ProfileCover({super.key, required this.coverId, this.height = 150, this.child, this.animated = true});
+  const ProfileCover({super.key, required this.coverId, this.height = 150, this.child, this.animated = true, this.colors});
 
   @override
   Widget build(BuildContext context) {
@@ -458,7 +481,7 @@ class ProfileCover extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: cover.colors))),
+            DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors ?? cover.colors))),
             if (animated) const AmbientTableFX(density: 8, subtle: true),
             Positioned(right: 18, top: 12, child: Icon(cover.icon, size: height * .55, color: Colors.white.withValues(alpha: .10))),
             Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.transparent, Colors.black.withValues(alpha: .58)])))),

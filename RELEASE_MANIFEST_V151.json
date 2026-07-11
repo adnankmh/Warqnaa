@@ -1,0 +1,20 @@
+{
+  "name": "Warqna",
+  "release": "v151",
+  "flutter_version": "1.51.0+151",
+  "themes": 13,
+  "profile_covers": 22,
+  "reactions": 60,
+  "tables": 50,
+  "card_backs": 40,
+  "supported_languages": ["ar", "en", "de", "tr", "fr", "es"],
+  "game_layout": "landscape-first",
+  "local_demo_fallback": true,
+  "per_account_local_state": true,
+  "token_transfer_fee_percent": 10,
+  "max_game_exits": 3,
+  "pasha_away_mode": true,
+  "github_pages": true,
+  "android_workflow": true,
+  "backend": "Laravel"
+}
