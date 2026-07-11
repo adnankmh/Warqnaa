@@ -1,0 +1,27 @@
+{
+  "product": "Warqna",
+  "version": "1.62.0",
+  "build": 162,
+  "channel": "production",
+  "codename": "account-cancellation-analyzer-clean",
+  "release_date": "2026-07-11",
+  "platforms": ["web", "android", "ios", "laravel"],
+  "highlights": [
+    "User-facing account action renamed to Cancel account instead of immediate deletion",
+    "Password-confirmed 30-day recovery window before permanent deletion",
+    "Automatic account reactivation on password, Google, Facebook or Apple login",
+    "All active API sessions revoked when cancellation begins",
+    "Permanent purge limited to explicitly cancelled accounts whose grace period expired",
+    "Ordinary inactive accounts are never deleted merely for inactivity",
+    "Backward-compatible DELETE /account endpoint now schedules cancellation instead of immediate destruction",
+    "Flutter deprecated Color.withOpacity and form-field value usages removed",
+    "Analyzer CI wrapper fails on real errors and warnings but not informational lints",
+    "Regression tests for cancellation, restoration, admin protection and safe purge"
+  ],
+  "external_configuration_required": [
+    "Laravel Scheduler must run every minute in production",
+    "WARQNA_API_URL must point to the deployed HTTPS Laravel API",
+    "Database backups and retention policy must be enabled before production",
+    "Google, Facebook and Apple OAuth credentials are required for social login"
+  ]
+}

@@ -118,7 +118,9 @@ class TarneebLocalEngine {
     completedTricks.clear();
     roundTricks[0] = 0;
     roundTricks[1] = 0;
-    for (final hand in hands) hand.clear();
+    for (final hand in hands) {
+      hand.clear();
+    }
 
     final deck = <TarneebCard>[
       for (final suit in suits)
@@ -128,7 +130,9 @@ class TarneebLocalEngine {
     for (var i = 0; i < 52; i++) {
       hands[i % 4].add(deck[i]);
     }
-    for (final hand in hands) _sortHand(hand);
+    for (final hand in hands) {
+      _sortHand(hand);
+    }
     messages.add('بدأت الجولة $round: تم توزيع 13 ورقة فريدة لكل لاعب.');
   }
 
@@ -280,7 +284,9 @@ class TarneebLocalEngine {
 
     if (trick.isEmpty) {
       final suitCounts = <String, int>{for (final suit in suits) suit: 0};
-      for (final card in hands[seat]) suitCounts[card.suit] = (suitCounts[card.suit] ?? 0) + 1;
+      for (final card in hands[seat]) {
+        suitCounts[card.suit] = (suitCounts[card.suit] ?? 0) + 1;
+      }
       final longSuit = suitCounts.entries.where((entry) => entry.key != trump).reduce((a, b) => a.value >= b.value ? a : b).key;
       final longSuitCards = legal.where((card) => card.suit == longSuit).toList()..sort((a, b) => b.power.compareTo(a.power));
       final aces = legal.where((c) => c.rank == 'A').toList();
@@ -384,6 +390,8 @@ class TarneebLocalEngine {
 
 extension on String {
   Iterable<String> get characters sync* {
-    for (var i = 0; i < length; i++) yield this[i];
+    for (var i = 0; i < length; i++) {
+      yield this[i];
+    }
   }
 }

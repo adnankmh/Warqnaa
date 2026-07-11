@@ -110,8 +110,8 @@ class _WarqnaAppState extends State<WarqnaApp> {
               error: const Color(0xffd94f4f),
             ),
             navigationBarTheme: NavigationBarThemeData(
-              backgroundColor: palette.panel.withOpacity(.96),
-              indicatorColor: palette.gold.withOpacity(.16),
+              backgroundColor: palette.panel.withValues(alpha: .96),
+              indicatorColor: palette.gold.withValues(alpha: .16),
               labelTextStyle: WidgetStateProperty.resolveWith(
                 (states) => TextStyle(
                   fontWeight: FontWeight.w800,
@@ -127,11 +127,11 @@ class _WarqnaAppState extends State<WarqnaApp> {
               fillColor: palette.panel2,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble()),
-                borderSide: BorderSide(color: Colors.white.withOpacity(.08)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: .08)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble()),
-                borderSide: BorderSide(color: Colors.white.withOpacity(.08)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: .08)),
               ),
             ),
             filledButtonTheme: FilledButtonThemeData(
@@ -587,7 +587,7 @@ class AppController extends ChangeNotifier {
     if (loginId.trim().isEmpty || password.isEmpty) return 'أدخل اسم المستخدم وكلمة المرور.';
     final loopbackApi = api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost');
     if (!offline && kIsWeb && loopbackApi && !warqnaProductionMode) {
-      return this.login(loginId, password, offline: true);
+      return login(loginId, password, offline: true);
     }
     if (offline && warqnaProductionMode) return 'وضع الدخول المحلي معطل في نسخة الإنتاج.';
     if (offline) {
@@ -649,6 +649,9 @@ class AppController extends ChangeNotifier {
         final awarded = int.tryParse(streak['pasha_awarded']?.toString() ?? '') ?? 0;
         if (awarded > 0) notices.insert(0, AppNotice('🎩', 'مكافأة الاستمرارية', 'حصلت على يوم باشا مجاني بعد 3 أيام دخول متواصلة.'));
       }
+      if (data['account_reactivated'] == true) {
+        notices.insert(0, AppNotice('✅', 'تمت استعادة الحساب', data['reactivation_message']?.toString() ?? 'أُلغي الحذف النهائي لأنك سجلت الدخول خلال مهلة 30 يوماً.'));
+      }
       isAuthenticated = true;
       serverConnected = true;
       await _save();
@@ -656,7 +659,7 @@ class AppController extends ChangeNotifier {
       return null;
     } on ApiException catch (e) {
       if (warqnaProductionMode) return e.message;
-      final fallback = await this.login(loginId, password, offline: true);
+      final fallback = await login(loginId, password, offline: true);
       if (fallback == null) {
         notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
         return null;
@@ -664,7 +667,7 @@ class AppController extends ChangeNotifier {
       return e.message;
     } catch (_) {
       if (warqnaProductionMode) return 'تعذر الاتصال بخادم Warqna. تحقق من الإنترنت وحاول مجددًا.';
-      final fallback = await this.login(loginId, password, offline: true);
+      final fallback = await login(loginId, password, offline: true);
       if (fallback == null) {
         notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
         return null;
@@ -948,23 +951,16 @@ class AppController extends ChangeNotifier {
   double get levelProgress => xpNext <= 0 ? 0 : (xp / xpNext).clamp(0.0, 1.0).toDouble();
   int get pointsToNextLevel => math.max(0, xpNext - xp);
 
-  Future<String?> deleteAccount(String password) async {
-    if (isAdmin) return 'لا يمكن حذف حساب المدير الرئيسي.';
-    if (password.trim().isEmpty) return 'أدخل كلمة المرور لتأكيد حذف الحساب.';
-    if (serverConnected) {
-      try {
-        await api.deleteAccount(password);
-      } on ApiException catch (e) {
-        return e.message;
-      }
+  Future<String?> cancelAccount(String password, {String? reason}) async {
+    if (isAdmin) return 'لا يمكن إلغاء حساب المدير الرئيسي.';
+    if (password.trim().isEmpty) return 'أدخل كلمة المرور لتأكيد إلغاء الحساب.';
+    if (!serverConnected) return 'إلغاء الحساب يتطلب اتصالاً بالخادم لحماية بياناتك.';
+    try {
+      await api.requestDeletion(password, reason: reason);
+    } on ApiException catch (e) {
+      return e.message;
     }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    isAuthenticated = false;
-    serverConnected = false;
-    authToken = null;
-    api.token = null;
-    notifyListeners();
+    await logout();
     return null;
   }
 
@@ -1346,7 +1342,9 @@ class AppController extends ChangeNotifier {
   }
 
   void markAllRead() {
-    for (final notice in notices) notice.read = true;
+    for (final notice in notices) {
+      notice.read = true;
+    }
     notifyListeners();
   }
 
@@ -2148,7 +2146,7 @@ class L {
   static const Map<String, Map<String, String>> extra = {
     'ar': {
       'login': 'تسجيل الدخول', 'register': 'إنشاء حساب', 'username': 'اسم المستخدم', 'email': 'البريد الإلكتروني', 'password': 'كلمة المرور',
-      'guest': 'الدخول كضيف', 'profile': 'الملف الشخصي', 'logout': 'تسجيل الخروج', 'deleteAccount': 'حذف الحساب', 'appearance': 'المظهر',
+      'guest': 'الدخول كضيف', 'profile': 'الملف الشخصي', 'logout': 'تسجيل الخروج', 'deleteAccount': 'إلغاء الحساب', 'appearance': 'المظهر',
       'beginner': 'مبتدئ', 'professional': 'محترف', 'legendary': 'أسطوري', 'covers': 'أغلفة البروفايل', 'bots': 'اللاعبون الآليون',
       'difficulty': 'مستوى الذكاء', 'easy': 'سهل', 'normal': 'متوسط', 'pro': 'محترف', 'master': 'خبير', 'noCode': 'المصمم بدون كود',
       'statistics': 'الإحصاءات', 'winRate': 'نسبة الفوز', 'matches': 'المباريات', 'wins': 'الانتصارات', 'losses': 'الخسائر',
@@ -2157,7 +2155,7 @@ class L {
     },
     'en': {
       'login': 'Sign in', 'register': 'Create account', 'username': 'Username', 'email': 'Email', 'password': 'Password',
-      'guest': 'Continue as guest', 'profile': 'Profile', 'logout': 'Sign out', 'deleteAccount': 'Delete account', 'appearance': 'Appearance',
+      'guest': 'Continue as guest', 'profile': 'Profile', 'logout': 'Sign out', 'deleteAccount': 'Cancel account', 'appearance': 'Appearance',
       'beginner': 'Beginner', 'professional': 'Professional', 'legendary': 'Legendary', 'covers': 'Profile Covers', 'bots': 'AI Players',
       'difficulty': 'AI Difficulty', 'easy': 'Easy', 'normal': 'Normal', 'pro': 'Pro', 'master': 'Master', 'noCode': 'No-code Designer',
       'statistics': 'Statistics', 'winRate': 'Win rate', 'matches': 'Matches', 'wins': 'Wins', 'losses': 'Losses',
@@ -2166,7 +2164,7 @@ class L {
     },
     'de': {
       'login': 'Anmelden', 'register': 'Konto erstellen', 'username': 'Benutzername', 'email': 'E-Mail', 'password': 'Passwort',
-      'guest': 'Als Gast fortfahren', 'profile': 'Profil', 'logout': 'Abmelden', 'deleteAccount': 'Konto löschen', 'appearance': 'Darstellung',
+      'guest': 'Als Gast fortfahren', 'profile': 'Profil', 'logout': 'Abmelden', 'deleteAccount': 'Konto deaktivieren', 'appearance': 'Darstellung',
       'beginner': 'Anfänger', 'professional': 'Profi', 'legendary': 'Legendär', 'covers': 'Profil-Cover', 'bots': 'KI-Spieler',
       'difficulty': 'KI-Schwierigkeit', 'easy': 'Einfach', 'normal': 'Normal', 'pro': 'Profi', 'master': 'Meister', 'noCode': 'No-Code-Designer',
       'statistics': 'Statistiken', 'winRate': 'Siegquote', 'matches': 'Spiele', 'wins': 'Siege', 'losses': 'Niederlagen',
@@ -2175,7 +2173,7 @@ class L {
     },
     'tr': {
       'login': 'Giriş yap', 'register': 'Hesap oluştur', 'username': 'Kullanıcı adı', 'email': 'E-posta', 'password': 'Şifre',
-      'guest': 'Misafir olarak devam et', 'profile': 'Profil', 'logout': 'Çıkış yap', 'deleteAccount': 'Hesabı sil', 'appearance': 'Görünüm',
+      'guest': 'Misafir olarak devam et', 'profile': 'Profil', 'logout': 'Çıkış yap', 'deleteAccount': 'Hesabı iptal et', 'appearance': 'Görünüm',
       'beginner': 'Başlangıç', 'professional': 'Profesyonel', 'legendary': 'Efsanevi', 'covers': 'Profil Kapakları', 'bots': 'Yapay Zekâ Oyuncuları',
       'difficulty': 'YZ Zorluğu', 'easy': 'Kolay', 'normal': 'Normal', 'pro': 'Profesyonel', 'master': 'Usta', 'noCode': 'Kodsuz Tasarımcı',
       'statistics': 'İstatistikler', 'winRate': 'Kazanma oranı', 'matches': 'Maçlar', 'wins': 'Galibiyet', 'losses': 'Mağlubiyet',
@@ -2184,7 +2182,7 @@ class L {
     },
     'fr': {
       'login': 'Connexion', 'register': 'Créer un compte', 'username': "Nom d'utilisateur", 'email': 'E-mail', 'password': 'Mot de passe',
-      'guest': 'Continuer comme invité', 'profile': 'Profil', 'logout': 'Déconnexion', 'deleteAccount': 'Supprimer le compte', 'appearance': 'Apparence',
+      'guest': 'Continuer comme invité', 'profile': 'Profil', 'logout': 'Déconnexion', 'deleteAccount': 'Annuler le compte', 'appearance': 'Apparence',
       'beginner': 'Débutant', 'professional': 'Professionnel', 'legendary': 'Légendaire', 'covers': 'Couvertures de profil', 'bots': 'Joueurs IA',
       'difficulty': "Difficulté de l'IA", 'easy': 'Facile', 'normal': 'Normal', 'pro': 'Pro', 'master': 'Maître', 'noCode': 'Designer sans code',
       'statistics': 'Statistiques', 'winRate': 'Taux de victoire', 'matches': 'Parties', 'wins': 'Victoires', 'losses': 'Défaites',
@@ -2193,7 +2191,7 @@ class L {
     },
     'es': {
       'login': 'Iniciar sesión', 'register': 'Crear cuenta', 'username': 'Usuario', 'email': 'Correo', 'password': 'Contraseña',
-      'guest': 'Continuar como invitado', 'profile': 'Perfil', 'logout': 'Cerrar sesión', 'deleteAccount': 'Eliminar cuenta', 'appearance': 'Apariencia',
+      'guest': 'Continuar como invitado', 'profile': 'Perfil', 'logout': 'Cerrar sesión', 'deleteAccount': 'Cancelar cuenta', 'appearance': 'Apariencia',
       'beginner': 'Principiante', 'professional': 'Profesional', 'legendary': 'Legendario', 'covers': 'Portadas de perfil', 'bots': 'Jugadores IA',
       'difficulty': 'Dificultad de IA', 'easy': 'Fácil', 'normal': 'Normal', 'pro': 'Pro', 'master': 'Maestro', 'noCode': 'Diseñador sin código',
       'statistics': 'Estadísticas', 'winRate': 'Tasa de victoria', 'matches': 'Partidas', 'wins': 'Victorias', 'losses': 'Derrotas',
@@ -2311,7 +2309,7 @@ List<StoreProduct> buildTimedColorProducts() {
     final days = durations[index % durations.length];
     final base = days == 3 ? 2400 : days == 7 ? 6200 : 16800;
     final price = base + (index * 175);
-    final hex = '#${item.$4.value.toRadixString(16).padLeft(8, '0').substring(2)}';
+    final hex = '#${item.$4.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
     result.add(StoreProduct(
       id: 'player_color_${item.$1}_${days}d', category: 'names', icon: '✨',
       nameAr: 'لون لاعب ${item.$2} — $days أيام', nameEn: '${item.$3} player color — $days days',
@@ -2535,7 +2533,7 @@ class AppLoadingScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary]),
-                boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(.25), blurRadius: 32)],
+                boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: .25), blurRadius: 32)],
               ),
               child: const Text('W', style: TextStyle(color: Color(0xff07111c), fontSize: 38, fontWeight: FontWeight.w900)),
             ),
@@ -2689,7 +2687,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 gradient: RadialGradient(
                   center: const Alignment(.8, -.9),
                   radius: 1.4,
-                  colors: [palette.accent.withOpacity(.32), palette.bg, const Color(0xff030810)],
+                  colors: [palette.accent.withValues(alpha: .32), palette.bg, const Color(0xff030810)],
                 ),
               ),
             ),
@@ -2711,7 +2709,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(29),
                           gradient: LinearGradient(colors: [palette.gold, const Color(0xffb67a20)]),
-                          boxShadow: [BoxShadow(color: palette.gold.withOpacity(.35), blurRadius: 34, offset: const Offset(0, 16))],
+                          boxShadow: [BoxShadow(color: palette.gold.withValues(alpha: .35), blurRadius: 34, offset: const Offset(0, 16))],
                         ),
                         child: const Text('W', style: TextStyle(color: Color(0xff15100a), fontSize: 46, fontWeight: FontWeight.w900)),
                       ),
@@ -2723,10 +2721,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: palette.panel.withOpacity(.94),
+                          color: palette.panel.withValues(alpha: .94),
                           borderRadius: BorderRadius.circular(27),
-                          border: Border.all(color: Colors.white.withOpacity(.09)),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(.38), blurRadius: 35, offset: const Offset(0, 20))],
+                          border: Border.all(color: Colors.white.withValues(alpha: .09)),
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .38), blurRadius: 35, offset: const Offset(0, 20))],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2773,7 +2771,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               const SizedBox(height: 12),
                               Container(
                                 padding: const EdgeInsets.all(13),
-                                decoration: BoxDecoration(color: Colors.red.withOpacity(.12), borderRadius: BorderRadius.circular(13), border: Border.all(color: Colors.red.withOpacity(.25))),
+                                decoration: BoxDecoration(color: Colors.red.withValues(alpha: .12), borderRadius: BorderRadius.circular(13), border: Border.all(color: Colors.red.withValues(alpha: .25))),
                                 child: Text(error!, style: const TextStyle(color: Color(0xffff9a9a), fontSize: 12, height: 1.5)),
                               ),
                             ],
@@ -2805,7 +2803,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               const SizedBox(height: 7),
                               FilledButton.tonalIcon(onPressed: busy || warqnaProductionMode ? null : widget.controller.loginAsGuest, icon: const Icon(Icons.person_outline_rounded), label: Text(authTextV151(lang, 'guest'))) ,
                               const SizedBox(height: 5),
-                              Text(authTextV151(lang, 'providerNote'), textAlign: TextAlign.center, style: TextStyle(color: palette.gold.withOpacity(.9), fontSize: 9, height: 1.5)),
+                              Text(authTextV151(lang, 'providerNote'), textAlign: TextAlign.center, style: TextStyle(color: palette.gold.withValues(alpha: .9), fontSize: 9, height: 1.5)),
                             ],
                             const SizedBox(height: 8),
                             TextButton(
@@ -2838,7 +2836,7 @@ class _GlowOrb extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         width: size,
         height: size,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: color.withOpacity(.09), boxShadow: [BoxShadow(color: color.withOpacity(.16), blurRadius: 90, spreadRadius: 28)]),
+        decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: .09), boxShadow: [BoxShadow(color: color.withValues(alpha: .16), blurRadius: 90, spreadRadius: 28)]),
       );
 }
 
@@ -2900,8 +2898,8 @@ class PremiumTopBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(13, 8, 8, 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor.withOpacity(.95),
-        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(.07))),
+        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: .95),
+        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: .07))),
       ),
       child: Row(
         children: [
@@ -3281,7 +3279,7 @@ class _StorePageState extends State<StorePage> {
             padding: const EdgeInsets.all(12),
             child: Text(
               'لا تُخصم التوكنز من اللعب أو الغرف. الخصم يتم داخل المتجر فقط وبعد رسالة تأكيد واضحة.',
-              style: TextStyle(color: Colors.white.withOpacity(.65), fontSize: 11, height: 1.6),
+              style: TextStyle(color: Colors.white.withValues(alpha: .65), fontSize: 11, height: 1.6),
             ),
           ),
         ),
@@ -3317,7 +3315,7 @@ class ClubsPage extends StatelessWidget {
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
-                gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(.18), Colors.transparent]),
+                gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withValues(alpha: .18), Colors.transparent]),
               ),
               child: Column(
                 children: [
@@ -3358,7 +3356,7 @@ class ClubsPage extends StatelessWidget {
               child: Padding(
               padding: const EdgeInsets.all(13),
               child: Row(children: [
-                Container(width: 58, height: 58, alignment: Alignment.center, decoration: BoxDecoration(color: Colors.white.withOpacity(.06), borderRadius: BorderRadius.circular(18)), child: Text(club.$2, style: const TextStyle(fontSize: 31))),
+                Container(width: 58, height: 58, alignment: Alignment.center, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .06), borderRadius: BorderRadius.circular(18)), child: Text(club.$2, style: const TextStyle(fontSize: 31))),
                 const SizedBox(width: 11),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('${club.$3} • LV.${club.$4}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
@@ -3386,7 +3384,7 @@ class _ClubMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 5),
-    decoration: BoxDecoration(color: Colors.black.withOpacity(.18), borderRadius: BorderRadius.circular(14)),
+    decoration: BoxDecoration(color: Colors.black.withValues(alpha: .18), borderRadius: BorderRadius.circular(14)),
     child: Column(children: [Text(icon), Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12)), Text(label, style: const TextStyle(color: Colors.white54, fontSize: 8))]),
   );
 }
@@ -3539,7 +3537,7 @@ class HeroBanner extends StatelessWidget {
         gradient: const LinearGradient(
           colors: [Color(0xff3d174e), Color(0xff8f2e4e), Color(0xffd58b2a)],
         ),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(.32), blurRadius: 22, offset: const Offset(0, 13))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .32), blurRadius: 22, offset: const Offset(0, 13))],
       ),
       child: Row(
         children: [
@@ -3594,7 +3592,7 @@ class GiftRoad extends StatelessWidget {
                   final reached = controller.giftRoadProgress >= step;
                   final claimed = controller.claimedGiftSteps.contains(step);
                   return Expanded(child: Column(children: [
-                    AnimatedContainer(duration: const Duration(milliseconds: 250), width: 43, height: 43, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: claimed ? Colors.green.withOpacity(.25) : reached ? Theme.of(context).colorScheme.primary.withOpacity(.22) : Colors.white.withOpacity(.05), border: Border.all(color: claimed ? Colors.greenAccent : reached ? Theme.of(context).colorScheme.primary : Colors.white12)), child: Text(claimed ? '✓' : '🎁', style: const TextStyle(fontSize: 20))),
+                    AnimatedContainer(duration: const Duration(milliseconds: 250), width: 43, height: 43, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: claimed ? Colors.green.withValues(alpha: .25) : reached ? Theme.of(context).colorScheme.primary.withValues(alpha: .22) : Colors.white.withValues(alpha: .05), border: Border.all(color: claimed ? Colors.greenAccent : reached ? Theme.of(context).colorScheme.primary : Colors.white12)), child: Text(claimed ? '✓' : '🎁', style: const TextStyle(fontSize: 20))),
                     const SizedBox(height: 4),
                     Text('$step فوز', style: TextStyle(fontSize: 8, color: reached ? Colors.white : Colors.white38)),
                   ]));
@@ -3625,7 +3623,7 @@ class GameCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(19),
           gradient: LinearGradient(colors: [game.color, Theme.of(context).colorScheme.surface]),
-          border: Border.all(color: Colors.white.withOpacity(.09)),
+          border: Border.all(color: Colors.white.withValues(alpha: .09)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -3719,9 +3717,9 @@ class ProductCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: product.tier == 'legendary' ? Colors.amber.withOpacity(.16) : product.tier == 'pro' ? Colors.blueAccent.withOpacity(.13) : Colors.white.withOpacity(.06),
+                  color: product.tier == 'legendary' ? Colors.amber.withValues(alpha: .16) : product.tier == 'pro' ? Colors.blueAccent.withValues(alpha: .13) : Colors.white.withValues(alpha: .06),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: product.previewColor1?.withOpacity(.45) ?? Colors.white12),
+                  border: Border.all(color: product.previewColor1?.withValues(alpha: .45) ?? Colors.white12),
                 ),
                 child: Text(product.tierLabel(controller.localeCode), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900)),
               ),
@@ -3734,7 +3732,7 @@ class ProductCard extends StatelessWidget {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(.14),
+                    color: Colors.black.withValues(alpha: .14),
                     borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble()),
                   ),
                   child: Center(child: _CompactProductPreview(controller: controller, product: product)),
@@ -3930,7 +3928,9 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
 
   String _bestHumanTrump() {
     final counts = <String, int>{for (final suit in TarneebLocalEngine.suits) suit: 0};
-    for (final card in engine.humanHand) counts[card.suit] = counts[card.suit]! + card.power;
+    for (final card in engine.humanHand) {
+      counts[card.suit] = counts[card.suit]! + card.power;
+    }
     return counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
   }
 
@@ -4113,7 +4113,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
                     bottom: compact ? 92 : 112,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(color: Colors.black.withOpacity(.72), borderRadius: BorderRadius.circular(18), border: Border.all(color: seconds <= 5 ? Colors.redAccent : Theme.of(context).colorScheme.primary.withOpacity(.7))),
+                      decoration: BoxDecoration(color: Colors.black.withValues(alpha: .72), borderRadius: BorderRadius.circular(18), border: Border.all(color: seconds <= 5 ? Colors.redAccent : Theme.of(context).colorScheme.primary.withValues(alpha: .7))),
                       child: Text('⏱ 00:${seconds.toString().padLeft(2, '0')}', style: TextStyle(color: seconds <= 5 ? Colors.redAccent : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 11)),
                     ),
                   ),
@@ -4157,7 +4157,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
       return Center(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(color: Colors.black.withOpacity(.25), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: Colors.black.withValues(alpha: .25), borderRadius: BorderRadius.circular(14)),
           child: Text(_phaseTitle(), style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.w800)),
         ),
       );
@@ -4249,7 +4249,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
         child: Container(
           height: 42,
           alignment: Alignment.center,
-          decoration: BoxDecoration(color: Colors.white.withOpacity(.045), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: .045), borderRadius: BorderRadius.circular(14)),
           child: Text('الكمبيوتر يفكر… ${engine.playerNames[engine.currentSeat]}', style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w800)),
         ),
       );
@@ -4337,9 +4337,9 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
     return Container(
       margin: const EdgeInsets.all(7),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withOpacity(.96),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: .96),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: .08)),
       ),
       child: Column(
         children: [
@@ -4397,7 +4397,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
           const SizedBox(height: 10),
           ...engine.messages.reversed.take(40).map((message) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white.withOpacity(.045), borderRadius: BorderRadius.circular(12)), child: Text(message, style: const TextStyle(fontSize: 11))),
+                child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white.withValues(alpha: .045), borderRadius: BorderRadius.circular(12)), child: Text(message, style: const TextStyle(fontSize: 11))),
               )),
         ],
       ),
@@ -4442,13 +4442,13 @@ class PremiumCardBack extends StatelessWidget {
         borderRadius: BorderRadius.circular(width * .18),
         gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c1, Color.lerp(c1, Colors.black, .35)!]),
         border: Border.all(color: c2, width: 1.4),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(.35), blurRadius: 5, offset: const Offset(0, 3))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .35), blurRadius: 5, offset: const Offset(0, 3))],
       ),
       child: Container(
         width: width * .62,
         height: height * .67,
         alignment: Alignment.center,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(width * .12), border: Border.all(color: c2.withOpacity(.7))),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(width * .12), border: Border.all(color: c2.withValues(alpha: .7))),
         child: Text(product?.icon ?? 'W', style: TextStyle(color: c2, fontSize: width * .34, fontWeight: FontWeight.w900)),
       ),
     );
@@ -4486,11 +4486,11 @@ class _LuxuryTable extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        gradient: RadialGradient(center: const Alignment(0, -.25), radius: .95, colors: [c2.withOpacity(.72), c1, dark]),
+        gradient: RadialGradient(center: const Alignment(0, -.25), radius: .95, colors: [c2.withValues(alpha: .72), c1, dark]),
         border: Border.all(color: c2, width: 5),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(.62), blurRadius: 32, offset: const Offset(0, 18)),
-          BoxShadow(color: c2.withOpacity(.28), blurRadius: 22, spreadRadius: 2),
+          BoxShadow(color: Colors.black.withValues(alpha: .62), blurRadius: 32, offset: const Offset(0, 18)),
+          BoxShadow(color: c2.withValues(alpha: .28), blurRadius: 22, spreadRadius: 2),
         ],
       ),
       child: Stack(
@@ -4501,9 +4501,9 @@ class _LuxuryTable extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(skin?.icon ?? 'W', style: TextStyle(color: Colors.white.withOpacity(.16), fontSize: 78, fontWeight: FontWeight.w900)),
+                Text(skin?.icon ?? 'W', style: TextStyle(color: Colors.white.withValues(alpha: .16), fontSize: 78, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 4),
-                Text(trump == null ? phase.toUpperCase() : 'TRUMP ${TarneebCard('A', trump!).symbol}', style: TextStyle(color: Colors.white.withOpacity(.28), fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 10)),
+                Text(trump == null ? phase.toUpperCase() : 'TRUMP ${TarneebCard('A', trump!).symbol}', style: TextStyle(color: Colors.white.withValues(alpha: .28), fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 10)),
               ],
             ),
           ),
@@ -4518,7 +4518,7 @@ class _TablePatternPainter extends CustomPainter {
   const _TablePatternPainter({this.color = Colors.white});
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color.withOpacity(.055)..style = PaintingStyle.stroke..strokeWidth = 1;
+    final paint = Paint()..color = color.withValues(alpha: .055)..style = PaintingStyle.stroke..strokeWidth = 1;
     for (var i = 1; i < 7; i++) {
       canvas.drawOval(Rect.fromCenter(center: Offset(size.width / 2, size.height / 2), width: size.width * i / 7, height: size.height * i / 7), paint);
     }
@@ -5217,7 +5217,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: selected
-                      ? Theme.of(context).colorScheme.primary.withOpacity(.72)
+                      ? Theme.of(context).colorScheme.primary.withValues(alpha: .72)
                       : (row + col).isEven
                           ? const Color(0xffe8d9b5)
                           : const Color(0xff526b57),
@@ -5294,7 +5294,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
                             margin: const EdgeInsets.symmetric(horizontal: 2),
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: progress >= 56 ? Colors.green.withOpacity(.45) : progress < 0 ? Colors.white.withOpacity(.06) : Theme.of(context).colorScheme.primary.withOpacity(.16),
+                              color: progress >= 56 ? Colors.green.withValues(alpha: .45) : progress < 0 ? Colors.white.withValues(alpha: .06) : Theme.of(context).colorScheme.primary.withValues(alpha: .16),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: Colors.white10),
                             ),
@@ -5673,7 +5673,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
 
   Widget _engineChat() => Container(
         margin: const EdgeInsets.all(7),
-        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withOpacity(.08))),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withValues(alpha: .08))),
         child: Column(
           children: [
             ListTile(
@@ -5696,7 +5696,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 5),
                             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-                            decoration: BoxDecoration(color: message.mine ? Theme.of(context).colorScheme.primary.withOpacity(.16) : Colors.white.withOpacity(.055), borderRadius: BorderRadius.circular(11)),
+                            decoration: BoxDecoration(color: message.mine ? Theme.of(context).colorScheme.primary.withValues(alpha: .16) : Colors.white.withValues(alpha: .055), borderRadius: BorderRadius.circular(11)),
                             child: Text('${message.sender}: ${message.body}', style: TextStyle(fontSize: 9, height: 1.35, fontWeight: message.mine ? FontWeight.w800 : FontWeight.w500, color: message.mine ? colorFromHex(widget.controller.selectedChatColor) : Colors.white)),
                           ),
                         );
@@ -5783,7 +5783,7 @@ class PlayerSeat extends StatelessWidget {
       const SizedBox(width: 5, height: 4),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(color: Colors.black.withOpacity(.72), borderRadius: BorderRadius.circular(9), border: Border.all(color: Colors.white.withOpacity(.09))),
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: .72), borderRadius: BorderRadius.circular(9), border: Border.all(color: Colors.white.withValues(alpha: .09))),
         child: Text('${badge ?? ''}${badge == null ? '' : ' '}$name • $bid', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: nameColor ?? Colors.white)),
       ),
     ];
@@ -5836,8 +5836,8 @@ class PremiumPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(19),
-        border: Border.all(color: Colors.white.withOpacity(.08)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(.20), blurRadius: 14, offset: const Offset(0, 8))],
+        border: Border.all(color: Colors.white.withValues(alpha: .08)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .20), blurRadius: 14, offset: const Offset(0, 8))],
       ),
       child: child,
     );
@@ -5880,8 +5880,8 @@ class GlowAvatar extends StatelessWidget {
         padding: const EdgeInsets.all(2.5),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: LinearGradient(colors: [color, color.withOpacity(.3)]),
-          boxShadow: [BoxShadow(color: color.withOpacity(.55), blurRadius: 16, spreadRadius: 1)],
+          gradient: LinearGradient(colors: [color, color.withValues(alpha: .3)]),
+          boxShadow: [BoxShadow(color: color.withValues(alpha: .55), blurRadius: 16, spreadRadius: 1)],
         ),
         child: ClipOval(
           child: Container(
@@ -5998,7 +5998,7 @@ class PremiumListTile extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            Container(width: 46, height: 46, alignment: Alignment.center, decoration: BoxDecoration(color: Colors.white.withOpacity(.05), borderRadius: BorderRadius.circular(14)), child: Text(icon, style: const TextStyle(fontSize: 26))),
+            Container(width: 46, height: 46, alignment: Alignment.center, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .05), borderRadius: BorderRadius.circular(14)), child: Text(icon, style: const TextStyle(fontSize: 26))),
             const SizedBox(width: 10),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12)), const SizedBox(height: 3), Text(subtitle, style: const TextStyle(color: Colors.white60, fontSize: 9, height: 1.4))])),
             const SizedBox(width: 7),
@@ -6019,7 +6019,7 @@ Future<void> showAvatarPicker(BuildContext context, AppController controller) as
     const SizedBox(height: 13),
     FilledButton.icon(onPressed: () async { final err = await controller.updateAvatarFromGallery(context); if (context.mounted) showToast(context, err ?? 'تم تحديث الصورة.'); }, icon: const Icon(Icons.photo_library_outlined), label: const Text('اختيار صورة من الجهاز')),
     const SizedBox(height: 12),
-    Wrap(spacing: 8, runSpacing: 8, alignment: WrapAlignment.center, children: avatars.map((emoji) => InkWell(onTap: () async { await controller.chooseAvatarEmoji(emoji); if (context.mounted) Navigator.pop(context); }, borderRadius: BorderRadius.circular(50), child: Container(width: 54, height: 54, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(.06), border: Border.all(color: emoji == controller.avatarEmoji ? Theme.of(context).colorScheme.primary : Colors.white12)), child: Text(emoji, style: const TextStyle(fontSize: 28))))).toList()),
+    Wrap(spacing: 8, runSpacing: 8, alignment: WrapAlignment.center, children: avatars.map((emoji) => InkWell(onTap: () async { await controller.chooseAvatarEmoji(emoji); if (context.mounted) Navigator.pop(context); }, borderRadius: BorderRadius.circular(50), child: Container(width: 54, height: 54, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: .06), border: Border.all(color: emoji == controller.avatarEmoji ? Theme.of(context).colorScheme.primary : Colors.white12)), child: Text(emoji, style: const TextStyle(fontSize: 28))))).toList()),
   ]));
 }
 
@@ -6066,25 +6066,25 @@ Future<void> showAvatarPreview(BuildContext context, AppController controller) a
   );
 }
 
-Future<void> showDeleteAccountDialog(BuildContext context, AppController controller) async {
+Future<void> showCancelAccountDialog(BuildContext context, AppController controller) async {
   final password = TextEditingController();
   bool confirmed = false;
-  final shouldDelete = await showDialog<bool>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setState) => AlertDialog(
-    title: const Text('حذف الحساب نهائياً'),
+  final shouldCancel = await showDialog<bool>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setState) => AlertDialog(
+    title: const Text('إلغاء الحساب'),
     content: Column(mainAxisSize: MainAxisSize.min, children: [
-      const Text('سيتم حذف الحساب والملف والمحفظة وسجل المشتريات. كما تُحذف الحسابات غير النشطة بعد 30 يوماً من الخادم، باستثناء حساب المدير.', style: TextStyle(height: 1.5)),
+      const Text('هل أنت متأكد أنك سوف تلغي الحساب؟ سيتم تسجيل خروجك فوراً، وسيبقى الحساب محفوظاً لمدة 30 يوماً. إذا لم تفتح الحساب وتسجل الدخول خلال هذه المدة فسيتم حذفه نهائياً مع بياناته.', style: TextStyle(height: 1.55)),
       const SizedBox(height: 12),
       TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة المرور للتأكيد')),
-      CheckboxListTile(contentPadding: EdgeInsets.zero, value: confirmed, onChanged: (v) => setState(() => confirmed = v == true), title: const Text('أفهم أن الحذف نهائي ولا يمكن التراجع عنه', style: TextStyle(fontSize: 12))),
+      CheckboxListTile(contentPadding: EdgeInsets.zero, value: confirmed, onChanged: (v) => setState(() => confirmed = v == true), title: const Text('أفهم أن عدم فتح الحساب لمدة 30 يوماً سيؤدي إلى حذفه نهائياً', style: TextStyle(fontSize: 12))),
     ]),
-    actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')), FilledButton(onPressed: confirmed ? () => Navigator.pop(dialogContext, true) : null, style: FilledButton.styleFrom(backgroundColor: Colors.red), child: const Text('حذف نهائي'))],
+    actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')), FilledButton(onPressed: confirmed ? () => Navigator.pop(dialogContext, true) : null, style: FilledButton.styleFrom(backgroundColor: Colors.red), child: const Text('إلغاء الحساب'))],
   ))) ?? false;
-  if (!shouldDelete) { password.dispose(); return; }
-  final error = await controller.deleteAccount(password.text);
+  if (!shouldCancel) { password.dispose(); return; }
+  final error = await controller.cancelAccount(password.text);
   password.dispose();
   if (!context.mounted) return;
   if (error == null) Navigator.pop(context);
-  showToast(context, error ?? 'تم حذف الحساب.');
+  showToast(context, error ?? 'تم إلغاء الحساب. يمكنك استعادته بتسجيل الدخول خلال 30 يوماً.');
 }
 
 Future<void> showCountryPicker(BuildContext context, AppController controller) async {
@@ -6475,9 +6475,9 @@ void showSettings(BuildContext context, AppController controller) {
           ListTile(leading: const Icon(Icons.tune_rounded), title: Text(L.t(controller.localeCode, 'noCode')), subtitle: const Text('حجم الأزرار والخط والحواف والمؤثرات مع معاينة فورية'), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(context); showNoCodeDesignerSheet(context, controller); }),
           ListTile(leading: const Icon(Icons.install_mobile_rounded), title: const Text('تثبيت التطبيق على الهاتف'), subtitle: const Text('استخدم زر التثبيت أو إضافة إلى الشاشة الرئيسية من المتصفح.')),
           ListTile(leading: const Icon(Icons.security_rounded, color: Colors.lightBlueAccent), title: Text(v153Text(controller.localeCode, 'productionCenter')), subtitle: Text(v153Text(controller.localeCode, 'productionCenterHint')), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(context); openProductionCenterV153(context, controller); }),
-          const ListTile(leading: Icon(Icons.history_toggle_off_rounded), title: Text('الحساب غير النشط'), subtitle: Text('يُحذف الحساب غير الإداري بعد 30 يوماً دون فتحه عند تشغيل Scheduler.')),
+          const ListTile(leading: Icon(Icons.restore_rounded), title: Text('مهلة استعادة الحساب'), subtitle: Text('بعد إلغاء الحساب يمكنك استعادته بمجرد تسجيل الدخول خلال 30 يوماً؛ لا تُحذف الحسابات العادية بسبب عدم النشاط.')),
           const Divider(),
-          if (!controller.isAdmin) OutlinedButton.icon(onPressed: () => showDeleteAccountDialog(context, controller), icon: const Icon(Icons.delete_forever, color: Colors.redAccent), label: Text(L.t(controller.localeCode, 'deleteAccount'), style: const TextStyle(color: Colors.redAccent))),
+          if (!controller.isAdmin) OutlinedButton.icon(onPressed: () => showCancelAccountDialog(context, controller), icon: const Icon(Icons.person_off_rounded, color: Colors.redAccent), label: Text(L.t(controller.localeCode, 'deleteAccount'), style: const TextStyle(color: Colors.redAccent))),
           if (controller.isAdmin) const ListTile(leading: Icon(Icons.shield_outlined, color: Colors.amber), title: Text('حساب المدير محمي'), subtitle: Text('Adnan: مستوى 90+، 1000 يوم باشا، ورصيد إدارة غير محدود.')),
           const SizedBox(height: 8),
           FilledButton(onPressed: () { Navigator.pop(context); showToast(context, 'تم حفظ الإعدادات وتطبيقها على التطبيق.'); }, child: Text(L.t(controller.localeCode, 'save'))),
@@ -6889,7 +6889,7 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
           ],
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
-            value: visibility,
+            initialValue: visibility,
             decoration: InputDecoration(labelText: L.t(controller.localeCode, 'roomVisibility'), prefixIcon: const Icon(Icons.public_rounded)),
             items: [
               DropdownMenuItem(value: 'public', child: Text(L.t(controller.localeCode, 'publicRoom'))),
@@ -6904,7 +6904,7 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
           ],
           const SizedBox(height: 10),
           DropdownButtonFormField<int>(
-            value: turnSeconds,
+            initialValue: turnSeconds,
             decoration: InputDecoration(labelText: L.t(controller.localeCode, 'turnSpeed'), prefixIcon: const Icon(Icons.timer_outlined)),
             items: const [
               DropdownMenuItem(value: 5, child: Text('5 ثوانٍ • سريعة')),
@@ -7017,13 +7017,13 @@ class _ProductLivePreview extends StatelessWidget {
         height: 160,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(34),
-          gradient: RadialGradient(colors: [c2.withOpacity(.88), c1, Color.lerp(c1, Colors.black, .58)!]),
+          gradient: RadialGradient(colors: [c2.withValues(alpha: .88), c1, Color.lerp(c1, Colors.black, .58)!]),
           border: Border.all(color: c2, width: 5),
-          boxShadow: [BoxShadow(color: c2.withOpacity(.24), blurRadius: 26, spreadRadius: 2), BoxShadow(color: Colors.black.withOpacity(.5), blurRadius: 24, offset: const Offset(0, 13))],
+          boxShadow: [BoxShadow(color: c2.withValues(alpha: .24), blurRadius: 26, spreadRadius: 2), BoxShadow(color: Colors.black.withValues(alpha: .5), blurRadius: 24, offset: const Offset(0, 13))],
         ),
         child: Stack(
           children: [
-            Center(child: Text(product.icon, style: TextStyle(color: Colors.white.withOpacity(.25), fontSize: 65, fontWeight: FontWeight.w900))),
+            Center(child: Text(product.icon, style: TextStyle(color: Colors.white.withValues(alpha: .25), fontSize: 65, fontWeight: FontWeight.w900))),
             Positioned(left: 18, right: 18, bottom: 12, child: Text(controller.displayName, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w900))),
           ],
         ),
@@ -7041,8 +7041,8 @@ class _ProductLivePreview extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(13),
                 gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c1, c2]),
-                border: Border.all(color: Colors.white.withOpacity(.55), width: 2),
-                boxShadow: [BoxShadow(color: c2.withOpacity(.35), blurRadius: 18)],
+                border: Border.all(color: Colors.white.withValues(alpha: .55), width: 2),
+                boxShadow: [BoxShadow(color: c2.withValues(alpha: .35), blurRadius: 18)],
               ),
               child: Center(child: Text(product.icon, style: const TextStyle(fontSize: 38))),
             ),
@@ -7056,7 +7056,7 @@ class _ProductLivePreview extends StatelessWidget {
           GlowAvatar(text: controller.avatarEmoji, bytes: AccountAvatar(controller: controller)._decode(), size: 72, color: c1),
           const SizedBox(width: 14),
           Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            Text(controller.displayName, style: TextStyle(color: c1, fontSize: 25, fontWeight: FontWeight.w900, shadows: [Shadow(color: c1.withOpacity(.55), blurRadius: 12), const Shadow(color: Colors.black, blurRadius: 8)])),
+            Text(controller.displayName, style: TextStyle(color: c1, fontSize: 25, fontWeight: FontWeight.w900, shadows: [Shadow(color: c1.withValues(alpha: .55), blurRadius: 12), const Shadow(color: Colors.black, blurRadius: 8)])),
             Text('المستوى ${controller.level} • ${controller.vipDays > 0 ? 'باشا' : 'لاعب'}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
           ]),
         ],
@@ -7065,11 +7065,11 @@ class _ProductLivePreview extends StatelessWidget {
       preview = Container(
         width: 285,
         padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(color: const Color(0xff111827), borderRadius: BorderRadius.circular(22), border: Border.all(color: c1.withOpacity(.55))),
+        decoration: BoxDecoration(color: const Color(0xff111827), borderRadius: BorderRadius.circular(22), border: Border.all(color: c1.withValues(alpha: .55))),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [GlowAvatar(text: controller.avatarEmoji, bytes: AccountAvatar(controller: controller)._decode(), size: 42, color: c1), const SizedBox(width: 9), Text(controller.displayName, style: TextStyle(color: c1, fontWeight: FontWeight.w900, shadows: [Shadow(color: c1, blurRadius: 10)]))]),
           const SizedBox(height: 10),
-          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: c1.withOpacity(.13), borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble()), border: Border.all(color: c1.withOpacity(.35))), child: Text('رسالة تجريبية بلون الدردشة المختار', style: TextStyle(color: c1, fontWeight: FontWeight.w800))),
+          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: c1.withValues(alpha: .13), borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble()), border: Border.all(color: c1.withValues(alpha: .35))), child: Text('رسالة تجريبية بلون الدردشة المختار', style: TextStyle(color: c1, fontWeight: FontWeight.w800))),
         ]),
       );
     } else if (product.category == 'themes') {
@@ -7077,11 +7077,11 @@ class _ProductLivePreview extends StatelessWidget {
         width: 290,
         height: 155,
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), gradient: LinearGradient(colors: [c1, c2.withOpacity(.85)]), boxShadow: [BoxShadow(color: c2.withOpacity(.25), blurRadius: 22)]),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), gradient: LinearGradient(colors: [c1, c2.withValues(alpha: .85)]), boxShadow: [BoxShadow(color: c2.withValues(alpha: .25), blurRadius: 22)]),
         child: Column(children: [
-          Row(children: [const CircleAvatar(radius: 18, child: Text('W')), const SizedBox(width: 9), const Expanded(child: Text('معاينة الثيم', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15))), Container(width: 52, height: 24, decoration: BoxDecoration(color: Colors.white.withOpacity(.16), borderRadius: BorderRadius.circular(13)))]),
+          Row(children: [const CircleAvatar(radius: 18, child: Text('W')), const SizedBox(width: 9), const Expanded(child: Text('معاينة الثيم', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15))), Container(width: 52, height: 24, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(13)))]),
           const Spacer(),
-          Row(children: [Expanded(child: Container(height: 50, decoration: BoxDecoration(color: Colors.white.withOpacity(.11), borderRadius: BorderRadius.circular(14)))), const SizedBox(width: 8), Expanded(child: Container(height: 50, decoration: BoxDecoration(color: Colors.black.withOpacity(.18), borderRadius: BorderRadius.circular(14))))]),
+          Row(children: [Expanded(child: Container(height: 50, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .11), borderRadius: BorderRadius.circular(14)))), const SizedBox(width: 8), Expanded(child: Container(height: 50, decoration: BoxDecoration(color: Colors.black.withValues(alpha: .18), borderRadius: BorderRadius.circular(14))))]),
         ]),
       );
     } else if (product.category == 'pasha') {
@@ -7096,7 +7096,7 @@ class _ProductLivePreview extends StatelessWidget {
       preview = Container(
         width: 190,
         height: 145,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(30), gradient: LinearGradient(colors: [c1.withOpacity(.9), c2]), boxShadow: [BoxShadow(color: c1.withOpacity(.45), blurRadius: 28)]),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(30), gradient: LinearGradient(colors: [c1.withValues(alpha: .9), c2]), boxShadow: [BoxShadow(color: c1.withValues(alpha: .45), blurRadius: 28)]),
         child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [const Text('🚀', style: TextStyle(fontSize: 58)), Text('×${product.multiplier ?? 1}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900))])),
       );
     } else if (product.category == 'emoji') {
@@ -7108,9 +7108,9 @@ class _ProductLivePreview extends StatelessWidget {
       height: 220,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(.17),
+        color: Colors.black.withValues(alpha: .17),
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.white.withOpacity(.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: .08)),
       ),
       child: preview,
     );
@@ -7135,7 +7135,7 @@ void showRules(BuildContext context, String lang, String gameId) {
       children: [
         Row(
           children: [
-            Container(width: 52, height: 52, alignment: Alignment.center, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(.12), borderRadius: BorderRadius.circular(16)), child: Text(info.icon, style: const TextStyle(fontSize: 29))),
+            Container(width: 52, height: 52, alignment: Alignment.center, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .12), borderRadius: BorderRadius.circular(16)), child: Text(info.icon, style: const TextStyle(fontSize: 29))),
             const SizedBox(width: 11),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('${L.t(lang, 'rules')} — ${L.t(lang, gameId)}', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
@@ -7207,7 +7207,7 @@ class _RuleSection extends StatelessWidget {
 }
 
 void showLeaderboard(BuildContext context) {
-  final entries = const [('🥇','ياسر','18,420 XP'),('🥈','ليلى','17,980 XP'),('🥉','سامر','16,800 XP'),('4','أحمد','15,120 XP')];
+  const entries = [('🥇','ياسر','18,420 XP'),('🥈','ليلى','17,980 XP'),('🥉','سامر','16,800 XP'),('4','أحمد','15,120 XP')];
   showPremiumSheet(
     context,
     child: Column(
@@ -7270,7 +7270,7 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
         if (mounted) showToast(context, e.toString());
       }
     } else {
-      final candidates = const [
+      const candidates = [
         LocalFriend(6, 'ياسر', 'Yasser', online: true, activity: 'يلعب بلوت'),
         LocalFriend(7, 'رنا', 'Rana', online: false, activity: 'آخر ظهور أمس'),
         LocalFriend(8, 'كريم', 'Kareem', online: true, activity: 'في بطولة الأبطال'),
@@ -7450,6 +7450,7 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
 
   Future<void> _showTransfer(LocalFriend friend) async {
     final amountController = TextEditingController();
+    final messenger = ScaffoldMessenger.of(context);
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -7476,7 +7477,7 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
             if (!dialogContext.mounted) return;
             if (result == null) {
               Navigator.pop(dialogContext);
-              showToast(context, 'تم التحويل وخصم عمولة الإدارة 10%.');
+              if (mounted) messenger.showSnackBar(const SnackBar(content: Text('تم التحويل وخصم عمولة الإدارة 10%.')));
             } else {
               showToast(dialogContext, result);
             }
@@ -7546,7 +7547,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                   constraints: const BoxConstraints(maxWidth: 310),
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.fromLTRB(12, 9, 12, 7),
-                  decoration: BoxDecoration(color: message.mine ? Theme.of(context).colorScheme.primary.withOpacity(.18) : Colors.white.withOpacity(.06), borderRadius: BorderRadius.only(topLeft: const Radius.circular(17), topRight: const Radius.circular(17), bottomLeft: Radius.circular(message.mine ? 17 : 4), bottomRight: Radius.circular(message.mine ? 4 : 17))),
+                  decoration: BoxDecoration(color: message.mine ? Theme.of(context).colorScheme.primary.withValues(alpha: .18) : Colors.white.withValues(alpha: .06), borderRadius: BorderRadius.only(topLeft: const Radius.circular(17), topRight: const Radius.circular(17), bottomLeft: Radius.circular(message.mine ? 17 : 4), bottomRight: Radius.circular(message.mine ? 4 : 17))),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(message.body, style: TextStyle(height: 1.45, color: message.mine ? colorFromHex(widget.controller.selectedChatColor) : Colors.white, fontWeight: message.mine ? FontWeight.w800 : FontWeight.w500)), const SizedBox(height: 3), Text(message.time, style: const TextStyle(color: Colors.white38, fontSize: 8))]),
                 ),
               );
@@ -7700,7 +7701,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
       ListTile(leading:const Icon(Icons.language),title:const Text('اللغة'),trailing:Text(widget.controller.localeCode.toUpperCase())),
       ListTile(leading:const Icon(Icons.palette_outlined),title:const Text('الثيم'),trailing:Text(widget.controller.themeCode)),
       const SizedBox(height:12),
-      FilledButton.tonalIcon(onPressed:() async { await widget.controller.logout(); if (context.mounted) Navigator.pop(context); },icon:const Icon(Icons.logout),label:const Text('تسجيل الخروج')),
+      FilledButton.tonalIcon(onPressed:() async { final navigator = Navigator.of(context); await widget.controller.logout(); if (mounted) navigator.pop(); },icon:const Icon(Icons.logout),label:const Text('تسجيل الخروج')),
     ],
   );
 }

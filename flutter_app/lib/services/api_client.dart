@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.61.0');
-const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 161);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.62.0');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 162);
 
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})
@@ -119,7 +119,6 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> claimDaily() => post('/rewards/daily', const {});
   Future<Map<String, dynamic>> claimRewardedAd(String verificationId) => post('/rewards/rewarded-ad', {'verification_id': verificationId, 'network': 'admob', 'reward_type': 'standard'});
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> payload) => patch('/profile', payload);
-  Future<Map<String, dynamic>> deleteAccount(String password) => deleteWithBody('/account', {'password': password, 'confirmation': true});
   Future<Map<String, dynamic>> gameCatalog() => get('/games/catalog', authenticated: false);
   Future<Map<String, dynamic>> gameRules(String key) => get('/games/$key/rules', authenticated: false);
   Future<Map<String, dynamic>> createGame({

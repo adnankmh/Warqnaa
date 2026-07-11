@@ -65,7 +65,7 @@ jobs:
 
       - name: Analyze Flutter source
         working-directory: flutter_app
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        run: bash ../tools/flutter_analyze_ci.sh
 
       - name: Run engine and widget tests
         working-directory: flutter_app

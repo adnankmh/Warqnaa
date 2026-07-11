@@ -1,4 +1,13 @@
 include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    # These diagnostics are handled explicitly in source and CI. Keep errors
+    # and warnings visible; do not make style-only suggestions block releases.
+    todo: ignore
+
 linter:
   rules:
     avoid_print: true
+    prefer_const_constructors: false
+    prefer_const_literals_to_create_immutables: false

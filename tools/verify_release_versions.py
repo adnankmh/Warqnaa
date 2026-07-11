@@ -56,6 +56,19 @@ def main() -> None:
     require("backend-laravel/.env.example", f"WARQNA_BUILD={build}")
     require("backend-laravel/.env.production.example", f"WARQNA_VERSION={version}")
     require("backend-laravel/.env.production.example", f"WARQNA_BUILD={build}")
+    for rel in [
+        "backend-laravel/app/Http/Controllers/MobilePlatformController.php",
+        "backend-laravel/app/Http/Middleware/RequestContext.php",
+        "backend-laravel/app/Services/Platform/PlatformHealthService.php",
+        "backend-laravel/app/Services/Platform/ProductionConfigService.php",
+    ]:
+        require(rel, f"config('warqna.version', '{version}')")
+    for rel in [
+        "backend-laravel/app/Http/Controllers/MobilePlatformController.php",
+        "backend-laravel/app/Services/Platform/PlatformHealthService.php",
+        "backend-laravel/app/Services/Platform/ProductionConfigService.php",
+    ]:
+        require(rel, f"config('warqna.build', {build})")
 
     for rel in [
         ".github/workflows/flutter-android.yml",

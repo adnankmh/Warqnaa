@@ -1,16 +1,18 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\AccountDeletionRequest;
+use App\Services\Account\AccountCancellationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\{DB,Hash};
+use Illuminate\Support\Facades\{DB, Hash};
 
 class MobileAccountController extends Controller
 {
     public function export(Request $request)
     {
         $user = $request->user()->load([
-            'profile','wallet','inventoryItems','walletTransactions','notifications','sentMessages','receivedMessages',
+            'profile', 'wallet', 'inventoryItems', 'walletTransactions', 'notifications', 'sentMessages', 'receivedMessages',
         ]);
         $payload = [
             'exported_at' => now()->toIso8601String(),
@@ -31,12 +33,14 @@ class MobileAccountController extends Controller
                 'received' => $user->receivedMessages()->latest()->limit(2000)->get(),
             ],
         ];
+
         return response()->json(['ok' => true, 'export' => $payload]);
     }
 
     public function sessions(Request $request)
     {
         $current = $request->user()->currentAccessToken()?->getKey();
+
         return response()->json([
             'ok' => true,
             'sessions' => $request->user()->tokens()->latest()->get()->map(fn ($token) => [
@@ -55,6 +59,7 @@ class MobileAccountController extends Controller
         $token = $request->user()->tokens()->whereKey($tokenId)->firstOrFail();
         $current = $request->user()->currentAccessToken()?->getKey();
         $token->delete();
+
         return response()->json([
             'ok' => true,
             'message' => (int) $current === $tokenId ? 'تم تسجيل الخروج من هذه الجلسة.' : 'تم إغلاق الجلسة.',
@@ -62,45 +67,35 @@ class MobileAccountController extends Controller
         ]);
     }
 
-    public function requestDeletion(Request $request)
+    public function requestDeletion(Request $request, AccountCancellationService $cancellation)
     {
-        abort_if($request->user()->is_admin, 403, 'لا يمكن جدولة حذف حساب المدير الرئيسي.');
         $data = $request->validate([
             'password' => 'required|string|max:120',
             'reason' => 'nullable|string|max:500',
+            'confirmation' => 'nullable|accepted',
         ]);
         abort_unless(Hash::check($data['password'], $request->user()->password), 422, 'كلمة المرور غير صحيحة.');
-        $days = max(1, (int) config('warqna.account_deletion_grace_days', 7));
-        $deletion = DB::transaction(function () use ($request, $data, $days) {
-            $row = AccountDeletionRequest::updateOrCreate(
-                ['user_id' => $request->user()->id, 'status' => 'pending'],
-                [
-                    'requested_at' => now(),
-                    'scheduled_for' => now()->addDays($days),
-                    'reason' => $data['reason'] ?? null,
-                ]
-            );
-            $request->user()->update(['deletion_requested_at' => now()]);
-            return $row;
-        });
+
+        $deletion = $cancellation->request($request->user(), $data['reason'] ?? null);
+        $days = $cancellation->graceDays();
+
         return response()->json([
             'ok' => true,
-            'message' => "تم جدولة حذف الحساب بعد {$days} أيام. يمكنك إلغاء الطلب قبل الموعد.",
+            'account_cancelled' => true,
+            'grace_days' => $days,
+            'message' => "تم إلغاء الحساب وتسجيل الخروج. سيُحذف نهائياً إذا لم تفتحه وتسجل الدخول خلال {$days} يوماً.",
             'scheduled_for' => $deletion->scheduled_for?->toIso8601String(),
         ]);
     }
 
-    public function cancelDeletion(Request $request)
+    public function cancelDeletion(Request $request, AccountCancellationService $cancellation)
     {
-        $row = AccountDeletionRequest::query()
-            ->where('user_id', $request->user()->id)
-            ->where('status', 'pending')
-            ->latest()->first();
-        abort_unless($row, 404, 'لا يوجد طلب حذف معلق.');
-        DB::transaction(function () use ($row, $request) {
-            $row->update(['status' => 'cancelled', 'cancelled_at' => now()]);
-            $request->user()->update(['deletion_requested_at' => null]);
-        });
-        return response()->json(['ok' => true, 'message' => 'تم إلغاء طلب حذف الحساب.']);
+        $restored = $cancellation->reactivate($request->user());
+        abort_unless($restored, 404, 'لا يوجد إلغاء حساب معلق.');
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'تمت استعادة الحساب وإلغاء الحذف النهائي.',
+        ]);
     }
 }

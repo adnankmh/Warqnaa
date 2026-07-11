@@ -8,7 +8,7 @@ String v153Text(String locale, String key) {
       'server': 'الخادم والإصدار', 'privacy': 'الخصوصية والبيانات', 'sessions': 'الجلسات والأجهزة',
       'export': 'تصدير بياناتي', 'report': 'إرسال بلاغ', 'legal': 'الصفحات القانونية',
       'voice': 'جاهزية الغرف الصوتية', 'online': 'متصل', 'offline': 'وضع محلي', 'copy': 'نسخ',
-      'deleteRequest': 'جدولة حذف الحساب', 'cancelDelete': 'إلغاء طلب الحذف', 'verifyEmail':'تأكيد البريد الإلكتروني', 'verifyEmailHint':'إرسال رابط تأكيد إلى بريد الحساب',
+      'deleteRequest': 'إلغاء الحساب', 'cancelDelete': 'التراجع عن إلغاء الحساب', 'verifyEmail':'تأكيد البريد الإلكتروني', 'verifyEmailHint':'إرسال رابط تأكيد إلى بريد الحساب',
     },
     'en': {
       'productionCenter': 'Safety & Launch Center',
@@ -16,12 +16,12 @@ String v153Text(String locale, String key) {
       'server': 'Server & release', 'privacy': 'Privacy & data', 'sessions': 'Sessions & devices',
       'export': 'Export my data', 'report': 'Submit report', 'legal': 'Legal pages',
       'voice': 'Voice-room readiness', 'online': 'Online', 'offline': 'Local mode', 'copy': 'Copy',
-      'deleteRequest': 'Schedule account deletion', 'cancelDelete': 'Cancel deletion request', 'verifyEmail':'Verify email address', 'verifyEmailHint':'Send a verification link to the account email',
+      'deleteRequest': 'Cancel account', 'cancelDelete': 'Reactivate account', 'verifyEmail':'Verify email address', 'verifyEmailHint':'Send a verification link to the account email',
     },
-    'de': {'productionCenter':'Sicherheits- & Startcenter','productionCenterHint':'Serverstatus, Datenschutz, Sitzungen, Export und Meldungen','server':'Server & Version','privacy':'Datenschutz & Daten','sessions':'Sitzungen & Geräte','export':'Meine Daten exportieren','report':'Meldung senden','legal':'Rechtliche Seiten','voice':'Sprachraum-Bereitschaft','online':'Online','offline':'Lokaler Modus','copy':'Kopieren','deleteRequest':'Kontolöschung planen','cancelDelete':'Löschanfrage abbrechen','verifyEmail':'E-Mail bestätigen','verifyEmailHint':'Bestätigungslink an die Konto-E-Mail senden'},
-    'tr': {'productionCenter':'Güvenlik ve Yayın Merkezi','productionCenterHint':'Sunucu durumu, gizlilik, oturumlar, dışa aktarma ve raporlar','server':'Sunucu ve sürüm','privacy':'Gizlilik ve veriler','sessions':'Oturumlar ve cihazlar','export':'Verilerimi dışa aktar','report':'Rapor gönder','legal':'Yasal sayfalar','voice':'Sesli oda hazırlığı','online':'Çevrimiçi','offline':'Yerel mod','copy':'Kopyala','deleteRequest':'Hesap silmeyi planla','cancelDelete':'Silme isteğini iptal et','verifyEmail':'E-postayı doğrula','verifyEmailHint':'Hesap e-postasına doğrulama bağlantısı gönder'},
-    'fr': {'productionCenter':'Centre sécurité et lancement','productionCenterHint':'État serveur, confidentialité, sessions, export et signalements','server':'Serveur et version','privacy':'Confidentialité et données','sessions':'Sessions et appareils','export':'Exporter mes données','report':'Envoyer un signalement','legal':'Pages légales','voice':'État des salons vocaux','online':'En ligne','offline':'Mode local','copy':'Copier','deleteRequest':'Planifier la suppression','cancelDelete':'Annuler la suppression','verifyEmail':'Vérifier l’adresse e-mail','verifyEmailHint':'Envoyer un lien de vérification à l’e-mail du compte'},
-    'es': {'productionCenter':'Centro de seguridad y lanzamiento','productionCenterHint':'Estado del servidor, privacidad, sesiones, exportación y reportes','server':'Servidor y versión','privacy':'Privacidad y datos','sessions':'Sesiones y dispositivos','export':'Exportar mis datos','report':'Enviar reporte','legal':'Páginas legales','voice':'Estado de salas de voz','online':'En línea','offline':'Modo local','copy':'Copiar','deleteRequest':'Programar eliminación','cancelDelete':'Cancelar eliminación','verifyEmail':'Verificar correo','verifyEmailHint':'Enviar un enlace de verificación al correo de la cuenta'},
+    'de': {'productionCenter':'Sicherheits- & Startcenter','productionCenterHint':'Serverstatus, Datenschutz, Sitzungen, Export und Meldungen','server':'Server & Version','privacy':'Datenschutz & Daten','sessions':'Sitzungen & Geräte','export':'Meine Daten exportieren','report':'Meldung senden','legal':'Rechtliche Seiten','voice':'Sprachraum-Bereitschaft','online':'Online','offline':'Lokaler Modus','copy':'Kopieren','deleteRequest':'Konto deaktivieren','cancelDelete':'Konto reaktivieren','verifyEmail':'E-Mail bestätigen','verifyEmailHint':'Bestätigungslink an die Konto-E-Mail senden'},
+    'tr': {'productionCenter':'Güvenlik ve Yayın Merkezi','productionCenterHint':'Sunucu durumu, gizlilik, oturumlar, dışa aktarma ve raporlar','server':'Sunucu ve sürüm','privacy':'Gizlilik ve veriler','sessions':'Oturumlar ve cihazlar','export':'Verilerimi dışa aktar','report':'Rapor gönder','legal':'Yasal sayfalar','voice':'Sesli oda hazırlığı','online':'Çevrimiçi','offline':'Yerel mod','copy':'Kopyala','deleteRequest':'Hesabı iptal et','cancelDelete':'Hesabı yeniden etkinleştir','verifyEmail':'E-postayı doğrula','verifyEmailHint':'Hesap e-postasına doğrulama bağlantısı gönder'},
+    'fr': {'productionCenter':'Centre sécurité et lancement','productionCenterHint':'État serveur, confidentialité, sessions, export et signalements','server':'Serveur et version','privacy':'Confidentialité et données','sessions':'Sessions et appareils','export':'Exporter mes données','report':'Envoyer un signalement','legal':'Pages légales','voice':'État des salons vocaux','online':'En ligne','offline':'Mode local','copy':'Copier','deleteRequest':'Annuler le compte','cancelDelete':'Réactiver le compte','verifyEmail':'Vérifier l’adresse e-mail','verifyEmailHint':'Envoyer un lien de vérification à l’e-mail du compte'},
+    'es': {'productionCenter':'Centro de seguridad y lanzamiento','productionCenterHint':'Estado del servidor, privacidad, sesiones, exportación y reportes','server':'Servidor y versión','privacy':'Privacidad y datos','sessions':'Sesiones y dispositivos','export':'Exportar mis datos','report':'Enviar reporte','legal':'Páginas legales','voice':'Estado de salas de voz','online':'En línea','offline':'Modo local','copy':'Copiar','deleteRequest':'Cancelar cuenta','cancelDelete':'Reactivar cuenta','verifyEmail':'Verificar correo','verifyEmailHint':'Enviar un enlace de verificación al correo de la cuenta'},
   };
   return values[locale]?[key] ?? values['en']![key] ?? key;
 }
@@ -62,7 +62,7 @@ class _ProductionCenterV153State extends State<ProductionCenterV153> {
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
-    final t = (String key) => v153Text(c.localeCode, key);
+    String t(String key) => v153Text(c.localeCode, key);
     final legal = config?['legal'] is Map ? Map<String, dynamic>.from(config!['legal'] as Map) : <String, dynamic>{};
     final voice = config?['voice'] is Map ? Map<String, dynamic>.from(config!['voice'] as Map) : <String, dynamic>{};
     return Scaffold(
@@ -109,13 +109,13 @@ class _ProductionCenterV153State extends State<ProductionCenterV153> {
                       leading: const Icon(Icons.open_in_new_rounded, size: 18),
                       title: Text(entry.key.replaceAll('_', ' ')),
                       subtitle: Text(entry.value.toString(), maxLines: 1, overflow: TextOverflow.ellipsis, textDirection: TextDirection.ltr),
-                      trailing: IconButton(icon: const Icon(Icons.copy_rounded), tooltip: t('copy'), onPressed: () async { await Clipboard.setData(ClipboardData(text: entry.value.toString())); if (mounted) showToast(context, 'Copied'); }),
+                      trailing: IconButton(icon: const Icon(Icons.copy_rounded), tooltip: t('copy'), onPressed: () async { final messenger = ScaffoldMessenger.of(context); await Clipboard.setData(ClipboardData(text: entry.value.toString())); if (mounted) messenger.showSnackBar(const SnackBar(content: Text('Copied'))); }),
                     )),
                   ])),
                   const SizedBox(height: 10),
                   if (!c.isAdmin) PremiumPanel(child: Column(children: [
-                    ListTile(leading: const Icon(Icons.delete_forever_rounded, color: Colors.redAccent), title: Text(t('deleteRequest')), subtitle: const Text('Protected by password and a configurable grace period'), onTap: _requestDeletion),
-                    ListTile(leading: const Icon(Icons.restore_from_trash_rounded), title: Text(t('cancelDelete')), onTap: _cancelDeletion),
+                    ListTile(leading: const Icon(Icons.person_off_rounded, color: Colors.redAccent), title: Text(t('deleteRequest')), subtitle: const Text('Password protected • permanent deletion after 30 days without reopening'), onTap: _requestDeletion),
+                    ListTile(leading: const Icon(Icons.restore_from_trash_rounded), title: Text(t('cancelDelete')), subtitle: const Text('سجّل الدخول إلى الحساب خلال 30 يوماً لإعادة تفعيله تلقائياً.')),
                   ])),
                 ],
               ),
@@ -167,7 +167,7 @@ class _ProductionCenterV153State extends State<ProductionCenterV153> {
     final submitted = await showDialog<bool>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setLocalState) => AlertDialog(
       title: const Text('إرسال بلاغ إلى فريق السلامة'),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
-        DropdownButtonFormField<String>(value: category, decoration: const InputDecoration(labelText: 'نوع البلاغ'), items: const [
+        DropdownButtonFormField<String>(initialValue: category, decoration: const InputDecoration(labelText: 'نوع البلاغ'), items: const [
           DropdownMenuItem(value:'harassment',child:Text('إساءة أو تحرش')), DropdownMenuItem(value:'cheating',child:Text('غش')), DropdownMenuItem(value:'spam',child:Text('إزعاج')), DropdownMenuItem(value:'impersonation',child:Text('انتحال هوية')), DropdownMenuItem(value:'inappropriate_content',child:Text('محتوى غير مناسب')), DropdownMenuItem(value:'other',child:Text('أخرى')),
         ], onChanged: (value) => setLocalState(() => category = value ?? 'other')),
         const SizedBox(height: 10),
@@ -181,28 +181,49 @@ class _ProductionCenterV153State extends State<ProductionCenterV153> {
   }
 
   Future<void> _requestDeletion() async {
-    if (!widget.controller.serverConnected) { showToast(context, 'حذف الحساب الحقيقي يتطلب اتصالاً بالخادم.'); return; }
+    if (!widget.controller.serverConnected) {
+      showToast(context, 'إلغاء الحساب يتطلب اتصالاً بالخادم.');
+      return;
+    }
     final password = TextEditingController();
     final reason = TextEditingController();
-    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
-      title: const Text('جدولة حذف الحساب'),
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
-        const Text('سيبقى بإمكانك إلغاء الطلب خلال فترة السماح قبل الحذف النهائي.'),
-        const SizedBox(height: 10),
-        TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة المرور')),
-        const SizedBox(height: 8),
-        TextField(controller: reason, decoration: const InputDecoration(labelText: 'السبب (اختياري)')),
-      ]),
-      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')), FilledButton(onPressed: () => Navigator.pop(dialogContext, true), style: FilledButton.styleFrom(backgroundColor: Colors.redAccent), child: const Text('تأكيد الطلب'))],
-    )) ?? false;
-    if (confirmed) {
-      try { final result = await widget.controller.api.requestDeletion(password.text, reason: reason.text); if (mounted) showToast(context, result['message']?.toString() ?? 'تم إرسال الطلب.'); } catch (e) { if (mounted) showToast(context, e.toString()); }
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('إلغاء الحساب'),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Text(
+                'هل أنت متأكد أنك سوف تلغي الحساب؟ سيتم تسجيل خروجك الآن، وسيُحذف الحساب نهائياً إذا لم تفتحه وتسجل الدخول خلال 30 يوماً.',
+                style: TextStyle(height: 1.55),
+              ),
+              const SizedBox(height: 10),
+              TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة المرور')),
+              const SizedBox(height: 8),
+              TextField(controller: reason, decoration: const InputDecoration(labelText: 'السبب (اختياري)')),
+            ]),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('تراجع')),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+                child: const Text('نعم، إلغاء الحساب'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) {
+      password.dispose();
+      reason.dispose();
+      return;
     }
-    password.dispose(); reason.dispose();
+
+    final error = await widget.controller.cancelAccount(password.text, reason: reason.text);
+    password.dispose();
+    reason.dispose();
+    if (!mounted) return;
+    showToast(context, error ?? 'تم إلغاء الحساب. يمكنك استعادته بتسجيل الدخول خلال 30 يوماً.');
+    if (error == null) Navigator.pop(context);
   }
 
-  Future<void> _cancelDeletion() async {
-    if (!widget.controller.serverConnected) { showToast(context, 'يتطلب اتصالاً بالخادم.'); return; }
-    try { final result = await widget.controller.api.cancelDeletionRequest(); if (mounted) showToast(context, result['message']?.toString() ?? 'تم الإلغاء.'); } catch (e) { if (mounted) showToast(context, e.toString()); }
-  }
 }

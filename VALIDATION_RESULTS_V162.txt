@@ -1,0 +1,19 @@
+Warqna v162 validation results
+Date: 2026-07-11
+Version: 1.62.0+162
+
+PASS: tools/validate_release.py
+PASS: PHP syntax (271 files)
+PASS: JSON parse (19 files)
+PASS: YAML parse (15 files)
+PASS: Bash syntax (17 files)
+PASS: no Git conflict markers
+PASS: no runtime .env, signing keys, or secret-bearing files
+PASS: no deprecated Color.withOpacity calls in Flutter source
+PASS: 30-day account-cancellation/reactivation source contracts
+PASS: ordinary inactive accounts are excluded from permanent deletion
+
+Not executed in the packaging environment:
+- flutter analyze / flutter test / APK build (Flutter SDK is not installed here)
+- php artisan test (Composer vendor dependencies are not installed here)
+These executable framework checks remain enabled in GitHub Actions.

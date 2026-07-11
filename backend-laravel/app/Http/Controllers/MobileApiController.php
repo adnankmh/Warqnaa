@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\{Club,DailyRewardClaim,Game,Profile,RewardedAdClaim,Room,StoreItem,Tournament,User,Wallet};
 use App\Services\Wallet\WalletService;
 use App\Services\Platform\ProductionConfigService;
+use App\Services\Account\AccountCancellationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Auth,DB,Hash};
 
@@ -43,7 +44,7 @@ class MobileApiController extends Controller
         ], 201);
     }
 
-    public function login(Request $request)
+    public function login(Request $request, AccountCancellationService $cancellation)
     {
         $data = $request->validate(['login' => 'required|string|max:190', 'password' => 'required|string|max:120']);
         $field = filter_var($data['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
@@ -52,12 +53,12 @@ class MobileApiController extends Controller
         }
         $user = $request->user();
         if ($user->is_banned) return response()->json(['ok' => false, 'message' => 'الحساب موقوف'], 403);
+        $reactivated = $cancellation->reactivate($user);
         $user->tokens()->where('name', 'mobile')->delete();
         $user->update([
             'last_seen_at' => now(),
             'last_login_ip' => $request->ip(),
             'last_login_user_agent' => mb_substr((string) $request->userAgent(), 0, 500),
-            'deletion_requested_at' => null,
         ]);
         $streakReward = $this->applyLoginStreak($user);
         return response()->json([
@@ -66,6 +67,8 @@ class MobileApiController extends Controller
             'user' => $user->load('profile')->publicProfile(),
             'wallet' => $this->walletPayload($user),
             'streak_reward' => $streakReward,
+            'account_reactivated' => $reactivated,
+            'reactivation_message' => $reactivated ? 'تمت استعادة الحساب لأنك سجلت الدخول خلال مهلة 30 يوماً.' : null,
         ]);
     }
 
@@ -293,17 +296,24 @@ class MobileApiController extends Controller
         ]);
     }
 
-    public function deleteAccount(Request $request)
+    public function deleteAccount(Request $request, AccountCancellationService $cancellation)
     {
-        $data = $request->validate(['password'=>'required|string|max:120','confirmation'=>'required|accepted']);
+        $data = $request->validate([
+            'password' => 'required|string|max:120',
+            'confirmation' => 'nullable|accepted',
+            'reason' => 'nullable|string|max:500',
+        ]);
         $user = $request->user();
-        if ($user->is_admin) return response()->json(['ok'=>false,'message'=>'لا يمكن حذف حساب المدير الرئيسي من التطبيق.'],403);
-        if (!Hash::check($data['password'],$user->password)) return response()->json(['ok'=>false,'message'=>'كلمة المرور غير صحيحة.'],422);
-        DB::transaction(function () use ($user) {
-            $user->tokens()->delete();
-            $user->delete();
-        });
-        return response()->json(['ok'=>true,'message'=>'تم حذف الحساب وجميع بياناته نهائياً.']);
+        abort_unless(Hash::check($data['password'], $user->password), 422, 'كلمة المرور غير صحيحة.');
+        $deletion = $cancellation->request($user, $data['reason'] ?? null);
+
+        return response()->json([
+            'ok' => true,
+            'account_cancelled' => true,
+            'grace_days' => $cancellation->graceDays(),
+            'scheduled_for' => $deletion->scheduled_for?->toIso8601String(),
+            'message' => 'تم إلغاء الحساب. سيُحذف نهائياً فقط إذا لم تسجل الدخول خلال 30 يوماً.',
+        ]);
     }
 
     private function applyLoginStreak(User $user): array

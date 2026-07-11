@@ -77,6 +77,10 @@ def check_required_files() -> None:
         "flutter_app/lib/services/voice_room_service.dart",
         "backend-laravel/app/Http/Controllers/SocialAuthController.php",
         "VOICE_AND_SOCIAL_SETUP_V161_AR.md",
+        "backend-laravel/app/Services/Account/AccountCancellationService.php",
+        "backend-laravel/app/Console/Commands/PurgeCancelledAccounts.php",
+        "backend-laravel/tests/Feature/V162AccountCancellationLifecycleTest.php",
+        "tools/flutter_analyze_ci.sh",
         ".github/workflows/backend-ci.yml",
         ".github/workflows/flutter-android.yml",
         ".github/workflows/flutter-web-pages.yml",
@@ -132,15 +136,15 @@ def check_text_control_characters() -> None:
 def check_login_fix() -> None:
     require("flutter_app/lib/main.dart", [
         "Future<String?> login(String loginId, String password",
-        "return this.login(loginId, password, offline: true);",
-        "final fallback = await this.login(loginId, password, offline: true);",
+        "return login(loginId, password, offline: true);",
+        "final fallback = await login(loginId, password, offline: true);",
     ])
     forbid("flutter_app/lib/main.dart", [
         "Future<String?> login(String login, String password",
-        "return login(login, password, offline: true);",
-        "await login(login, password, offline: true);",
+        "return this.login(loginId, password, offline: true);",
+        "await this.login(loginId, password, offline: true);",
     ])
-    print("[OK] Merge-safe login fallback")
+    print("[OK] Merge-safe and analyzer-clean login fallback")
 
 
 def check_versions() -> None:
@@ -528,6 +532,85 @@ def check_v161_voice_social_progression() -> None:
     print("[OK] v161 voice, Android startup, countries, progression, clubs, designer and social OAuth contracts")
 
 
+def check_v162_account_cancellation_and_analyzer() -> None:
+    service = read("backend-laravel/app/Services/Account/AccountCancellationService.php")
+    for needle in [
+        "return max(30,",
+        "$user->tokens()->delete();",
+        "public function reactivate(User $user): bool",
+        "where('status', 'pending')",
+        "where('scheduled_for', '<=', now())",
+    ]:
+        if needle not in service:
+            fail(f"v162 account cancellation lifecycle missing: {needle}")
+    for forbidden in ["where('last_seen_at'", "subDays($days)"]:
+        if forbidden in service:
+            fail(f"Ordinary inactivity must never trigger account deletion: {forbidden}")
+
+    command = read("backend-laravel/app/Console/Commands/PurgeCancelledAccounts.php")
+    schedule = read("backend-laravel/routes/console.php")
+    for needle in ["warqna:purge-cancelled-accounts", "purgeDue()"]:
+        if needle not in command + schedule:
+            fail(f"Cancelled-account purge contract missing: {needle}")
+    if "warqna:purge-inactive-accounts --days=" in schedule:
+        fail("Dangerous broad inactivity purge returned to the scheduler")
+
+    mobile = read("backend-laravel/app/Http/Controllers/MobileApiController.php")
+    account = read("backend-laravel/app/Http/Controllers/MobileAccountController.php")
+    auth = read("backend-laravel/app/Http/Controllers/AuthController.php")
+    social = read("backend-laravel/app/Http/Controllers/SocialAuthController.php")
+    for needle in [
+        "$cancellation->reactivate($user)",
+        "'account_reactivated' => $reactivated",
+        "تم إلغاء الحساب وتسجيل الخروج",
+        "$cancellation->reactivate(auth()->user())",
+        "$cancellation->reactivate($user);",
+    ]:
+        if needle not in mobile + account + auth + social:
+            fail(f"Account reopening/reactivation contract missing: {needle}")
+
+    routes = read("backend-laravel/routes/api.php")
+    if "Route::delete('/account', [MobileApiController::class, 'deleteAccount'])" in routes:
+        fail("Immediate destructive account-delete route returned")
+    require("backend-laravel/routes/api.php", [
+        "Route::post('/account/deletion-request'",
+        "Route::delete('/account', [MobileAccountController::class, 'requestDeletion'])",
+    ])
+
+    main = read("flutter_app/lib/main.dart")
+    production = read("flutter_app/lib/production_v153.dart")
+    for needle in [
+        "Future<String?> cancelAccount",
+        "هل أنت متأكد أنك سوف تلغي الحساب؟",
+        "لمدة 30 يوماً",
+        "showCancelAccountDialog",
+        "تمت استعادة الحساب",
+    ]:
+        if needle not in main + production:
+            fail(f"Flutter account-cancellation UX missing: {needle}")
+    forbid("flutter_app/lib/main.dart", ["showDeleteAccountDialog", "حذف الحساب نهائياً"])
+
+    analyzer = read("tools/flutter_analyze_ci.sh")
+    for needle in [
+        "flutter analyze --no-fatal-infos --no-fatal-warnings",
+        "error|warning",
+        "informational lints only",
+    ]:
+        if needle not in analyzer:
+            fail(f"Flutter analyzer wrapper incomplete: {needle}")
+    for rel in [
+        ".github/workflows/flutter-android.yml",
+        ".github/workflows/flutter-web-pages.yml",
+        ".github/workflows/flutter-ios.yml",
+    ]:
+        require(rel, ["bash ../tools/flutter_analyze_ci.sh"])
+    for dart in (ROOT / "flutter_app/lib").rglob("*.dart"):
+        text = dart.read_text(encoding="utf-8")
+        if ".withOpacity(" in text:
+            fail(f"Deprecated Color.withOpacity returned in {dart.relative_to(ROOT)}")
+    print("[OK] v162 30-day account cancellation/reactivation and analyzer-only-info handling")
+
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -558,6 +641,7 @@ def main() -> None:
     check_release_and_wallet_regressions()
     check_android_ci_order()
     check_v161_voice_social_progression()
+    check_v162_account_cancellation_and_analyzer()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

@@ -23,6 +23,5 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="MAIL_MAILER" value="array"/>
-        <env name="INACTIVE_ACCOUNT_DRY_RUN" value="true"/>
     </php>
 </phpunit>

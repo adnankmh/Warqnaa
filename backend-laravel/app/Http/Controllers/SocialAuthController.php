@@ -6,6 +6,8 @@ use App\Models\{SocialAccount,SocialAuthSession,User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{DB,Hash,Http};
 use Illuminate\Support\Str;
+use App\Services\Account\AccountCancellationService;
+use Symfony\Component\HttpKernel\Exception\GoneHttpException;
 
 class SocialAuthController extends Controller
 {
@@ -33,7 +35,7 @@ class SocialAuthController extends Controller
         return response()->json(['ok'=>true,'status'=>'completed','token'=>$token,'user'=>$session->user?->publicProfile(),'wallet'=>['tokens'=>(string)($session->user?->wallet?->tokens ?? 0)]]);
     }
 
-    public function callback(Request $request,string $provider)
+    public function callback(Request $request,string $provider, AccountCancellationService $cancellation)
     {
         abort_unless(in_array($provider,self::PROVIDERS,true),404);
         $state=(string)$request->input('state');
@@ -61,9 +63,14 @@ class SocialAuthController extends Controller
                 SocialAccount::create(['user_id'=>$user->id,'provider'=>$provider,'provider_user_id'=>$identity['id'],'email'=>$identity['email'],'display_name'=>$identity['name'],'avatar_url'=>$identity['avatar'],'meta'=>$identity['meta']]);
                 return $user;
             });
+            $cancellation->reactivate($user);
+            $user->update(['last_seen_at'=>now()]);
             $plain=$user->createToken('social-'.$provider.'-'.now()->timestamp)->plainTextToken;
             $session->update(['status'=>'completed','user_id'=>$user->id,'one_time_token'=>$plain]);
             return $this->resultPage(true,'تم تسجيل الدخول بنجاح. ارجع إلى تطبيق ورقنا وسيُفتح الحساب تلقائيًا.');
+        }catch(GoneHttpException $e){
+            $session->update(['status'=>'failed','error'=>$e->getMessage()]);
+            return $this->resultPage(false,$e->getMessage());
         }catch(\Throwable $e){
             report($e);
             $session->update(['status'=>'failed','error'=>'تعذر التحقق من حساب '.$provider.'. راجع مفاتيح OAuth وعنوان Callback.']);

@@ -1,5 +1,15 @@
-# Warqna v161
+# Warqna — الإصدار الحالي
 
-ابدأ من: `START_HERE_V161_AR.md`
+الإصدار الحالي هو **v162 — 1.62.0+162**.
 
-إعداد الصوت وتسجيل الدخول: `VOICE_AND_SOCIAL_SETUP_V161_AR.md`
+ابدأ بقراءة:
+
+```text
+START_HERE_V162_AR.md
+```
+
+ثم شغّل:
+
+```text
+CHECK_V162_WINDOWS.bat
+```

@@ -1,33 +1,25 @@
 <?php
+
 namespace App\Console\Commands;
 
-use App\Models\User;
+use App\Services\Account\AccountCancellationService;
 use Illuminate\Console\Command;
 
 class PurgeInactiveAccounts extends Command
 {
     protected $signature = 'warqna:purge-inactive-accounts {--days=30} {--dry-run}';
-    protected $description = 'Delete non-admin accounts that have not been opened during the configured retention window.';
+    protected $description = 'Legacy safe alias. It purges only accounts explicitly cancelled by their owners, never ordinary inactive accounts.';
 
-    public function handle(): int
+    public function handle(AccountCancellationService $cancellation): int
     {
-        $days = max(1, (int)$this->option('days'));
-        $cutoff = now()->subDays($days);
-        $query = User::query()->where('is_admin', false)->where(function ($q) use ($cutoff) {
-            $q->where('last_seen_at','<',$cutoff)
-              ->orWhere(function ($nested) use ($cutoff) {
-                  $nested->whereNull('last_seen_at')->where('created_at','<',$cutoff);
-              });
-        });
-        $count = (clone $query)->count();
         if ($this->option('dry-run')) {
-            $this->info("{$count} account(s) would be deleted.");
+            $this->info($cancellation->dueCount().' explicitly cancelled account(s) are due for deletion.');
             return self::SUCCESS;
         }
-        $query->orderBy('id')->chunkById(100, function ($users) {
-            foreach ($users as $user) $user->delete();
-        });
-        $this->info("Deleted {$count} inactive account(s).");
+
+        $deleted = $cancellation->purgeDue();
+        $this->info("Permanently deleted {$deleted} explicitly cancelled account(s).");
+
         return self::SUCCESS;
     }
 }

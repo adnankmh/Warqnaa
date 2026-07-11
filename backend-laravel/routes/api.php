@@ -54,7 +54,7 @@ Route::prefix('mobile/v1')->group(function () {
         Route::delete('/account/sessions/{tokenId}', [MobileAccountController::class, 'revokeSession'])->middleware('throttle:warqna-sensitive');
         Route::post('/account/deletion-request', [MobileAccountController::class, 'requestDeletion'])->middleware('throttle:warqna-sensitive');
         Route::delete('/account/deletion-request', [MobileAccountController::class, 'cancelDeletion'])->middleware('throttle:warqna-sensitive');
-        Route::delete('/account', [MobileApiController::class, 'deleteAccount'])->middleware('throttle:warqna-sensitive');
+        Route::delete('/account', [MobileAccountController::class, 'requestDeletion'])->middleware('throttle:warqna-sensitive');
 
         Route::post('/safety/reports', [MobileSafetyController::class, 'report'])->middleware('throttle:warqna-report');
         Route::get('/safety/reports', [MobileSafetyController::class, 'mine']);

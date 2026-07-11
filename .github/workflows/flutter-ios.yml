@@ -85,7 +85,7 @@ jobs:
           fi
           if [ -z "$REWARDED_ID" ]; then REWARDED_ID="ca-app-pub-3940256099942544/1712485313"; fi
           EXTRA_ARGS+=("--dart-define=ADMOB_REWARDED_IOS_ID=$REWARDED_ID")
-          flutter analyze --no-fatal-infos --no-fatal-warnings
+          bash ../tools/flutter_analyze_ci.sh
           flutter test
           flutter build ios --release --no-codesign "${EXTRA_ARGS[@]}"
 

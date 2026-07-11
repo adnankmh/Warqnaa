@@ -13,8 +13,8 @@ class ProductionConfigService
         $release = $this->release($platform);
         return [
             'app' => config('app.name', 'Warqna'),
-            'version' => config('warqna.version', '1.61.0'),
-            'build' => (int) config('warqna.build', 161),
+            'version' => config('warqna.version', '1.62.0'),
+            'build' => (int) config('warqna.build', 162),
             'environment' => app()->environment(),
             'maintenance' => (bool) data_get($flags, 'maintenance_mode.enabled', false),
             'maintenance_message' => (string) data_get($flags, 'maintenance_mode.payload.message', ''),
@@ -31,6 +31,11 @@ class ProductionConfigService
             'voice' => [
                 'enabled' => (bool) data_get($flags, 'voice_rooms.enabled', true),
                 'turn_required' => count((array) config('voice.turn_urls', [])) > 0,
+            ],
+            'account_cancellation' => [
+                'grace_days' => max(30, (int) config('warqna.account_deletion_grace_days', 30)),
+                'reactivate_on_login' => true,
+                'ordinary_inactivity_deletes_account' => false,
             ],
             'limits' => [
                 'token_transfer_fee_percent' => (int) data_get($flags, 'token_transfers.payload.fee_percent', 10),
