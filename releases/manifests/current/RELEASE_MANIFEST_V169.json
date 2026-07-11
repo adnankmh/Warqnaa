@@ -1,0 +1,18 @@
+{
+  "release": "Warqna v169",
+  "version": "1.69.0",
+  "build": 169,
+  "base_release": "v168",
+  "focus": [
+    "Flutter analyzer error and warning cleanup",
+    "flutter_local_notifications 22 named-argument API compatibility",
+    "central localization helper correction",
+    "ChangeNotifier protected-member boundary fix",
+    "pre-analyzer Flutter CI regression test"
+  ],
+  "guides": {
+    "start": "docs/ar/releases/current/START_HERE_V169_AR.md",
+    "github": "docs/ar/deployment/GITHUB_UPLOAD_V169_AR.md",
+    "structure": "docs/ar/STRUCTURE_GUIDE_AR.md"
+  }
+}

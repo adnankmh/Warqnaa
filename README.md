@@ -1,6 +1,6 @@
-# Warqna v168
+# Warqna v169
 
-نسخة إنتاجية منظمة مع إصلاح سياسة فحص جذر المستودع في GitHub Actions.
+نسخة إنتاجية منظمة مع إصلاح عقود Flutter Analyzer وواجهة الإشعارات المحلية v22.
 
 - البداية: `START_HERE_AR.md`
 - فهرس الوثائق: `docs/README_AR.md`

@@ -1,8 +1,8 @@
 {
-  "version": "1.68.0",
-  "build": 168,
-  "full": "1.68.0+168",
-  "release": "v168",
+  "version": "1.69.0",
+  "build": 169,
+  "full": "1.69.0+169",
+  "release": "v169",
   "channel": "production",
-  "codename": "organized-ci-root-policy-hotfix"
+  "codename": "flutter-ci-api-contract-hotfix"
 }

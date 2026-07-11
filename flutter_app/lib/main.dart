@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -472,10 +471,10 @@ class AppController extends ChangeNotifier {
         final code = route.substring('room:'.length);
         if (code.isNotEmpty) {
           activeRoomCode = code;
-          notices.insert(0, AppNotice('🎮', v166Text(localeCode, 'activeGame'), v166Text(localeCode, 'resumeGame')));
+          notices.insert(0, AppNotice('🎮', L.t(localeCode, 'activeGame'), L.t(localeCode, 'resumeGame')));
         }
       } else if (route.startsWith('friend-chat:')) {
-        notices.insert(0, AppNotice('💬', v166Text(localeCode, 'friendsChat'), v166Text(localeCode, 'friendsChat')));
+        notices.insert(0, AppNotice('💬', L.t(localeCode, 'friendsChat'), L.t(localeCode, 'friendsChat')));
       }
       notifyListeners();
     };
@@ -1283,14 +1282,25 @@ class AppController extends ChangeNotifier {
       final bytes = await file.readAsBytes();
       if (bytes.length > 6000000) return 'الصورة أكبر من 6MB.';
       final data = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-      if (kind == 'table') customTableBackgroundData = data; else customCardBackData = data;
-      await _save(); notifyListeners(); return null;
+      if (kind == 'table') {
+        customTableBackgroundData = data;
+      } else {
+        customCardBackData = data;
+      }
+      await _save();
+      notifyListeners();
+      return null;
     } catch (_) { return 'تعذر قراءة الصورة المختارة.'; }
   }
 
   void clearDesignerImage(String kind) {
-    if (kind == 'table') customTableBackgroundData = null; else customCardBackData = null;
-    _save(); notifyListeners();
+    if (kind == 'table') {
+      customTableBackgroundData = null;
+    } else {
+      customCardBackData = null;
+    }
+    _save();
+    notifyListeners();
   }
 
   void changeBotDifficulty(String value) {
@@ -1526,6 +1536,11 @@ class AppController extends ChangeNotifier {
     for (final notice in notices) {
       notice.read = true;
     }
+    notifyListeners();
+  }
+
+  void addNotice(AppNotice notice) {
+    notices.insert(0, notice);
     notifyListeners();
   }
 
@@ -3349,7 +3364,7 @@ class _StorePageState extends State<StorePage> {
       final text = '${p.name(lang)} ${p.description(lang)}'.toLowerCase();
       return categoryMatch && tierMatch && text.contains(query.toLowerCase());
     }).toList();
-    final categories = const [
+    const categories = [
       ('all', 'الكل'),
       ('pasha', 'الباشا'),
       ('themes', 'الثيمات'),
@@ -3480,7 +3495,7 @@ class ClubsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lang = controller.localeCode;
-    final clubs = const [
+    const clubs = [
       ('falcons', '🦅', 'صقور العرب', 18, 46, 315000, 'متصدر دوري المجموعات'),
       ('kings', '👑', 'ملوك الورق', 25, 50, 728000, 'مجموعة احترافية • دخول بالباشا'),
       ('friends', '🤝', 'رفاق اللعب', 12, 31, 146000, 'مجتمع ودي وتحديات يومية'),
@@ -3581,7 +3596,7 @@ class EventsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lang = controller.localeCode;
-    final entries = const [
+    const entries = [
       ('champions', '🏆', 'بطولة الأبطال', 'طرنيب • 64 لاعب', 200),
       ('weekend', '🎉', 'تحدي نهاية الأسبوع', 'اختيار لعبة • 16 لاعب', 100),
       ('clubs_war', '🛡️', 'دوري المجموعات', 'فرق المجموعات • 32 فريقاً', 200),
@@ -4422,7 +4437,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
     if (hand.isEmpty) return const SizedBox(height: 8);
     final perRow = maxWidth >= 760 ? hand.length : 7;
     final rows = (hand.length / perRow).ceil();
-    final spacing = 3.0;
+    const spacing = 3.0;
     final available = maxWidth - 16 - ((perRow - 1) * spacing);
     final cardWidth = math.min(compact ? 43.0 : 52.0, math.max(34.0, available / perRow)).toDouble();
     final cardHeight = cardWidth * 1.52;
@@ -5051,22 +5066,23 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
         final fingerprint = '${latest.sender}|${latest.body}|${latest.time}';
         if (_roomChatInitialized && fingerprint != _lastRoomChatFingerprint && !latest.mine) {
           AppSounds.fire(latest.body.runes.length <= 4 ? 'emoji' : 'message');
-          widget.controller.notices.insert(0, AppNotice('💬', latest.sender, latest.body));
+          widget.controller.addNotice(AppNotice('💬', latest.sender, latest.body));
           unawaited(PushNotifications.showLocal(
             title: '${latest.sender} • ${L.t(widget.controller.localeCode, 'gameChat')}',
             body: latest.body,
             payload: 'room:$roomCode',
           ));
-          widget.controller.notifyListeners();
         }
         _lastRoomChatFingerprint = fingerprint;
       }
       _roomChatInitialized = true;
-      if (mounted) setState(() {
-        serverMessages
-          ..clear()
-          ..addAll(parsed);
-      });
+      if (mounted) {
+        setState(() {
+          serverMessages
+            ..clear()
+            ..addAll(parsed);
+        });
+      }
     } catch (_) {}
   }
 
@@ -5536,7 +5552,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
             Expanded(
               child: Row(
                 children: range.map((number) {
-                  final raw = points[number.toString()] ?? points[number];
+                  final raw = points[number.toString()];
                   final point = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
                   final count = int.tryParse(point['count']?.toString() ?? '') ?? 0;
                   final owner = point['owner']?.toString() ?? '';
@@ -6928,7 +6944,11 @@ Future<void> openGameRoom(BuildContext context, AppController controller, GameIn
   await controller.setLandscapeMode(true);
   if (!context.mounted) return;
   final leftRoom = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => GameRoomPage(controller: controller, game: game, options: options)));
-  if (leftRoom == true) controller.leaveGame(game.id); else controller.rememberActiveRoom(game.id, code: controller.activeRoomCode, options: options);
+  if (leftRoom == true) {
+    controller.leaveGame(game.id);
+  } else {
+    controller.rememberActiveRoom(game.id, code: controller.activeRoomCode, options: options);
+  }
   if (!previousLandscape) await controller.setLandscapeMode(false);
 }
 

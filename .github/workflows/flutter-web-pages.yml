@@ -63,6 +63,10 @@ jobs:
           print('Controller references are correct.')
           PY
 
+      - name: Verify Flutter API compatibility contract
+        working-directory: flutter_app
+        run: python3 ../tools/test_flutter_ci_contract.py
+
       - name: Analyze Flutter source
         working-directory: flutter_app
         run: bash ../tools/flutter_analyze_ci.sh

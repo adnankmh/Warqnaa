@@ -97,6 +97,7 @@ def check_required_files() -> None:
         "backend-laravel/tests/Feature/V162AccountCancellationLifecycleTest.php",
         "backend-laravel/tests/Unit/V163CiRegressionContractTest.php",
         "tools/flutter_analyze_ci.sh",
+        "tools/test_flutter_ci_contract.py",
         ".github/workflows/backend-ci.yml",
         ".github/workflows/flutter-android.yml",
         ".github/workflows/flutter-web-pages.yml",
@@ -989,6 +990,55 @@ def check_v166_global_polish() -> None:
     print("[OK] v166 voice, gameplay, social, accessibility, store, push and Play Store polish contracts")
 
 
+
+def check_v169_flutter_ci_regressions() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_flutter_ci_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Flutter v169 API regression contract failed: " + result.stdout.strip())
+
+    notifications = read("flutter_app/lib/services/app_notifications.dart")
+    for needle in [
+        "settings: const InitializationSettings(",
+        "id: DateTime.now().millisecondsSinceEpoch",
+        "notificationDetails: details",
+    ]:
+        if needle not in notifications:
+            fail(f"flutter_local_notifications v22 named API contract missing: {needle}")
+
+    main = read("flutter_app/lib/main.dart")
+    for needle in [
+        "L.t(localeCode, 'activeGame')",
+        "L.t(localeCode, 'friendsChat')",
+        "void addNotice(AppNotice notice)",
+        "widget.controller.addNotice(AppNotice(",
+    ]:
+        if needle not in main:
+            fail(f"v169 Flutter analyzer regression guard missing: {needle}")
+    for forbidden in [
+        "v166Text(",
+        "widget.controller.notifyListeners()",
+        "import 'dart:typed_data';",
+        "points[number]",
+    ]:
+        if forbidden in main:
+            fail(f"v169 Flutter analyzer regression returned: {forbidden}")
+
+    for rel in [
+        ".github/workflows/flutter-android.yml",
+        ".github/workflows/flutter-web-pages.yml",
+        ".github/workflows/flutter-ios.yml",
+    ]:
+        require(rel, ["python3 ../tools/test_flutter_ci_contract.py", "bash ../tools/flutter_analyze_ci.sh"])
+
+    print(result.stdout.strip())
+    print("[OK] v169 Flutter localization, notification API and ChangeNotifier CI regressions")
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -1027,6 +1077,7 @@ def main() -> None:
     check_v164_android_startup_safety()
     check_v165_android_workmanager_boot_guard()
     check_v166_global_polish()
+    check_v169_flutter_ci_regressions()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

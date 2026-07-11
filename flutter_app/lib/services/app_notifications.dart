@@ -64,7 +64,7 @@ class PushNotifications {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const darwin = DarwinInitializationSettings();
     await _local.initialize(
-      const InitializationSettings(android: android, iOS: darwin),
+      settings: const InitializationSettings(android: android, iOS: darwin),
       onDidReceiveNotificationResponse: (response) => onTap?.call(response.payload),
     );
     final androidPlugin = _local.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
@@ -124,7 +124,13 @@ class PushNotifications {
         ),
         iOS: DarwinNotificationDetails(presentAlert: true, presentBadge: true, presentSound: true),
       );
-      await _local.show(DateTime.now().millisecondsSinceEpoch.remainder(2147483647), title, body, details, payload: payload);
+      await _local.show(
+        id: DateTime.now().millisecondsSinceEpoch.remainder(2147483647),
+        title: title,
+        body: body,
+        notificationDetails: details,
+        payload: payload,
+      );
     } catch (error) {
       debugPrint('Local notification skipped: $error');
     }

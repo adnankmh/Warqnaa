@@ -1,0 +1,17 @@
+{
+  "release": "Warqna v168",
+  "version": "1.68.0",
+  "build": 168,
+  "base_release": "v167",
+  "focus": [
+    "GitHub Actions root-policy validation fix",
+    "repository metadata aware clean-root audit",
+    "self-tested root allowlist and denylist behavior",
+    "organized production layout preservation"
+  ],
+  "guides": {
+    "start": "docs/ar/releases/current/START_HERE_V168_AR.md",
+    "github": "docs/ar/deployment/GITHUB_UPLOAD_V168_AR.md",
+    "structure": "docs/ar/STRUCTURE_GUIDE_AR.md"
+  }
+}

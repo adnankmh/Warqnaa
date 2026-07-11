@@ -139,7 +139,7 @@ Future<void> showVoiceDiagnosticsDialog(BuildContext context, AppController cont
       L.t(controller.localeCode,'audioInputs'): service==null?'—':'${service.audioInputCount}',
       L.t(controller.localeCode,'speaker'): service==null?'—':L.t(controller.localeCode,service.speakerEnabled?'speaker':'earpiece'),
       L.t(controller.localeCode,'transport'): service==null?'—':L.t(controller.localeCode,service.localPreview?'localMode':service.hasTurnServer?'turnStun':'stunOnly'),
-      L.t(controller.localeCode,'peers'): service==null?'—':'${service.diagnostics['peers'] ?? '0'}',
+      L.t(controller.localeCode,'peers'): service == null ? '—' : (service.diagnostics['peers'] ?? '0').toString(),
       L.t(controller.localeCode,'lastConnected'): service?.lastConnectedAt?.toLocal().toString() ?? '—',
     };
     return AlertDialog(title:Text(L.t(controller.localeCode,'voiceStatus')),content:Column(mainAxisSize:MainAxisSize.min,children:[

@@ -1,0 +1,26 @@
+Warqna v168 — Validation Results
+================================
+Release: 1.68.0+168
+Focus: GitHub Actions clean-root policy hotfix after v167 organization
+
+PASS — release version contract is consistent across Flutter, Laravel, environment examples and release manifest.
+PASS — required v168 release collateral exists.
+PASS — clean-root policy accepts `.git` as a normal clone directory.
+PASS — clean-root policy accepts `.git` as a Git worktree metadata file.
+PASS — clean-root policy still rejects an actual unexpected root file (`rogue.txt`) in its regression test.
+PASS — Production Release Gate invokes the dedicated clean-root regression test before the full preflight.
+PASS — full source preflight completes with `.git` present under simulated GitHub Actions environment variables.
+PASS — no Git conflict markers or corrupt control characters.
+PASS — JSON syntax: 24 files.
+PASS — YAML parsing: 15 files.
+PASS — PHP syntax: 243 files.
+PASS — Python syntax and Shell syntax.
+PASS — Dart delimiter structure and existing v161–v166 product contracts.
+PASS — Android WorkManager startup guard from v165 remains enabled.
+PASS — voice, gameplay, social, accessibility, store, push and Play Store contracts from v166 remain enabled.
+PASS — no committed runtime secrets or signing files.
+
+Not executed locally:
+- Full `php artisan test` was not run because Composer vendor dependencies are not present in this source package environment.
+- `flutter analyze`, `flutter test`, APK/AAB and Flutter Web builds were not run because Flutter SDK is not installed in this packaging environment.
+These remain authoritative GitHub Actions steps after upload.
