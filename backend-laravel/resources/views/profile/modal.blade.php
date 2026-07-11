@@ -16,6 +16,12 @@ $relation=$relation ?? null;
  </div>
  <div class="profile-mini-grid"><div><b>{{$level}}</b><span>المستوى</span></div><div><b>{{number_format($profile?->wins ?? 0)}}</b><span>فوز</span></div><div><b>{{number_format($profile?->games_played ?? 0)}}</b><span>لعبة</span></div><div><b>{{number_format($wallet?->tokens ?? 0)}}</b><span>توكنز</span></div></div>
  <div class="xp-box"><div class="xp-text">يحتاج اللاعب <b>{{number_format($need)}}</b> XP للصعود للمستوى التالي</div><div class="progress"><span style="width:{{$percent}}%"></span></div></div>
+ <div class="profile-points-grid-v161">
+  <div><b>{{number_format($profile?->round_points ?? 0)}}</b><span>نقاط الجولات</span></div>
+  <div><b>{{number_format($profile?->tournament_points ?? 0)}}</b><span>نقاط المسابقات</span></div>
+  <div><b>{{number_format($profile?->club_points ?? 0)}}</b><span>نقاط النادي</span></div>
+  <div><b>×{{($profile?->pasha_days ?? 0)>0?'2':'1'}}</b><span>مضاعف الباشا</span></div>
+ </div>
  @if($mine)<div class="profile-self-details"><div><b>{{ number_format($profile?->xp ?? 0) }}</b><span>XP الحالي</span></div><div><b>{{ number_format($profile?->losses ?? 0) }}</b><span>خسارة</span></div><div class="profile-pasha-days-v134"><img src="/assets/store/basha1.png" alt="باشا"><b>{{ number_format($profile?->pasha_days ?? 0) }}</b><span>أيام الباشا</span></div><div><b>{{ number_format($wallet?->tokens ?? 0) }}</b><span>الرصيد</span></div></div>@endif
 	 <div class="active-items"><b>المقتنيات المفعلة</b><div class="active-chip-row">@foreach($user->inventoryItems->where('active',true)->take($mine?12:6) as $inv)<span class="active-chip">{{$inv->storeItem?->payload['preview_icon'] ?? '✨'}} {{$inv->storeItem?->name['ar'] ?? 'مقتنى'}}</span>@endforeach @if($user->inventoryItems->where('active',true)->count()===0)<span class="muted">لا توجد مقتنيات مفعلة.</span>@endif</div></div>
  <div class="profile-actions">

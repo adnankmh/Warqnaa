@@ -720,33 +720,41 @@ class RoomController
 
 
  private function awardProfilePointsIfFinished(Room $room,array $state): array{
-  if(($state['phase'] ?? '')!=='finished' || !empty($state['profile_points_awarded'])) return $state;
+  $phase=(string)($state['phase'] ?? '');
+  if(!in_array($phase,['round_end','finished'],true)) return $state;
+  $round=(int)($state['round'] ?? 1);
+  $isFinal=$phase==='finished' && (array_key_exists('winner_team',$state) || !empty($state['game_over']) || !empty($state['overall_winner']) || !empty($state['winner_final']) || !empty($state['winner']));
+  $eventType=$isFinal ? 'match_complete' : 'round_complete';
+  $awardedRounds=(array)($state['profile_points_awarded_rounds'] ?? []);
+  $awardMarker=$eventType.':'.$round;
+  if(in_array($awardMarker,$awardedRounds,true)) return $state;
   try{
-   $room->loadMissing('players.user.profile','players.user.inventoryItems.storeItem');
-   $winnerTeam=$state['winner_team'] ?? null;
-   $winner=$state['winner'] ?? null;
+   $room->loadMissing('players.user.profile','game');
+   $winnerTeam=$state['winner_team'] ?? $state['round_winner_team'] ?? null;
+   $winner=$state['winner'] ?? $state['round_winner'] ?? null;
+   $teams=$state['teams'] ?? [];
+   $mode=!empty($state['tournament_id']) ? (!empty($state['sponsored'])?'sponsored':'tournament') : (!empty($state['club_id'])?'club':'normal');
    $pop=[];
+   $service=app(\App\Services\Progression\ProgressionService::class);
    foreach($room->players as $rp){
-    if($rp->is_bot || !$rp->user || !$rp->user->profile) continue;
+    if($rp->is_bot || !$rp->user) continue;
     $key='user:'.$rp->user_id;
-    $win=false;
-    if($winner && $winner===$key) $win=true;
-    if($winnerTeam && !empty($state['teams'][$winnerTeam]) && in_array($key,$state['teams'][$winnerTeam],true)) $win=true;
-    $base=((int)($rp->user->profile->pasha_days ?? 0)>0) ? 20 : 10;
-    $mult=$this->activeXpMultiplier($rp->user);
-    $xp=(int)round($base*$mult);
-    $profile=$rp->user->profile;
-    $oldLevel=(int)($profile->level ?? 1);
-    $profile->xp=max(0,(int)$profile->xp)+$xp;
-    $profile->games_played=(int)($profile->games_played ?? 0)+1;
-    $profile->wins=(int)($profile->wins ?? 0)+($win?1:0);
-    $profile->level=app(\App\Services\Leveling\XpService::class)->levelForXp((int)$profile->xp);
-    $profile->save();
-    $pop[$key]=['xp'=>$xp,'tokens'=>0,'win'=>$win,'base'=>$base,'multiplier'=>$mult,'old_level'=>$oldLevel,'new_level'=>$profile->level];
+    $win=$winner===$key;
+    if($winnerTeam!==null && isset($teams[$winnerTeam]) && is_array($teams[$winnerTeam])) $win=in_array($key,$teams[$winnerTeam],true);
+    $eventKey='web-room:'.$room->id.':round:'.$round.':user:'.$rp->user_id.':'.$eventType;
+    $pop[$key]=$service->award($rp->user,$eventKey,[
+     'room_id'=>$room->id,'event_type'=>$eventType,'mode'=>$mode,'won'=>$win,
+     'stage'=>(string)($state['tournament_stage'] ?? ($isFinal && $win?'champion':'round')),
+     'game'=>$room->game?->key,'round'=>$round,
+     'same_club_team'=>(bool)($state['same_club_team'] ?? false),
+    ]);
    }
-   $state['profile_points_awarded']=true; $state['score_popups']=$pop;
-   if($pop) $state['messages'][]='تمت إضافة XP الجولة تلقائيًا: اللاعب العادي 10 XP، الباشا 20 XP، والمسرّع يضاعف نقاط الجولة حسب نسبته.';
-  }catch(\Throwable $e){ $state['messages'][]='انتهت الجولة، وسيتم تحديث نقاط الخبرة لاحقًا عند توفر الخدمة.'; }
+   $awardedRounds[]=$awardMarker;
+   $state['profile_points_awarded_rounds']=array_values(array_unique($awardedRounds));
+   if($isFinal) $state['profile_points_awarded']=true;
+   $state['score_popups']=array_merge((array)($state['score_popups'] ?? []),$pop);
+   if($pop) $state['messages'][]='✅ تم احتساب نقاط '.$eventType.': الباشا ×2، المسرّعات تراكمية، والمسابقات أعلى من اللعب العادي.';
+  }catch(\Throwable $e){ Log::warning('progression_award_failed',['room'=>$room->id,'error'=>$e->getMessage()]); $state['messages'][]='انتهت الجولة، وسيُعاد احتساب النقاط تلقائيًا دون تكرار عند عودة الخدمة.'; }
   return $state;
 }
 

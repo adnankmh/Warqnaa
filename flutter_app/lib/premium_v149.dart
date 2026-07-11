@@ -301,6 +301,30 @@ const reactionCatalog = <ReactionItem>[
   ReactionItem('rage', '🤬', 'mood', 'غضب', 'Rage', animated: true),
   ReactionItem('broken_heart', '💔', 'mood', 'قلب مكسور', 'Broken heart', animated: true),
   ReactionItem('red_hat', '🧢', 'pasha', 'طربوش الباشا', 'Pasha hat', animated: true),
+  ReactionItem('palestine', '🇵🇸', 'friendly', 'فلسطين', 'Palestine', animated: true),
+  ReactionItem('prayer', '🤲', 'friendly', 'دعاء', 'Prayer', animated: true),
+  ReactionItem('sun', '☀️', 'friendly', 'صباح الخير', 'Good morning', animated: true),
+  ReactionItem('moon_face', '🌙', 'friendly', 'مساء الخير', 'Good evening', animated: true),
+  ReactionItem('cat_laugh', '😹', 'fun', 'ضحك القط', 'Cat laugh', animated: true),
+  ReactionItem('monkey', '🙊', 'fun', 'لن أقول', 'Secret', animated: true),
+  ReactionItem('alien', '👽', 'fun', 'فضائي', 'Alien', animated: true),
+  ReactionItem('clown', '🤡', 'fun', 'مقلب', 'Joke', animated: true),
+  ReactionItem('volcano', '🌋', 'power', 'بركان', 'Volcano', animated: true),
+  ReactionItem('lion_roar', '🦁', 'power', 'زئير', 'Roar', animated: true),
+  ReactionItem('eagle_fly', '🦅', 'power', 'تحليق', 'Soar', animated: true),
+  ReactionItem('boxing', '🥊', 'power', 'تحدي', 'Challenge', animated: true),
+  ReactionItem('fireworks', '🎆', 'victory', 'ألعاب نارية', 'Fireworks', animated: true),
+  ReactionItem('champagne', '🍾', 'victory', 'احتفال', 'Celebrate', animated: true),
+  ReactionItem('royal_crown', '♛', 'victory', 'تاج ملكي', 'Royal crown', animated: true),
+  ReactionItem('trophy_gold', '🏆', 'victory', 'الكأس الذهبي', 'Gold trophy', animated: true),
+  ReactionItem('steam', '😤', 'mood', 'إصرار', 'Determined', animated: true),
+  ReactionItem('pleading', '🥺', 'mood', 'رجاء', 'Please', animated: true),
+  ReactionItem('melting', '🫠', 'mood', 'ذبت', 'Melting', animated: true),
+  ReactionItem('scream', '😱', 'mood', 'صدمة', 'Scream', animated: true),
+  ReactionItem('throne', '🪑', 'pasha', 'العرش', 'Throne', animated: true),
+  ReactionItem('sultan', '🕌', 'pasha', 'قصر السلطان', 'Sultan palace', animated: true),
+  ReactionItem('falcon', '🦅', 'pasha', 'صقر الباشا', 'Pasha falcon', animated: true),
+  ReactionItem('gold_key', '🗝️', 'pasha', 'مفتاح القصر', 'Palace key', animated: true),
 ];
 
 class ReactionDock extends StatefulWidget {
@@ -329,7 +353,7 @@ class _ReactionDockState extends State<ReactionDock> {
       child: Material(
         color: Colors.transparent,
         child: Container(
-          constraints: const BoxConstraints(maxHeight: 260),
+          constraints: const BoxConstraints(maxHeight: 330),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: const Color(0xff0b1724).withValues(alpha: .97),
@@ -362,7 +386,7 @@ class _ReactionDockState extends State<ReactionDock> {
               Flexible(
                 child: GridView.builder(
                   shrinkWrap: true,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, childAspectRatio: 1.05, crossAxisSpacing: 7, mainAxisSpacing: 7),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, childAspectRatio: .95, crossAxisSpacing: 7, mainAxisSpacing: 7),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
@@ -375,7 +399,7 @@ class _ReactionDockState extends State<ReactionDock> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            item.animated ? _AnimatedReaction(item.emoji, size: 28) : Text(item.emoji, style: const TextStyle(fontSize: 28)),
+                            item.animated ? _AnimatedReaction(item.emoji, size: 42) : Text(item.emoji, style: const TextStyle(fontSize: 42)),
                             const SizedBox(height: 2),
                             Text(item.label(widget.locale), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 8, color: Colors.white70, fontWeight: FontWeight.w800)),
                           ],

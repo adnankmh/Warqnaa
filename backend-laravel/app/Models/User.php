@@ -30,6 +30,7 @@ class User extends Authenticatable
     public function reportsMade(){ return $this->hasMany(UserReport::class,'reporter_id'); }
     public function reportsReceived(){ return $this->hasMany(UserReport::class,'reported_user_id'); }
     public function deletionRequests(){ return $this->hasMany(AccountDeletionRequest::class); }
+    public function socialAccounts(){ return $this->hasMany(SocialAccount::class); }
 
     public function publicProfile(): array
     {
@@ -43,7 +44,13 @@ class User extends Authenticatable
             'country_code'=>$p?->country_code,
             'country_name'=>$p?->country_name,
             'level'=>$p?->level,
-            'xp'=>$p?->xp,
+            'xp'=>(int)($p?->xp ?? 0),
+            'xp_next'=>(new \App\Services\Leveling\XpService())->requiredXp((int)($p?->level ?? 1)),
+            'round_points'=>(int)($p?->round_points ?? 0),
+            'tournament_points'=>(int)($p?->tournament_points ?? 0),
+            'club_points'=>(int)($p?->club_points ?? 0),
+            'flag'=>(string)(config('countries.'.safe_country_code($p?->country_code ?? 'PS').'.flag') ?? '🇵🇸'),
+            'flag_url'=>flag_url($p?->country_code ?? 'PS'),
             'name_color'=>$p?->name_color,
             'chat_color'=>$p?->chat_color,
             'name_color_expires_at'=>$p?->name_color_expires_at?->toIso8601String(),

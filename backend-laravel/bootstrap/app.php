@@ -21,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_PROTO
                 | Request::HEADER_X_FORWARDED_PREFIX
         );
+        // Apple Sign in uses response_mode=form_post. The callback is protected
+        // by the one-time OAuth state and must not be rejected by Laravel CSRF.
+        $middleware->validateCsrfTokens(except: ['auth/social/*/callback']);
         $middleware->append(\App\Http\Middleware\RequestContext::class);
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->alias([

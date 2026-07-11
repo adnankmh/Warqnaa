@@ -71,6 +71,12 @@ def check_required_files() -> None:
         "backend-laravel/app/Services/GameEngine/TarneebRules.php",
         "backend-laravel/tests/Unit/EnvironmentSanityTest.php",
         "backend-laravel/database/migrations/2026_07_11_000158_ci_lock_and_laravel_quality_hotfix.php",
+        "backend-laravel/database/migrations/2026_07_11_000161_voice_mobile_social_progression.php",
+        "backend-laravel/tests/Feature/V161VoiceSocialProgressionTest.php",
+        "flutter_app/lib/data/countries.dart",
+        "flutter_app/lib/services/voice_room_service.dart",
+        "backend-laravel/app/Http/Controllers/SocialAuthController.php",
+        "VOICE_AND_SOCIAL_SETUP_V161_AR.md",
         ".github/workflows/backend-ci.yml",
         ".github/workflows/flutter-android.yml",
         ".github/workflows/flutter-web-pages.yml",
@@ -439,6 +445,89 @@ def check_android_ci_order() -> None:
     print("[OK] Android project generation and Java/Gradle CI order")
 
 
+def check_v161_voice_social_progression() -> None:
+    progression = read("backend-laravel/app/Services/Progression/ProgressionService.php")
+    for needle in [
+        "? 2.0 : 1.0",
+        "'champion','winner','final_winner' => 1000",
+        "'runner_up','finalist' => 600",
+        "same_club_team",
+        "event_key",
+    ]:
+        if needle not in progression:
+            fail(f"v161 progression contract missing: {needle}")
+    if "? 1.5 : 1.0" in progression:
+        fail("Pasha multiplier regressed to x1.5")
+
+    xp = read("backend-laravel/app/Services/Leveling/XpService.php")
+    for needle in ["bool $applyMultipliers = true", "$applyMultipliers ?", "? 2.0 : 1.0"]:
+        if needle not in xp:
+            fail(f"XP multiplier guard missing: {needle}")
+    if "false, false);" not in progression:
+        fail("Progression must bypass the second XP multiplier application")
+
+    countries_php = read("backend-laravel/config/countries.php")
+    countries_dart = read("flutter_app/lib/data/countries.dart")
+    if len(re.findall(r"""['"]flag['"]\s*=>""", countries_php)) < 240 or countries_dart.count("CountryInfo('") < 240:
+        fail("All-country flag catalog is incomplete")
+    for needle in ["country_code", "country_name", "flag_url", "round_points"]:
+        if needle not in read("backend-laravel/app/Http/Controllers/MobileGameController.php"):
+            fail(f"Room player profile field missing: {needle}")
+
+    voice = read("flutter_app/lib/services/voice_room_service.dart")
+    for needle in ["Uri.base.scheme != 'https'", "_pendingCandidates", "_reconnectPeer", "hasTurnServer", "Duration(milliseconds: 900)"]:
+        if needle not in voice:
+            fail(f"Voice recovery contract missing: {needle}")
+    if "restartIce()" in voice or re.search(r"}\s*else\s*{\s*}\s*else\s*{", voice):
+        fail("Voice service contains a compatibility or duplicate-else regression")
+
+    main = read("flutter_app/lib/main.dart")
+    for needle in ["runZonedGuarded", "addPostFrameCallback", "RewardedAds.initialize()", "vipDays = math.max(vipDays, 3650)", "recordRoundProgress", "showCountryPicker", "final completedRound = engine.round"]:
+        if needle not in main:
+            fail(f"Flutter startup/profile contract missing: {needle}")
+
+    clubs = read("backend-laravel/app/Http/Controllers/ClubController.php")
+    club_view = read("backend-laravel/resources/views/clubs/show.blade.php")
+    for needle in ["create_announcements", "create_tournaments", "announcementStore", "announcementDelete", "required|in:accepted,rejected"]:
+        if needle not in clubs + club_view:
+            fail(f"Club moderator contract missing: {needle}")
+
+    admin = read("backend-laravel/app/Http/Controllers/AdminController.php")
+    store = read("backend-laravel/resources/views/store/index.blade.php")
+    for needle in ["table_image", "card_back_image", "asset_url"]:
+        if needle not in admin or needle not in store:
+            fail(f"Admin-uploaded cosmetic contract missing: {needle}")
+
+    social = read("backend-laravel/app/Http/Controllers/SocialAuthController.php")
+    bootstrap = read("backend-laravel/bootstrap/app.php")
+    for needle in ["accounts.google.com", "facebook.com", "appleid.apple.com", "issuer is invalid", "audience is invalid"]:
+        if needle not in social:
+            fail(f"Social OAuth contract missing: {needle}")
+    if "validateCsrfTokens(except: ['auth/social/*/callback'])" not in bootstrap:
+        fail("Apple form_post callback CSRF exception is missing")
+
+    tournament_model = read("backend-laravel/app/Models/Tournament.php")
+    club_model = read("backend-laravel/app/Models/Club.php")
+    social_session = read("backend-laravel/app/Models/SocialAuthSession.php")
+    room_controller = read("backend-laravel/app/Http/Controllers/RoomController.php")
+    for required in ["prize_distribution", "leaderboard_points", "reward_multiplier", "sponsored"]:
+        if required not in tournament_model:
+            fail(f"Tournament persistence contract missing: {required}")
+    for required in ["capacity", "league_tier", "total_points"]:
+        if required not in club_model:
+            fail(f"Club persistence contract missing: {required}")
+    if "'one_time_token'=>'encrypted'" not in social_session:
+        fail("Social one-time bearer token is not encrypted at rest")
+    if "array_key_exists('winner_team',$state)" not in room_controller:
+        fail("winner_team=0 final-round scoring guard is missing")
+
+    migration = read("backend-laravel/database/migrations/2026_07_11_000161_voice_mobile_social_progression.php")
+    for needle in ["progression_events", "club_announcements", "social_accounts", "social_auth_sessions", "3650"]:
+        if needle not in migration:
+            fail(f"v161 migration contract missing: {needle}")
+    print("[OK] v161 voice, Android startup, countries, progression, clubs, designer and social OAuth contracts")
+
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -468,6 +557,7 @@ def main() -> None:
     check_product_contract_tests()
     check_release_and_wallet_regressions()
     check_android_ci_order()
+    check_v161_voice_social_progression()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

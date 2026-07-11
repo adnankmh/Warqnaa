@@ -58,7 +58,8 @@ foreach($labels as $k=>$v){ if($k!=='inventory' && (($items[$k] ?? collect())->c
       @forelse(($inventory ?? collect()) as $inv)
        @php $si=$inv->storeItem; @endphp
        <article class="store-product-card-v127 inventory-owned" data-category="inventory" data-name="{{ strtolower(($si?->name['ar'] ?? '').' '.($si?->key ?? '')) }}">
-        <div class="product-preview-v127"><div class="shop-icon product-generic-v127">{{ $si?->payload['preview_icon'] ?? '🎁' }}</div></div>
+        @php $ownedAsset=$si?->payload['asset_url'] ?? $si?->payload['table_image'] ?? $si?->payload['card_back_image'] ?? null; @endphp
+        <div class="product-preview-v127">@if($ownedAsset)<div class="admin-uploaded-cosmetic-preview" style="background-image:url('{{$ownedAsset}}')"></div>@else<div class="shop-icon product-generic-v127">{{ $si?->payload['preview_icon'] ?? '🎁' }}</div>@endif</div>
         <div class="product-info-v127"><h3>{{ $si?->name['ar'] ?? 'عنصر' }}</h3><p>{{ $si?->category ?? '' }}</p></div>
         <div class="product-actions-v127">
          <button type="button" onclick="previewStoreItem(this)">معاينة</button>
@@ -106,6 +107,7 @@ foreach($labels as $k=>$v){ if($k!=='inventory' && (($items[$k] ?? collect())->c
         $emojiTier=$payload['emoji_tier'] ?? (($item->price==0)?'free':'vip');
         $name=$item->name['ar'] ?? $item->key;
         $previewIcon=$payload['preview_icon'] ?? $payload['icon'] ?? $icons[$cat] ?? '🎁';
+        $assetUrl=$payload['asset_url'] ?? $payload['table_image'] ?? $payload['card_back_image'] ?? null;
        @endphp
        <form method="post" action="{{ route('store.buy',$item) }}"
         class="store-product-card-v127 store-card"
@@ -118,9 +120,9 @@ foreach($labels as $k=>$v){ if($k!=='inventory' && (($items[$k] ?? collect())->c
         @csrf
         <div class="product-preview-v127 type-{{$cat}}" style="--item-color:{{$color}};--item-color2:{{$color2}};--item-pattern:{{$pattern}}">
          @if($cat==='table')
-          <div class="product-table-v127 table-real-preview-v128"><i>{{$emblem}}</i></div>
+          <div class="product-table-v127 table-real-preview-v128" @if($assetUrl) style="background-image:linear-gradient(#0003,#0005),url('{{$assetUrl}}');background-size:cover;background-position:center" @endif><i>{{$emblem}}</i></div>
          @elseif($cat==='card_back')
-          <div class="product-cardback-v127 cardback-real-preview-v128"><i>{{$emblem}}</i></div>
+          <div class="product-cardback-v127 cardback-real-preview-v128" @if($assetUrl) style="background-image:url('{{$assetUrl}}');background-size:cover;background-position:center" @endif><i>{{$assetUrl?'':$emblem}}</i></div>
          @elseif($cat==='emoji_pack')
           <div class="emoji-store-icon product-emoji-v127">{{ $payload['emojis'] ?? $previewIcon }}</div>
          @elseif($cat==='xp_booster')

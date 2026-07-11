@@ -22,9 +22,15 @@ class TournamentController
     {
         abort_unless((auth()->user()->profile?->pasha_days ?? 0)>0 || auth()->user()->is_admin,403,'إنشاء المنافسات ميزة لأعضاء الباشا فقط.');
         $data=$r->validate([
-            'game_id'=>'required|exists:games,id','stages'=>'required|integer|min:1|max:4','seats_per_match'=>'required|integer|min:2|max:6','entry_fee'=>'required|integer|min:0|max:1000000','prize_pool'=>'required|integer|min:0|max:100000000'
+            'club_id'=>'nullable|exists:clubs,id','game_id'=>'required|exists:games,id','stages'=>'required|integer|min:1|max:4','seats_per_match'=>'required|integer|min:2|max:6','entry_fee'=>'required|integer|min:0|max:1000000','prize_pool'=>'required|integer|min:0|max:100000000'
         ]);
         $game=Game::findOrFail($data['game_id']);
+        if (!empty($data['club_id'])) {
+            $club=\App\Models\Club::findOrFail($data['club_id']);
+            $membership=$club->members()->where('user_id',auth()->id())->first();
+            $allowedClubTournament=$club->owner_id===auth()->id() || auth()->user()->is_admin || ($membership && $membership->role==='moderator' && (!empty(($membership->permissions ?: [])['all']) || !empty(($membership->permissions ?: [])['create_tournaments'])));
+            abort_unless($allowedClubTournament,403,'ليس لديك صلاحية إنشاء مسابقة لهذا النادي.');
+        }
         $allowed=$this->allowedSeatsForGame($game);
         if(!in_array((int)$data['seats_per_match'],$allowed,true)) return back()->withErrors(['msg'=>'عدد مقاعد المسابقة غير مناسب لهذه اللعبة. الخيارات الصحيحة: '.implode(' / ',$allowed)]);
         // v142: competition creation is free. Prize pools are administrative/virtual and never debit player wallets.

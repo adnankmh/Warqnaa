@@ -8,6 +8,13 @@
    <img class="avatar-lg" src="{{$profile?->avatar ?: '/assets/avatars/default.svg'}}" alt="avatar">
    <div><h2>{{$profile?->display_name ?: $user->username}}</h2><div id="countryPreviewBig">{!! flag_img($code,'flag-img flag-small') !!} <b>{{country_name($code)}}</b></div></div>
   </div>
+  @php $xp=(int)($profile?->xp ?? 0); $level=(int)($profile?->level ?? 1); $next=app(\App\Services\Leveling\XpService::class)->requiredXp($level); $need=max(0,$next-$xp); $percent=$next?min(100,round(($xp/$next)*100)):0; @endphp
+  <div class="profile-progress-v161">
+   <div class="xp-text"><b>المستوى {{$level}}</b><span>{{$xp}} / {{$next}} XP</span></div>
+   <div class="progress"><span style="width:{{$percent}}%"></span></div>
+   <small>متبقٍ {{number_format($need)}} XP للمستوى التالي • الباشا يضاعف نقاط الجولات ×2</small>
+   <div class="profile-points-grid-v161"><div><b>{{number_format($profile?->round_points ?? 0)}}</b><span>الجولات</span></div><div><b>{{number_format($profile?->tournament_points ?? 0)}}</b><span>المسابقات</span></div><div><b>{{number_format($profile?->club_points ?? 0)}}</b><span>النادي</span></div><div><b>{{number_format($profile?->pasha_days ?? 0)}}</b><span>أيام الباشا</span></div></div>
+  </div>
 
   <div class="profile-theme-box-v131">
    <h2>🎨 الثيمات السريعة</h2>

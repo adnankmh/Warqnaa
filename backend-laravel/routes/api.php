@@ -11,7 +11,8 @@ use App\Http\Controllers\{
     MobileAccountController,
     MobileSafetyController,
     MobileModerationController,
-    MobileAuthRecoveryController
+    MobileAuthRecoveryController,
+    SocialAuthController
 };
 
 // Backward-compatible public aliases for older Flutter/PWA builds. They
@@ -25,6 +26,9 @@ Route::prefix('mobile')->group(function () {
 Route::prefix('mobile/v1')->group(function () {
     Route::get('/health', [MobilePlatformController::class, 'health']);
     Route::get('/app-config', [MobilePlatformController::class, 'config']);
+    Route::get('/countries', [MobilePlatformController::class, 'countries']);
+    Route::post('/social-auth/start/{provider}', [SocialAuthController::class, 'start'])->middleware('throttle:warqna-auth');
+    Route::get('/social-auth/status/{state}', [SocialAuthController::class, 'status'])->middleware('throttle:warqna-auth');
     Route::post('/register', [MobileApiController::class, 'register'])->middleware('throttle:warqna-auth');
     Route::post('/password/forgot', [MobileAuthRecoveryController::class, 'forgot'])->middleware('throttle:warqna-auth');
     Route::post('/password/reset', [MobileAuthRecoveryController::class, 'reset'])->middleware('throttle:warqna-auth');

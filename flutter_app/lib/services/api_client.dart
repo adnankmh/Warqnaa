@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.60.0');
-const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 160);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.61.0');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 161);
 
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})
@@ -47,6 +47,9 @@ class WarqnaApiClient {
       };
 
   Future<Map<String, dynamic>> platformConfig() => get('/app-config?platform=$platform', authenticated: false);
+  Future<Map<String, dynamic>> countries() => get('/countries', authenticated: false);
+  Future<Map<String, dynamic>> startSocialAuth(String provider) => post('/social-auth/start/$provider', const {}, authenticated: false);
+  Future<Map<String, dynamic>> socialAuthStatus(String state) => get('/social-auth/status/$state', authenticated: false);
   Future<Map<String, dynamic>> exportAccount() => get('/account/export');
   Future<Map<String, dynamic>> sessions() => get('/account/sessions');
   Future<Map<String, dynamic>> revokeSession(int tokenId) => delete('/account/sessions/$tokenId');

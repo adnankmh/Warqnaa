@@ -28,6 +28,11 @@ class MobileVoiceController extends Controller
             'self_id' => $request->user()->id,
             'room_code' => $room->code,
             'ice_servers' => $this->iceServers(),
+            'voice_diagnostics' => [
+                'turn_configured' => count((array)config('voice.turn_urls',[])) > 0,
+                'secure_required' => true,
+                'poll_interval_ms' => 900,
+            ],
             'participants' => $this->participants($room, $request->user()->id),
             'message' => 'تم الانضمام إلى المحادثة الصوتية.',
         ]);
@@ -176,6 +181,8 @@ class MobileVoiceController extends Controller
                     'user_id' => $player->user_id,
                     'name' => $player->user?->profile?->display_name ?: $player->user?->username ?: 'لاعب',
                     'avatar' => $player->user?->profile?->avatar,
+                    'country_code' => safe_country_code($player->user?->profile?->country_code ?? 'PS'),
+                    'flag' => (string)(config('countries.'.safe_country_code($player->user?->profile?->country_code ?? 'PS').'.flag') ?? '🇵🇸'),
                     'muted' => (bool) $player->voice_muted,
                     'deafened' => (bool) $player->voice_deafened,
                     'online' => $online,

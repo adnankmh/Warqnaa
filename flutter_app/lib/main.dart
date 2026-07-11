@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'engines/tarneeb_engine.dart';
 import 'engines/local_game_engine.dart';
@@ -16,6 +18,7 @@ import 'services/api_client.dart';
 import 'services/rewarded_ads.dart';
 import 'services/voice_room_service.dart';
 import 'models/room_launch_options.dart';
+import 'data/countries.dart';
 import 'premium_v149.dart';
 
 part 'premium_v151.dart';
@@ -23,8 +26,31 @@ part 'production_v153.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await RewardedAds.initialize();
-  runApp(const WarqnaApp());
+
+  // Never allow an optional SDK (ads, analytics, platform plug-ins) to keep
+  // the application from painting its first frame. This is especially
+  // important for release APKs where a missing vendor configuration used to
+  // terminate the process before the login screen appeared.
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+  };
+  ui.PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Uncaught platform error: $error\n$stack');
+    return true;
+  };
+
+  runZonedGuarded(() {
+    runApp(const WarqnaApp());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(RewardedAds.initialize()
+          .timeout(const Duration(seconds: 8))
+          .catchError((error, stack) {
+        debugPrint('Optional ads initialization skipped: $error');
+      }));
+    });
+  }, (error, stack) {
+    debugPrint('Application zone error: $error\n$stack');
+  });
 }
 
 class WarqnaApp extends StatefulWidget {
@@ -174,6 +200,11 @@ class AppController extends ChangeNotifier {
   String username = 'Adnan';
   String displayName = 'Adnan';
   String email = 'adnan@warqna.local';
+  String countryCode = 'PS';
+  String countryName = 'الأراضي الفلسطينية';
+  int roundPoints = 0;
+  int tournamentPoints = 0;
+  int clubPoints = 0;
   String? authToken;
   BigInt coins = BigInt.from(125680);
   int level = 28;
@@ -240,6 +271,11 @@ class AppController extends ChangeNotifier {
       vipDays = defaultVipDays ?? 0;
       avatarEmoji = defaultAvatar ?? demoAvatarFor(username);
       avatarData = null;
+      countryCode = 'PS';
+      countryName = countryByCode(countryCode).name(localeCode);
+      roundPoints = 0;
+      tournamentPoints = 0;
+      clubPoints = 0;
       selectedTable = 'table_premium_01';
       selectedCardBack = 'cardback_01';
       selectedNameColor = '#facc15';
@@ -263,6 +299,11 @@ class AppController extends ChangeNotifier {
 
     displayName = prefs.getString(_accountKey('displayName')) ?? displayName;
     email = prefs.getString(_accountKey('email')) ?? email;
+    countryCode = prefs.getString(_accountKey('countryCode')) ?? 'PS';
+    countryName = prefs.getString(_accountKey('countryName')) ?? countryByCode(countryCode).name(localeCode);
+    roundPoints = prefs.getInt(_accountKey('roundPoints')) ?? 0;
+    tournamentPoints = prefs.getInt(_accountKey('tournamentPoints')) ?? 0;
+    clubPoints = prefs.getInt(_accountKey('clubPoints')) ?? 0;
     coins = BigInt.tryParse(prefs.getString(_accountKey('coins')) ?? '') ?? BigInt.from(1500);
     level = prefs.getInt(_accountKey('level')) ?? defaultLevel ?? 1;
     xp = prefs.getInt(_accountKey('xp')) ?? (level <= 1 ? 0 : level * 620);
@@ -310,6 +351,11 @@ class AppController extends ChangeNotifier {
     await prefs.setInt(_accountKey('vipDays'), vipDays);
     await prefs.setString(_accountKey('displayName'), displayName);
     await prefs.setString(_accountKey('email'), email);
+    await prefs.setString(_accountKey('countryCode'), countryCode);
+    await prefs.setString(_accountKey('countryName'), countryName);
+    await prefs.setInt(_accountKey('roundPoints'), roundPoints);
+    await prefs.setInt(_accountKey('tournamentPoints'), tournamentPoints);
+    await prefs.setInt(_accountKey('clubPoints'), clubPoints);
     await prefs.setString(_accountKey('avatarEmoji'), avatarEmoji);
     if (avatarData == null) { await prefs.remove(_accountKey('avatarData')); } else { await prefs.setString(_accountKey('avatarData'), avatarData!); }
     await prefs.setString(_accountKey('selectedTable'), selectedTable);
@@ -455,13 +501,13 @@ class AppController extends ChangeNotifier {
         prefs,
         defaultCoins: seed?['coins']?.toString(),
         defaultLevel: int.tryParse(seed?['level']?.toString() ?? ''),
-        defaultVipDays: isAdmin ? 1000 : 0,
+        defaultVipDays: isAdmin ? 3650 : 0,
         defaultAvatar: demoAvatarFor(username),
       );
       if (isAdmin) {
         coins = BigInt.parse('1000000000000000000');
         level = math.max(level, 90);
-        vipDays = math.max(vipDays, 1000);
+        vipDays = math.max(vipDays, 3650);
       }
       isAuthenticated = true;
       serverConnected = false;
@@ -576,13 +622,13 @@ class AppController extends ChangeNotifier {
         prefs,
         defaultCoins: user['coins']!.toString(),
         defaultLevel: int.tryParse(user['level']!.toString()) ?? 1,
-        defaultVipDays: isAdmin ? 1000 : 0,
+        defaultVipDays: isAdmin ? 3650 : 0,
         defaultAvatar: demoAvatarFor(username),
       );
       if (isAdmin) {
         coins = BigInt.parse('1000000000000000000');
         level = math.max(level, 90);
-        vipDays = math.max(vipDays, 1000);
+        vipDays = math.max(vipDays, 3650);
       }
       isAuthenticated = true;
       serverConnected = false;
@@ -624,6 +670,47 @@ class AppController extends ChangeNotifier {
         return null;
       }
       return 'تعذر الاتصال بالخادم، ولم يتم العثور على حساب محلي بهذه البيانات.';
+    }
+  }
+
+  Future<String?> loginWithSocialProvider(String provider) async {
+    if (api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost')) {
+      return 'تسجيل $provider يحتاج رابط Laravel API منشورًا عبر HTTPS، وليس 127.0.0.1.';
+    }
+    try {
+      final start = await api.startSocialAuth(provider);
+      final url = Uri.tryParse(start['authorize_url']?.toString() ?? '');
+      final state = start['state']?.toString() ?? '';
+      if (url == null || state.isEmpty) return 'لم يعُد الخادم برابط OAuth صالح.';
+      final opened = await launchUrl(url, mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication, webOnlyWindowName: '_blank');
+      if (!opened) return 'تعذر فتح صفحة تسجيل $provider.';
+      final deadline = DateTime.now().add(const Duration(minutes: 3));
+      while (DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(seconds: 2));
+        final status = await api.socialAuthStatus(state);
+        final value = status['status']?.toString();
+        if (value == 'completed') {
+          authToken = status['token']?.toString();
+          if (authToken == null || authToken!.isEmpty) return 'أكمل المزود الدخول لكن الخادم لم يُرجع جلسة.';
+          api.token = authToken;
+          _applySession(status);
+          isAuthenticated = true;
+          serverConnected = true;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('authToken', authToken!);
+          await _save();
+          notifyListeners();
+          return null;
+        }
+        if (value == 'failed' || value == 'expired' || value == 'consumed') {
+          return status['error']?.toString() ?? 'لم يكتمل تسجيل الدخول عبر $provider.';
+        }
+      }
+      return 'انتهت مهلة تسجيل الدخول. أعد المحاولة وأكمل نافذة المزود.';
+    } on ApiException catch (e) {
+      return e.message;
+    } catch (e) {
+      return 'تعذر تسجيل الدخول عبر $provider: $e';
     }
   }
 
@@ -693,6 +780,11 @@ class AppController extends ChangeNotifier {
       username = user['username']?.toString() ?? username;
       displayName = user['display_name']?.toString() ?? user['name']?.toString() ?? username;
       email = user['email']?.toString() ?? email;
+      countryCode = (user['country_code']?.toString() ?? countryCode).toUpperCase();
+      countryName = user['country_name']?.toString() ?? countryByCode(countryCode).name(localeCode);
+      roundPoints = int.tryParse(user['round_points']?.toString() ?? '') ?? roundPoints;
+      tournamentPoints = int.tryParse(user['tournament_points']?.toString() ?? '') ?? tournamentPoints;
+      clubPoints = int.tryParse(user['club_points']?.toString() ?? '') ?? clubPoints;
       avatarEmoji = user['avatar']?.toString() ?? avatarEmoji;
       avatarData = user['avatar_data']?.toString().isNotEmpty == true ? user['avatar_data']?.toString() : avatarData;
       selectedNameColor = user['name_color']?.toString() ?? selectedNameColor;
@@ -723,7 +815,7 @@ class AppController extends ChangeNotifier {
     if (isAdmin && username.toLowerCase() == 'adnan') {
       if (coins < BigInt.parse('1000000000000000000')) coins = BigInt.parse('1000000000000000000');
       level = math.max(level, 90);
-      vipDays = math.max(vipDays, 1000);
+      vipDays = math.max(vipDays, 3650);
     }
     _normalizeTimedCosmetics();
   }
@@ -832,6 +924,29 @@ class AppController extends ChangeNotifier {
     notifyListeners();
     return null;
   }
+
+  Future<String?> changeCountry(CountryInfo country) async {
+    countryCode = country.code;
+    countryName = country.name(localeCode);
+    if (serverConnected) {
+      try {
+        final data = await api.updateProfile({'country_code': country.code});
+        final user = data['user'];
+        if (user is Map) {
+          countryName = user['country_name']?.toString() ?? countryName;
+        }
+      } on ApiException catch (e) {
+        return e.message;
+      }
+    }
+    await _save();
+    notifyListeners();
+    return null;
+  }
+
+  String get countryFlag => countryByCode(countryCode).flag;
+  double get levelProgress => xpNext <= 0 ? 0 : (xp / xpNext).clamp(0.0, 1.0).toDouble();
+  int get pointsToNextLevel => math.max(0, xpNext - xp);
 
   Future<String?> deleteAccount(String password) async {
     if (isAdmin) return 'لا يمكن حذف حساب المدير الرئيسي.';
@@ -1130,6 +1245,25 @@ class AppController extends ChangeNotifier {
 
   void leaveGame([String? id]) {
     if (id == null || activeGame == id) activeGame = null;
+    _save();
+    notifyListeners();
+  }
+
+  void recordRoundProgress({required bool won, String mode = 'normal', String stage = 'round', bool away = false}) {
+    if (away) return;
+    final modeMultiplier = mode == 'sponsored' || mode == 'seasonal' ? 3.0 : mode == 'tournament' ? 2.0 : mode == 'club' ? 1.35 : 1.0;
+    final pashaMultiplier = vipDays > 0 ? 2.0 : 1.0;
+    final multiplier = modeMultiplier * pashaMultiplier * math.max(1.0, activeXpMultiplier);
+    final earned = ((won ? 60 : 20) * multiplier).round();
+    xp += earned;
+    roundPoints += ((won ? 30 : 8) * multiplier).round();
+    if (mode == 'tournament' || mode == 'sponsored' || mode == 'seasonal') {
+      final base = stage == 'champion' ? 1000 : stage == 'runner_up' ? 600 : stage == 'semifinal' ? 350 : stage == 'quarterfinal' ? 150 : 35;
+      tournamentPoints += (modeMultiplier >= 3 ? base * 3 : base);
+    }
+    if (activeClub != null) clubPoints += ((won ? 20 : 5) * (mode == 'club' ? 2 : 1)).round();
+    _recalculateLevel();
+    notices.insert(0, AppNotice('⭐', 'نقاط الجولة', '+$earned XP • مضاعف ×${multiplier.toStringAsFixed(2)}'));
     _save();
     notifyListeners();
   }
@@ -2335,6 +2469,21 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "badge_king", category: "badges", icon: "👑", nameAr: "شارة الملك", nameEn: "King Badge", descriptionAr: "عنصر تجميلي فاخر يظهر في الملف الشخصي وغرفة اللعب.", descriptionEn: "Premium cosmetic shown in the profile and game room.", price: 30000),
   StoreProduct(id: "badge_pro", category: "badges", icon: "🔥", nameAr: "شارة المحترف", nameEn: "Pro Badge", descriptionAr: "عنصر تجميلي فاخر يظهر في الملف الشخصي وغرفة اللعب.", descriptionEn: "Premium cosmetic shown in the profile and game room.", price: 30000),
   StoreProduct(id: "badge_fairplay", category: "badges", icon: "🛡️", nameAr: "شارة اللعب النظيف", nameEn: "Fair Play Badge", descriptionAr: "عنصر تجميلي فاخر يظهر في الملف الشخصي وغرفة اللعب.", descriptionEn: "Premium cosmetic shown in the profile and game room.", price: 30000),
+  StoreProduct(id: "badge_tournament_champion", category: "badges", icon: "🏆", nameAr: "بطل المسابقات", nameEn: "Tournament Champion", descriptionAr: "شارة فاخرة تظهر في البروفايل والطاولة.", descriptionEn: "Premium profile and table badge.", price: 28000),
+  StoreProduct(id: "badge_club_commander", category: "badges", icon: "🛡️", nameAr: "قائد النادي", nameEn: "Club Commander", descriptionAr: "شارة قيادية لأصحاب النوادي ومشرفيها.", descriptionEn: "Leadership badge for clubs.", price: 22000),
+  StoreProduct(id: "badge_voice_host", category: "badges", icon: "🎙️", nameAr: "مضيف صوتي", nameEn: "Voice Host", descriptionAr: "شارة غرف الصوت الاحترافية.", descriptionEn: "Professional voice room badge.", price: 9000),
+  StoreProduct(id: "badge_1000_wins", category: "badges", icon: "👑", nameAr: "ألف انتصار", nameEn: "1000 Wins", descriptionAr: "شارة أسطورية لأبطال اللعب.", descriptionEn: "Mythic champion badge.", price: 75000),
+  StoreProduct(id: "effect_fireworks_royal", category: "effects", icon: "🎆", nameAr: "ألعاب نارية ملكية", nameEn: "Royal Fireworks", descriptionAr: "احتفال فوز كبير لمدة خمس ثوانٍ.", descriptionEn: "Large five-second victory celebration.", price: 18000),
+  StoreProduct(id: "effect_lightning_crown", category: "effects", icon: "⚡", nameAr: "تاج البرق", nameEn: "Lightning Crown", descriptionAr: "برق وتاج متحرك عند الفوز.", descriptionEn: "Animated lightning crown on victory.", price: 24000),
+  StoreProduct(id: "effect_golden_confetti", category: "effects", icon: "🎊", nameAr: "كونفيتي ذهبي", nameEn: "Golden Confetti", descriptionAr: "قصاصات ذهبية احترافية.", descriptionEn: "Premium golden confetti.", price: 12000),
+  StoreProduct(id: "effect_dragon_victory", category: "effects", icon: "🐉", nameAr: "انتصار التنين", nameEn: "Dragon Victory", descriptionAr: "مؤثر أسطوري للتنين والنار.", descriptionEn: "Mythic dragon and fire effect.", price: 45000),
+  StoreProduct(id: "effect_phoenix_victory", category: "effects", icon: "🔥", nameAr: "عنقاء النصر", nameEn: "Phoenix Victory", descriptionAr: "عنقاء متوهجة تعلن الفوز.", descriptionEn: "Glowing phoenix victory effect.", price: 52000),
+  StoreProduct(id: "effect_crystal_burst", category: "effects", icon: "💎", nameAr: "انفجار الكريستال", nameEn: "Crystal Burst", descriptionAr: "بلورات لامعة حول الطاولة.", descriptionEn: "Shining crystals around the table.", price: 30000),
+  StoreProduct(id: "emoji_pack_giant_fun", category: "emoji", icon: "😂🤣😹😆🥳", nameAr: "إيموجي المرح العملاقة", nameEn: "Giant Fun Emojis", descriptionAr: "إيموجي كبيرة ومتحركة ضمن تبويب المرح.", descriptionEn: "Large animated fun emojis.", price: 5000),
+  StoreProduct(id: "emoji_pack_reactions_pro", category: "emoji", icon: "🔥👏💪😎🤝", nameAr: "ردود المحترفين", nameEn: "Pro Reactions", descriptionAr: "ردود احترافية كبيرة للصوت والدردشة.", descriptionEn: "Large professional reactions.", price: 10000),
+  StoreProduct(id: "emoji_pack_legendary", category: "emoji", icon: "🐉👑⚡💎🏆", nameAr: "الإيموجي الأسطورية", nameEn: "Legendary Emojis", descriptionAr: "حزمة أسطورية متحركة.", descriptionEn: "Animated legendary pack.", price: 15000),
+  StoreProduct(id: "emoji_pack_emotions", category: "emoji", icon: "😡😭🥺😍😱", nameAr: "المشاعر الكاملة", nameEn: "Full Emotions", descriptionAr: "غضب وحزن وفرح ودهشة بحجم كبير.", descriptionEn: "Large full emotion set.", price: 3500),
+  StoreProduct(id: "emoji_pack_sports", category: "emoji", icon: "⚽🏀🎯🥇🚀", nameAr: "الحماس الرياضي", nameEn: "Sports Energy", descriptionAr: "حزمة حماس وتحدي ومسابقات.", descriptionEn: "Sports and tournament energy pack.", price: 7000),
   StoreProduct(id: "effect_gold_entry", category: "effects", icon: "✨", nameAr: "دخول ذهبي", nameEn: "Golden Entry", descriptionAr: "عنصر تجميلي فاخر يظهر في الملف الشخصي وغرفة اللعب.", descriptionEn: "Premium cosmetic shown in the profile and game room.", price: 42000),
   StoreProduct(id: "effect_fire_win", category: "effects", icon: "🔥", nameAr: "احتفال فوز ناري", nameEn: "Fire Win Celebration", descriptionAr: "عنصر تجميلي فاخر يظهر في الملف الشخصي وغرفة اللعب.", descriptionEn: "Premium cosmetic shown in the profile and game room.", price: 48000),
   StoreProduct(id: "effect_royal_confetti", category: "effects", icon: "🎉", nameAr: "قصاصات ملكية", nameEn: "Royal Confetti", descriptionAr: "عنصر تجميلي فاخر يظهر في الملف الشخصي وغرفة اللعب.", descriptionEn: "Premium cosmetic shown in the profile and game room.", price: 55000),
@@ -2518,6 +2667,15 @@ class _LoginScreenState extends State<LoginScreen> {
     await submit(offline: true);
   }
 
+  Future<void> socialLogin(String provider) async {
+    if (busy) return;
+    setState(() { busy = true; error = null; });
+    final result = await widget.controller.loginWithSocialProvider(provider);
+    if (!mounted) return;
+    setState(() { busy = false; error = result; });
+    if (result == null) showToast(context, 'تم تسجيل الدخول عبر ${provider.toUpperCase()} بنجاح.');
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.fromCode(widget.controller.themeCode);
@@ -2638,11 +2796,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               Text(authTextV151(lang, 'fallback'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white54, fontSize: 9, height: 1.5)),
                               Padding(padding: const EdgeInsets.symmetric(vertical: 5), child: Row(children: [const Expanded(child: Divider()), Padding(padding: const EdgeInsets.symmetric(horizontal: 9), child: Text(authTextV151(lang, 'orVia'), style: const TextStyle(fontSize: 10, color: Colors.white54))), const Expanded(child: Divider())])),
                               Row(children: [
-                                Expanded(child: OutlinedButton.icon(onPressed: busy ? null : () => showToast(context, 'تسجيل Google جاهز للربط بعد إضافة مفاتيح OAuth في الخادم.'), icon: const Text('G', style: TextStyle(fontWeight: FontWeight.w900)), label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Google', maxLines: 1, softWrap: false, style: TextStyle(fontSize: 10))))),
+                                Expanded(child: OutlinedButton.icon(onPressed: busy ? null : () => socialLogin('google'), icon: const Text('G', style: TextStyle(fontWeight: FontWeight.w900)), label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Google', maxLines: 1, softWrap: false, style: TextStyle(fontSize: 10))))),
                                 const SizedBox(width: 6),
-                                Expanded(child: OutlinedButton.icon(onPressed: busy ? null : () => showToast(context, 'تسجيل Apple جاهز للربط بعد إضافة Service ID ومفتاح Apple.'), icon: const Icon(Icons.apple, size: 18), label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Apple', maxLines: 1, softWrap: false, style: TextStyle(fontSize: 10))))),
+                                Expanded(child: OutlinedButton.icon(onPressed: busy ? null : () => socialLogin('apple'), icon: const Icon(Icons.apple, size: 18), label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Apple', maxLines: 1, softWrap: false, style: TextStyle(fontSize: 10))))),
                                 const SizedBox(width: 6),
-                                Expanded(child: OutlinedButton.icon(onPressed: busy ? null : () => showToast(context, 'تسجيل Facebook جاهز للربط بعد إضافة App ID وSecret.'), icon: const Text('f', style: TextStyle(fontWeight: FontWeight.w900)), label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Facebook', maxLines: 1, softWrap: false, style: TextStyle(fontSize: 9))))),
+                                Expanded(child: OutlinedButton.icon(onPressed: busy ? null : () => socialLogin('facebook'), icon: const Text('f', style: TextStyle(fontWeight: FontWeight.w900)), label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Facebook', maxLines: 1, softWrap: false, style: TextStyle(fontSize: 9))))),
                               ]),
                               const SizedBox(height: 7),
                               FilledButton.tonalIcon(onPressed: busy || warqnaProductionMode ? null : widget.controller.loginAsGuest, icon: const Icon(Icons.person_outline_rounded), label: Text(authTextV151(lang, 'guest'))) ,
@@ -3031,6 +3189,18 @@ class _StorePageState extends State<StorePage> {
           action: '🪙 ${formatNumber(widget.controller.coins)}',
           onTap: () => showWallet(context, widget.controller),
         ),
+        const SizedBox(height: 10),
+        PremiumPanel(child:Padding(padding:const EdgeInsets.all(13),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Row(children:[Expanded(child:Text('تقدم المستوى ${controller.level}',style:const TextStyle(fontWeight:FontWeight.w900))),Text('${controller.xp} / ${controller.xpNext} XP',style:const TextStyle(color:Colors.amber,fontWeight:FontWeight.w900,fontSize:11))]),
+          const SizedBox(height:8),
+          ClipRRect(borderRadius:BorderRadius.circular(20),child:LinearProgressIndicator(value:controller.levelProgress,minHeight:12,backgroundColor:Colors.white10)),
+          const SizedBox(height:6),
+          Text('تحتاج ${controller.pointsToNextLevel} نقطة XP للمستوى التالي',style:const TextStyle(color:Colors.white60,fontSize:10)),
+          const SizedBox(height:10),
+          Row(children:[Expanded(child:ProfileMetric(value:'${controller.roundPoints}',label:'نقاط الجولات')),const SizedBox(width:6),Expanded(child:ProfileMetric(value:'${controller.tournamentPoints}',label:'نقاط المسابقات')),const SizedBox(width:6),Expanded(child:ProfileMetric(value:'${controller.clubPoints}',label:'نقاط النادي'))]),
+          const SizedBox(height:7),
+          Text('المضاعف الحالي ×${((controller.vipDays>0?2.0:1.0)*math.max(1.0,controller.activeXpMultiplier)).toStringAsFixed(2)} • المسابقات أعلى من اللعب العادي • المدعومة/الموسمية حتى ×3',style:const TextStyle(color:Colors.lightGreenAccent,fontSize:9,fontWeight:FontWeight.w800)),
+        ]))),
         const SizedBox(height: 10),
         PremiumPanel(
           child: Padding(
@@ -3638,6 +3808,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
   bool chatOpen = true;
   bool botsActing = false;
   bool rewardGranted = false;
+  final Set<int> awardedProgressRounds = <int>{};
   bool awayMode = false;
   int autoPlayedTurns = 0;
   final chatController = TextEditingController();
@@ -3661,6 +3832,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
     );
     selectedCode = null;
     rewardGranted = false;
+    awardedProgressRounds.clear();
     seconds = 10;
     WidgetsBinding.instance.addPostFrameCallback((_) => _runBots());
   }
@@ -3704,6 +3876,8 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
           return;
         }
       }
+      _maybeAwardRoundProgress();
+      _maybeRewardWin();
       if (mounted) {
         setState(() {});
         showToast(context, awayMode
@@ -3717,7 +3891,35 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
     }
   }
 
+  void _maybeAwardRoundProgress() {
+    if (awayMode || awardedProgressRounds.contains(engine.round)) return;
+    if (engine.phase != TarneebPhase.roundEnd && engine.phase != TarneebPhase.gameOver) return;
+    awardedProgressRounds.add(engine.round);
+    final wonRound = engine.roundTricks[0] >= engine.roundTricks[1];
+    widget.controller.recordRoundProgress(
+      won: wonRound,
+      mode: widget.controller.activeChallenge == null ? 'normal' : 'tournament',
+      stage: engine.phase == TarneebPhase.gameOver && engine.winnerTeam == 0 ? 'champion' : 'round',
+    );
+    if (wonRound && mounted) {
+      final completedRound = engine.round;
+      final product = storeProductById(widget.controller.selectedEffect);
+      floatingReaction = ReactionItem(
+        'victory_$completedRound',
+        product?.icon ?? '🏆',
+        'victory',
+        product?.nameAr ?? 'مؤثر الفوز',
+        product?.nameEn ?? 'Victory effect',
+        animated: true,
+      );
+      Future<void>.delayed(const Duration(seconds: 5), () {
+        if (mounted && floatingReaction?.id == 'victory_$completedRound') setState(() => floatingReaction = null);
+      });
+    }
+  }
+
   void _maybeRewardWin() {
+    _maybeAwardRoundProgress();
     if (rewardGranted || engine.phase != TarneebPhase.gameOver) return;
     rewardGranted = true;
     if (engine.winnerTeam == 0 && !awayMode) {
@@ -3745,6 +3947,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
       guard += 1;
     }
     botsActing = false;
+    _maybeAwardRoundProgress();
     _maybeRewardWin();
   }
 
@@ -3783,6 +3986,8 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
       autoPlayedTurns = 0;
       selectedCode = null;
       seconds = 10;
+      _maybeAwardRoundProgress();
+      _maybeRewardWin();
       setState(() {});
       await _runBots();
     } catch (e) {
@@ -4349,6 +4554,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
   int seconds = 10;
   Timer? timer;
   int chatPoll = 0;
+  final Set<String> progressionMarkers = <String>{};
   final serverChatController = TextEditingController();
   final List<ChatMessage> serverMessages = [];
   VoiceRoomService? voiceRoom;
@@ -4512,10 +4718,40 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
     sending = false;
   }
 
+  void _awardLocalProgressionTransition(Map<String, dynamic> before, Map<String, dynamic> after) {
+    if (localSession == null || awayMode) return;
+    final beforeState = before['state'] is Map ? Map<String, dynamic>.from(before['state'] as Map) : before;
+    final afterState = after['state'] is Map ? Map<String, dynamic>.from(after['state'] as Map) : after;
+    final beforePhase = beforeState['phase']?.toString() ?? '';
+    final afterPhase = afterState['phase']?.toString() ?? '';
+    final round = int.tryParse((afterState['round'] ?? afterState['round_no'] ?? 1).toString()) ?? 1;
+    final completed = !const {'round_end', 'finished', 'game_over'}.contains(beforePhase) && const {'round_end', 'finished', 'game_over'}.contains(afterPhase);
+    if (!completed) return;
+    final marker = '${widget.game.id}:$round:$afterPhase';
+    if (!progressionMarkers.add(marker)) return;
+    final winner = afterState['winner']?.toString() ?? afterState['round_winner']?.toString() ?? '';
+    final winnerTeam = int.tryParse((afterState['winner_team'] ?? afterState['round_winner_team'] ?? -1).toString()) ?? -1;
+    final won = winner == 'user:0' || winnerTeam == 0;
+    final tournament = widget.controller.activeChallenge != null || widget.controller.activeCompetition != null;
+    widget.controller.recordRoundProgress(
+      won: won,
+      mode: tournament ? 'tournament' : 'normal',
+      stage: (afterPhase == 'finished' || afterPhase == 'game_over') && won ? 'champion' : 'round',
+    );
+    if (won) {
+      final product = storeProductById(widget.controller.selectedEffect);
+      floatingReaction = ReactionItem('local_victory_$marker', product?.icon ?? '🏆', 'victory', product?.nameAr ?? 'مؤثر الفوز', product?.nameEn ?? 'Victory effect', animated: true);
+      Future<void>.delayed(const Duration(seconds: 5), () {
+        if (mounted && floatingReaction?.id == 'local_victory_$marker') setState(() => floatingReaction = null);
+      });
+    }
+  }
+
   Future<void> _action(String action, [Map<String, dynamic>? payload]) async {
     if (sending || roomCode.isEmpty) return;
     setState(() => sending = true);
     try {
+      final beforeRoom = room == null ? <String, dynamic>{} : Map<String, dynamic>.from(room!);
       final Map<String, dynamic> updated;
       if (localSession != null) {
         updated = localSession!.action(action, payload);
@@ -4524,6 +4760,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
         updated = Map<String, dynamic>.from(data['room'] as Map);
       }
       if (!mounted) return;
+      _awardLocalProgressionTransition(beforeRoom, updated);
       setState(() {
         room = updated;
         seconds = turnDuration;
@@ -5850,6 +6087,34 @@ Future<void> showDeleteAccountDialog(BuildContext context, AppController control
   showToast(context, error ?? 'تم حذف الحساب.');
 }
 
+Future<void> showCountryPicker(BuildContext context, AppController controller) async {
+  final search = TextEditingController();
+  var filtered = List<CountryInfo>.from(allCountries);
+  final selected = await showDialog<CountryInfo>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(builder: (context, setState) => AlertDialog(
+      title: const Text('اختر الدولة والعلم'),
+      content: SizedBox(
+        width: 520,
+        height: math.min(MediaQuery.sizeOf(context).height * .68, 620),
+        child: Column(children: [
+          TextField(controller: search, decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث باسم الدولة أو الرمز'), onChanged: (value) {
+            final q=value.trim().toLowerCase();
+            setState(() => filtered=allCountries.where((c)=>c.code.toLowerCase().contains(q)||c.ar.contains(q)||c.en.toLowerCase().contains(q)).toList());
+          }),
+          const SizedBox(height:8),
+          Expanded(child: ListView.builder(itemCount:filtered.length,itemBuilder:(context,index){final c=filtered[index];return ListTile(leading:Text(c.flag,style:const TextStyle(fontSize:28)),title:Text(c.name(controller.localeCode)),subtitle:Text('${c.code} • ${c.en}'),selected:c.code==controller.countryCode,onTap:()=>Navigator.pop(dialogContext,c));})),
+        ]),
+      ),
+      actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext),child:const Text('إلغاء'))],
+    )),
+  );
+  search.dispose();
+  if(selected==null) return;
+  final error=await controller.changeCountry(selected);
+  if(context.mounted) showToast(context,error ?? 'تم تحديث الدولة والعلم في البروفايل وكل صفحات التطبيق.');
+}
+
 void showProfile(BuildContext context, AppController controller) {
   showPremiumSheet(
     context,
@@ -5883,6 +6148,8 @@ void showProfile(BuildContext context, AppController controller) {
                         ]),
                         const SizedBox(height: 3),
                         Text('@${controller.username} • ${controller.serverConnected ? 'LIVE' : 'LOCAL'}', style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 4),
+                        InkWell(onTap:()=>showCountryPicker(context,controller),borderRadius:BorderRadius.circular(12),child:Padding(padding:const EdgeInsets.symmetric(vertical:2),child:Row(mainAxisSize:MainAxisSize.min,children:[Text(controller.countryFlag,style:const TextStyle(fontSize:20)),const SizedBox(width:5),Flexible(child:Text(controller.countryName,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800,fontSize:10))),const SizedBox(width:4),const Icon(Icons.edit_location_alt_outlined,size:13,color:Colors.white60)]))),
                         const SizedBox(height: 6),
                         Row(children: [
                           Image.asset('assets/images/pasha.png', width: 25, height: 25),
@@ -5953,7 +6220,7 @@ void showProfile(BuildContext context, AppController controller) {
           _RecentMatchTile(game: 'هاند', result: 'خسارة', score: '92–101', icon: '🎴', win: false),
         ])),
         const SizedBox(height: 11),
-        FilledButton.tonalIcon(onPressed: () => showAvatarPicker(context, controller), icon: const Icon(Icons.add_a_photo_outlined), label: const Text('تغيير الصورة أو الرمز'), style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44))),
+        Row(children:[Expanded(child:FilledButton.tonalIcon(onPressed:()=>showCountryPicker(context,controller),icon:Text(controller.countryFlag,style:const TextStyle(fontSize:20)),label:const Text('الدولة والعلم'))),const SizedBox(width:7),Expanded(child:FilledButton.tonalIcon(onPressed: () => showAvatarPicker(context, controller), icon: const Icon(Icons.add_a_photo_outlined), label: const Text('الصورة والرمز')))]),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -7540,8 +7807,13 @@ List<String> activeEmojiList(AppController controller) {
     'emoji_pro_power' => const ['🔥', '⚡', '💎', '🏆', '👑', '🛡️'],
     'emoji_legend_big' => const ['🦁', '🐉', '🦅', '🌌', '💥', '🎆'],
     'emoji_animated_vip' => const ['😂', '🔥', '👑', '💎', '⚡', '🏆', '🎉'],
-    'emoji_huge_reactions' => const ['😂', '👑', '🔥', '😡', '😭', '🤯'],
-    _ => const ['👍', '😂', '😍', '😮', '😢', '😡'],
+    'emoji_huge_reactions' => const ['😂', '👑', '🔥', '😡', '😭', '🤯', '🥳', '🐉'],
+    'emoji_pack_giant_fun' => const ['😂', '🤣', '😹', '😆', '🥳', '🤪', '🙈', '👻'],
+    'emoji_pack_reactions_pro' => const ['🔥', '👏', '💪', '😎', '🤝', '⚡', '🎯', '🧠'],
+    'emoji_pack_legendary' => const ['🐉', '👑', '⚡', '💎', '🏆', '🦁', '🦅', '🌌'],
+    'emoji_pack_emotions' => const ['😡', '😭', '🥺', '😍', '😱', '😬', '🤐', '🥹'],
+    'emoji_pack_sports' => const ['⚽', '🏀', '🎯', '🥇', '🚀', '🏅', '🏆', '💯'],
+    _ => const ['👍', '😂', '😍', '😮', '😢', '😡', '👏', '🔥'],
   };
 }
 

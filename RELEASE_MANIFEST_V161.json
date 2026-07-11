@@ -1,0 +1,27 @@
+{
+  "product": "Warqna",
+  "version": "1.61.0",
+  "build": 161,
+  "channel": "production",
+  "codename": "voice-social-progression",
+  "release_date": "2026-07-11",
+  "platforms": ["web", "android", "ios", "laravel"],
+  "highlights": [
+    "Crash-safe Android startup with optional SDK isolation",
+    "WebRTC voice room reconnection, HTTPS guard and TURN diagnostics",
+    "248 countries and flags in player profiles",
+    "Server-authoritative idempotent round, tournament and club progression",
+    "Pasha x2 and stackable XP boosters",
+    "Club moderator permissions, announcements and club tournaments",
+    "Admin-uploaded table, card-back and profile-cover assets",
+    "Expanded victory effects, badges and large categorized emojis",
+    "3650 Pasha days for every administrator",
+    "Google, Facebook and Apple OAuth foundation"
+  ],
+  "external_configuration_required": [
+    "WARQNA_API_URL must point to the deployed HTTPS Laravel API",
+    "TURN credentials are required for reliable voice between different networks",
+    "Google, Facebook and Apple provider credentials and callback URLs",
+    "AdMob production IDs and Android signing secrets before store publication"
+  ]
+}

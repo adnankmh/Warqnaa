@@ -31,14 +31,14 @@ class XpService
         };
     }
 
-    public function award(User $user, int $xp, int $tokens = 0, bool $win = false): array
+    public function award(User $user, int $xp, int $tokens = 0, bool $win = false, bool $countGame = true, bool $applyMultipliers = true): array
     {
         $profile = $user->profile;
         $wallet = $user->wallet;
         $oldLevel = (int) ($profile->level ?? 1);
         $booster = max(1, (float)($profile->xp_boost_multiplier ?? 1));
-        $pashaBoost = ((int)($profile->pasha_days ?? 0) > 0) ? 1.5 : 1.0;
-        $earnedXp = (int) round(max(0, $xp) * $booster * $pashaBoost);
+        $pashaBoost = ((int)($profile->pasha_days ?? 0) > 0) ? 2.0 : 1.0;
+        $earnedXp = $applyMultipliers ? (int) round(max(0, $xp) * $booster * $pashaBoost) : max(0, $xp);
         $profile->xp = (int) $profile->xp + $earnedXp;
         $newLevel = $this->levelForXp((int) $profile->xp);
         $bonus = 0;
@@ -46,8 +46,8 @@ class XpService
             for ($i = $oldLevel + 1; $i <= $newLevel; $i++) $bonus += $this->rewardForLevel($i);
         }
         $profile->level = $newLevel;
-        $profile->games_played = (int) ($profile->games_played ?? 0) + 1;
-        $profile->wins = (int) ($profile->wins ?? 0) + ($win ? 1 : 0);
+        $profile->games_played = (int) ($profile->games_played ?? 0) + ($countGame ? 1 : 0);
+        $profile->wins = (int) ($profile->wins ?? 0) + (($countGame && $win) ? 1 : 0);
         $profile->save();
         if ($wallet) {
             $wallet->tokens += max(0, $tokens) + $bonus;

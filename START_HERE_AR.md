@@ -1,5 +1,5 @@
-# ابدأ من هنا
+# Warqna v161
 
-الإصدار الحالي: **v160 — 1.60.0+160**
+ابدأ من: `START_HERE_V161_AR.md`
 
-افتح الدليل: `START_HERE_V160_AR.md`.
+إعداد الصوت وتسجيل الدخول: `VOICE_AND_SOCIAL_SETUP_V161_AR.md`

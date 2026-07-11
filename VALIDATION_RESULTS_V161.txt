@@ -1,0 +1,37 @@
+Warqna v161 — Validation Results
+================================
+Release contract: 1.61.0+161 — PASS
+Source-package preflight: PASS
+Git conflict markers: none
+Runtime secrets/signing files: none
+PHP syntax: 268 files — PASS
+JSON syntax: 18 files — PASS
+YAML structural audit: 15 files — PASS
+JavaScript syntax: PASS
+Python source compilation: PASS
+Shell launcher syntax: PASS
+Dart delimiter/source-structure audit: 13 files — PASS
+Country/flag catalog: 248 entries — PASS
+Flutter dependency lock parser self-test: PASS
+Android workflow startup/Gradle ordering contract: PASS
+Laravel SQLite/PHPUnit/Docker contracts: PASS
+Voice HTTPS/TURN/reconnection contract: PASS
+Progression idempotency/Pasha x2/booster guard: PASS
+Club moderator permission contract: PASS
+Admin table/card asset upload contract: PASS
+Google/Facebook/Apple OAuth route/config contract: PASS
+
+Execution boundary
+------------------
+The complete `flutter test`, Android APK/AAB build, Composer installation,
+Laravel migrations and `php artisan test` are intentionally executed by the
+included GitHub Actions workflows. Flutter SDK and Composer vendor packages
+are not installed in the ZIP preparation environment.
+
+Production prerequisites
+------------------------
+- HTTPS Laravel API URL
+- TURN server credentials for reliable voice across different networks
+- Google/Facebook/Apple provider credentials and registered callback URLs
+- Production AdMob IDs
+- Android signing secrets before store publication

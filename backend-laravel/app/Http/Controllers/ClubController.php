@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\{Club,ClubMember,ClubJoinRequest,Notification};
+use App\Models\{Club,ClubMember,ClubJoinRequest,ClubAnnouncement,Notification,Tournament};
 use App\Services\Wallet\WalletService;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -33,7 +33,7 @@ class ClubController
 
     public function show(Club $club)
     {
-        $club->load('owner.profile','members.user.profile','joinRequests.user.profile');
+        $club->load('owner.profile','members.user.profile','joinRequests.user.profile','announcements.author.profile','tournaments.game');
         return view('clubs.show',[
             'club'=>$club,
             'clubCaps'=>$this->clubCaps,
@@ -42,6 +42,7 @@ class ClubController
             'canAccept'=>$this->can($club,'accept_members'),
             'canKick'=>$this->can($club,'kick_members'),
             'canTournament'=>$this->can($club,'create_tournaments'),
+            'canAnnounce'=>$this->can($club,'create_announcements'),
         ]);
     }
 
@@ -104,6 +105,7 @@ class ClubController
                 'kick_members'=>$r->boolean('kick_members'),
                 'create_tournaments'=>$r->boolean('create_tournaments'),
                 'manage_chat'=>$r->boolean('manage_chat'),
+                'create_announcements'=>$r->boolean('create_announcements'),
             ];
             $member->update(['role'=>'moderator','permissions'=>$perms]);
             return back()->with('ok','تم تعيين المشرف وتحديد صلاحياته');
@@ -117,11 +119,36 @@ class ClubController
         abort(422,'إجراء غير معروف');
     }
 
+
+    public function announcementStore(Club $club, Request $request)
+    {
+        abort_unless($this->can($club,'create_announcements'),403,'ليس لديك صلاحية نشر إعلانات النادي.');
+        $data=$request->validate(['title'=>'required|string|max:140','body'=>'required|string|max:2000','pinned'=>'nullable|boolean']);
+        ClubAnnouncement::create(['club_id'=>$club->id,'author_id'=>auth()->id(),'title'=>$data['title'],'body'=>$data['body'],'pinned'=>$request->boolean('pinned')]);
+        return back()->with('ok','تم نشر إعلان النادي.');
+    }
+
+    public function announcementDelete(Club $club, ClubAnnouncement $announcement)
+    {
+        abort_unless($announcement->club_id===$club->id,404);
+        abort_unless($club->owner_id===auth()->id() || auth()->user()->is_admin || $announcement->author_id===auth()->id(),403);
+        $announcement->delete();
+        return back()->with('ok','تم حذف الإعلان.');
+    }
+
+    public function createTournament(Club $club, Request $request)
+    {
+        abort_unless($this->can($club,'create_tournaments'),403,'ليس لديك صلاحية إنشاء مسابقات النادي.');
+        $request->merge(['club_id'=>$club->id]);
+        return app(TournamentController::class)->store($request, app(\App\Services\Wallet\WalletService::class));
+    }
+
     public function respond(ClubJoinRequest $request, Request $r)
     {
         $club=$request->club;
         abort_unless($this->can($club,'accept_members'),403);
-        $status=$r->input('status','accepted');
+        $data=$r->validate(['status'=>'required|in:accepted,rejected']);
+        $status=$data['status'];
         $request->update(['status'=>$status]);
         if($status==='accepted'){
             abort_if($club->members()->count() >= $this->cap($club),422,'النادي ممتلئ حسب مستوى النادي الحالي');

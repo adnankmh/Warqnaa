@@ -60,6 +60,8 @@ class VoiceRoomService extends ChangeNotifier {
   Timer? _pollTimer;
   final Map<int, RTCPeerConnection> _peers = {};
   final Map<int, List<MediaStreamTrack>> _remoteTracks = {};
+  final Map<int, List<RTCIceCandidate>> _pendingCandidates = {};
+  final Map<int, int> _peerFailures = {};
   final Set<int> _locallyMutedPeers = {};
   List<Map<String, dynamic>> _iceServers = const [
     {'urls': ['stun:stun.l.google.com:19302']}
@@ -78,6 +80,9 @@ class VoiceRoomService extends ChangeNotifier {
     _notify();
 
     try {
+      if (kIsWeb && Uri.base.scheme != 'https' && Uri.base.host != 'localhost' && Uri.base.host != '127.0.0.1') {
+        throw StateError('الغرف الصوتية على الويب تحتاج HTTPS حتى يسمح المتصفح بالميكروفون.');
+      }
       _localStream = await navigator.mediaDevices.getUserMedia({
         'audio': {
           'echoCancellation': true,
@@ -106,8 +111,9 @@ class VoiceRoomService extends ChangeNotifier {
       status = 'الصوت متصل';
       _notify();
 
+      await _poll();
       await _ensureOffers();
-      _pollTimer = Timer.periodic(const Duration(milliseconds: 1300), (_) => _poll());
+      _pollTimer = Timer.periodic(const Duration(milliseconds: 900), (_) => unawaited(_poll()));
     } on ApiException catch (e) {
       await _fallbackToLocal(e.message);
     } catch (e) {
@@ -209,16 +215,42 @@ class VoiceRoomService extends ChangeNotifier {
     };
 
     pc.onConnectionState = (state) {
-      status = state == RTCPeerConnectionState.RTCPeerConnectionStateConnected
-          ? 'الصوت متصل'
-          : state == RTCPeerConnectionState.RTCPeerConnectionStateFailed
-              ? 'فشل اتصال صوت أحد اللاعبين'
-              : status;
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
+        _peerFailures[remoteUserId] = 0;
+        status = 'الصوت متصل';
+      } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
+          state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+        final failures = (_peerFailures[remoteUserId] ?? 0) + 1;
+        _peerFailures[remoteUserId] = failures;
+        status = failures > 2
+            ? (hasTurnServer ? 'تعذر الوصول للاعب — أعد المحاولة' : 'تعذر الوصول للاعب — أضف خادم TURN')
+            : 'إعادة توصيل الصوت…';
+        if (failures <= 2) {
+          unawaited(Future<void>.delayed(const Duration(milliseconds: 700), () => _reconnectPeer(remoteUserId, pc)));
+        }
+      }
       _notify();
     };
 
     _peers[remoteUserId] = pc;
     return pc;
+  }
+
+  Future<void> _reconnectPeer(int remoteUserId, RTCPeerConnection failedPeer) async {
+    if (_disposed || !joined || localPreview) return;
+    if (!identical(_peers[remoteUserId], failedPeer)) return;
+    try {
+      await failedPeer.close();
+    } catch (_) {}
+    _peers.remove(remoteUserId);
+    _remoteTracks.remove(remoteUserId);
+    _pendingCandidates.remove(remoteUserId);
+    try {
+      await _ensureOffers();
+    } catch (_) {
+      status = hasTurnServer ? 'إعادة الاتصال بالصوت…' : 'الصوت يحتاج خادم TURN على الشبكات المختلفة';
+      _notify();
+    }
   }
 
   Future<void> _handleSignal(Map<String, dynamic> signal) async {
@@ -230,6 +262,7 @@ class VoiceRoomService extends ChangeNotifier {
 
     if (type == 'offer') {
       await pc.setRemoteDescription(RTCSessionDescription(payload['sdp']?.toString(), 'offer'));
+      await _flushCandidates(senderId, pc);
       final answer = await pc.createAnswer({'offerToReceiveAudio': 1});
       await pc.setLocalDescription(answer);
       await api.voiceSignal(roomCode!, senderId, 'answer', {'sdp': answer.sdp, 'type': answer.type});
@@ -237,18 +270,42 @@ class VoiceRoomService extends ChangeNotifier {
     }
     if (type == 'answer') {
       await pc.setRemoteDescription(RTCSessionDescription(payload['sdp']?.toString(), 'answer'));
+      await _flushCandidates(senderId, pc);
       return;
     }
     if (type == 'candidate') {
       final candidate = payload['candidate']?.toString();
       if (candidate == null || candidate.isEmpty) return;
-      await pc.addCandidate(RTCIceCandidate(
+      final ice = RTCIceCandidate(
         candidate,
         payload['sdpMid']?.toString(),
         int.tryParse(payload['sdpMLineIndex']?.toString() ?? ''),
-      ));
+      );
+      try {
+        final remote = await pc.getRemoteDescription();
+        if (remote == null) {
+          _pendingCandidates.putIfAbsent(senderId, () => <RTCIceCandidate>[]).add(ice);
+        } else {
+          await pc.addCandidate(ice);
+        }
+      } catch (_) {
+        _pendingCandidates.putIfAbsent(senderId, () => <RTCIceCandidate>[]).add(ice);
+      }
     }
   }
+
+  Future<void> _flushCandidates(int remoteUserId, RTCPeerConnection pc) async {
+    final queued = _pendingCandidates.remove(remoteUserId) ?? const <RTCIceCandidate>[];
+    for (final candidate in queued) {
+      try { await pc.addCandidate(candidate); } catch (_) {}
+    }
+  }
+
+  bool get hasTurnServer => _iceServers.any((server) {
+    final urls=server['urls'];
+    if (urls is List) return urls.any((u)=>u.toString().startsWith('turn:')||u.toString().startsWith('turns:'));
+    return urls.toString().startsWith('turn:')||urls.toString().startsWith('turns:');
+  });
 
   Future<void> setMicEnabled(bool value) async {
     micEnabled = value;
@@ -307,6 +364,8 @@ class VoiceRoomService extends ChangeNotifier {
       } catch (_) {}
     }
     _peers.clear();
+    _pendingCandidates.clear();
+    _peerFailures.clear();
     for (final track in _localStream?.getTracks() ?? const <MediaStreamTrack>[]) {
       try {
         track.stop();

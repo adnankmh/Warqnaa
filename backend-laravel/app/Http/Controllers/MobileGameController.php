@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{DB,Hash,Schema};
 use Illuminate\Support\Str;
 use App\Services\Platform\ProductionConfigService;
+use App\Services\Progression\ProgressionService;
 
 class MobileGameController extends Controller
 {
@@ -250,7 +251,7 @@ class MobileGameController extends Controller
         return response()->json(['ok' => true, 'room' => $this->roomPayload($room->load(['game', 'players.user.profile']), $request->user()->id)]);
     }
 
-    public function action(Request $request, Room $room)
+    public function action(Request $request, Room $room, ProgressionService $progression)
     {
         $this->authorizeRoom($request, $room);
         $data = $request->validate([
@@ -285,6 +286,8 @@ class MobileGameController extends Controller
 
         $next = $engine->apply($state, $playerKey, $data['action'], $payload);
         $next = $this->advanceAutomatedTurns($engine, $next, (string) $room->game->key);
+        $progressionPopup = $this->awardProgressionTransition($progression, $room, $state, $next);
+        if ($progressionPopup !== []) $next['progression_popup'] = $progressionPopup;
         $room->update([
             'state' => $next,
             'status' => $this->roomStatus((string) ($next['phase'] ?? 'playing')),
@@ -298,7 +301,7 @@ class MobileGameController extends Controller
         ]);
     }
 
-    public function timeout(Request $request, Room $room)
+    public function timeout(Request $request, Room $room, ProgressionService $progression)
     {
         $this->authorizeRoom($request, $room);
         $state = $room->state ?: [];
@@ -308,7 +311,10 @@ class MobileGameController extends Controller
         } else {
             $state = $this->automaticMove($engine, $state, (string) $room->game->key);
         }
+        $before = $room->state ?: [];
         $state = $this->advanceAutomatedTurns($engine, $state, (string) $room->game->key);
+        $progressionPopup = $this->awardProgressionTransition($progression, $room, $before, $state);
+        if ($progressionPopup !== []) $state['progression_popup'] = $progressionPopup;
         $room->update(['state' => $state, 'status' => $this->roomStatus((string) ($state['phase'] ?? 'playing'))]);
         return response()->json(['ok' => true, 'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $request->user()->id)]);
     }
@@ -399,11 +405,49 @@ class MobileGameController extends Controller
                     'voice_deafened' => (bool) ($player->voice_deafened ?? false),
                     'avatar' => $player->user?->profile?->avatar,
                     'badge' => $player->user?->profile?->badge,
+                    'country_code' => safe_country_code($player->user?->profile?->country_code ?? 'PS'),
+                    'country_name' => country_name($player->user?->profile?->country_code ?? 'PS'),
+                    'flag' => (string)(config('countries.'.safe_country_code($player->user?->profile?->country_code ?? 'PS').'.flag') ?? '🇵🇸'),
+                    'flag_url' => flag_url($player->user?->profile?->country_code ?? 'PS'),
+                    'level' => (int)($player->user?->profile?->level ?? 1),
+                    'round_points' => (int)($player->user?->profile?->round_points ?? 0),
                 ];
             })->values(),
             'state' => $state,
             'updated_at' => $room->updated_at?->toIso8601String(),
         ];
+    }
+
+    /** @return array<string,array<string,mixed>> */
+    private function awardProgressionTransition(ProgressionService $progression, Room $room, array $before, array $after): array
+    {
+        $beforeRound = (int)($before['round'] ?? $before['round_no'] ?? 1);
+        $afterRound = (int)($after['round'] ?? $after['round_no'] ?? $beforeRound);
+        $beforePhase = (string)($before['phase'] ?? '');
+        $afterPhase = (string)($after['phase'] ?? '');
+        $roundCompleted = $afterRound > $beforeRound || (!in_array($beforePhase,['round_end','finished'],true) && in_array($afterPhase,['round_end','finished'],true));
+        if (!$roundCompleted) return [];
+
+        $room->loadMissing('players.user.profile','game');
+        $winner = (string)($after['winner'] ?? $after['round_winner'] ?? '');
+        $winnerTeam = $after['winner_team'] ?? null;
+        $teams = $after['teams'] ?? [];
+        $mode = !empty($after['tournament_id']) ? (!empty($after['sponsored']) ? 'sponsored' : 'tournament') : 'normal';
+        $popups = [];
+        foreach ($room->players as $player) {
+            if ($player->is_bot || !$player->user) continue;
+            $key = 'user:'.$player->user_id;
+            $won = $winner === $key;
+            if ($winnerTeam !== null && isset($teams[$winnerTeam]) && is_array($teams[$winnerTeam])) $won = in_array($key,$teams[$winnerTeam],true);
+            $eventType = $afterPhase === 'finished' ? 'match_complete' : 'round_complete';
+            $eventKey = 'room:'.$room->id.':round:'.$afterRound.':user:'.$player->user_id.':'.$eventType;
+            $popups[$key] = $progression->award($player->user,$eventKey,[
+                'room_id'=>$room->id,'event_type'=>$eventType,'mode'=>$mode,'won'=>$won,
+                'stage'=>(string)($after['tournament_stage'] ?? ($won && $afterPhase === 'finished' ? 'champion' : 'round')),
+                'game'=>$room->game?->key,'round'=>$afterRound,
+            ]);
+        }
+        return $popups;
     }
 
     /** @return array<string,mixed> */

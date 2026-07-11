@@ -7,5 +7,5 @@ flutter pub get
 flutter run -d chrome \
   --dart-define=WARQNA_API_URL=http://127.0.0.1:8006/api/mobile/v1 \
   --dart-define=WARQNA_PRODUCTION_MODE=false \
-  --dart-define=WARQNA_APP_VERSION=1.60.0 \
+  --dart-define=WARQNA_APP_VERSION=1.61.0 \
   --dart-define=WARQNA_APP_BUILD=160

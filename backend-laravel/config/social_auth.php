@@ -1,0 +1,19 @@
+<?php
+return [
+    'google'=>[
+        'client_id'=>env('GOOGLE_CLIENT_ID',''),
+        'client_secret'=>env('GOOGLE_CLIENT_SECRET',''),
+        'redirect_uri'=>env('GOOGLE_REDIRECT_URI',rtrim((string)env('APP_URL',''),'/').'/auth/social/google/callback'),
+    ],
+    'facebook'=>[
+        'client_id'=>env('FACEBOOK_CLIENT_ID',''),
+        'client_secret'=>env('FACEBOOK_CLIENT_SECRET',''),
+        'redirect_uri'=>env('FACEBOOK_REDIRECT_URI',rtrim((string)env('APP_URL',''),'/').'/auth/social/facebook/callback'),
+        'graph_version'=>env('FACEBOOK_GRAPH_VERSION','v22.0'),
+    ],
+    'apple'=>[
+        'client_id'=>env('APPLE_SERVICE_ID',''),
+        'client_secret'=>env('APPLE_CLIENT_SECRET',''),
+        'redirect_uri'=>env('APPLE_REDIRECT_URI',rtrim((string)env('APP_URL',''),'/').'/auth/social/apple/callback'),
+    ],
+];

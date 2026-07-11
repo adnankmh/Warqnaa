@@ -1,6 +1,8 @@
 {
-  "version": "1.60.0",
-  "build": 160,
-  "full": "1.60.0+160",
-  "release": "v160"
+  "version": "1.61.0",
+  "build": 161,
+  "full": "1.61.0+161",
+  "release": "v161",
+  "channel": "production",
+  "codename": "voice-social-progression"
 }
