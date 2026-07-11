@@ -100,7 +100,7 @@ Future<void> confirmLeaveGameV151(BuildContext context, AppController controller
   if (!confirmed || !context.mounted) return;
   final exits = await controller.recordGameExit(gameId);
   if (!context.mounted) return;
-  Navigator.pop(context);
+  Navigator.pop(context, true);
   showToast(context, exits >= 3 ? 'تم الخروج. وصلت إلى الحد الأقصى لهذه الجلسة.' : 'تم الخروج. المتبقي ${3 - exits} مرات.');
 }
 

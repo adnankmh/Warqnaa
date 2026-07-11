@@ -1,7 +1,7 @@
-# Warqna v165
+# Warqna v166
 
-Warqna production source package, version `1.65.0+165`.
+Warqna production source package, version `1.66.0+166`.
 
-This release fixes the Android APK startup crash proven by Logcat: AndroidX WorkManager attempted to create `WorkDatabase` before Flutter opened the first frame.
+This release preserves the Android WorkManager boot fix from v165 and adds the global voice, social, gameplay, accessibility, store, profile, notification, privacy and Play Store polish requested for v166.
 
-Start with `START_HERE_V165_AR.md`.
+ابدأ من: `START_HERE_V166_AR.md`.

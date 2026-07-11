@@ -26,7 +26,7 @@ return [
     'ID'=>['ar'=>'إندونيسيا','en'=>'Indonesia','flag'=>'🇮🇩'],
     'IR'=>['ar'=>'إيران','en'=>'Iran','flag'=>'🇮🇷'],
     'IT'=>['ar'=>'إيطاليا','en'=>'Italy','flag'=>'🇮🇹'],
-    'PS'=>['ar'=>'الأراضي الفلسطينية','en'=>'Palestinian Territories','flag'=>'🇵🇸'],
+    'PS'=>['ar'=>'فلسطين','en'=>'Palestinian Territories','flag'=>'🇵🇸'],
     'AR'=>['ar'=>'الأرجنتين','en'=>'Argentina','flag'=>'🇦🇷'],
     'JO'=>['ar'=>'الأردن','en'=>'Jordan','flag'=>'🇯🇴'],
     'TF'=>['ar'=>'الأقاليم الجنوبية الفرنسية','en'=>'French Southern Territories','flag'=>'🇹🇫'],

@@ -24,6 +24,7 @@ PERMISSIONS: tuple[tuple[str, str | None], ...] = (
     ("android.permission.INTERNET", None),
     ("android.permission.ACCESS_NETWORK_STATE", None),
     ("android.permission.CHANGE_NETWORK_STATE", None),
+    ("android.permission.POST_NOTIFICATIONS", None),
     ("android.permission.RECORD_AUDIO", None),
     ("android.permission.MODIFY_AUDIO_SETTINGS", None),
     ("android.permission.BLUETOOTH", "30"),

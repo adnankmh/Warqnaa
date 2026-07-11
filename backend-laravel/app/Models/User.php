@@ -31,6 +31,7 @@ class User extends Authenticatable
     public function reportsReceived(){ return $this->hasMany(UserReport::class,'reported_user_id'); }
     public function deletionRequests(){ return $this->hasMany(AccountDeletionRequest::class); }
     public function socialAccounts(){ return $this->hasMany(SocialAccount::class); }
+    public function pushDevices(){ return $this->hasMany(PushDevice::class); }
 
     public function publicProfile(): array
     {

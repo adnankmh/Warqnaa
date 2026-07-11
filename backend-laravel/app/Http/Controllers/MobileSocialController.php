@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\{Friendship,Message,Notification,User};
 use App\Services\Wallet\WalletService;
 use App\Services\Platform\ProductionConfigService;
+use App\Services\Notifications\FirebasePushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -41,7 +42,7 @@ class MobileSocialController extends Controller
         return response()->json(['ok' => true, 'users' => $users->map(fn ($u) => $this->userPayload($u))]);
     }
 
-    public function request(Request $request, User $user)
+    public function request(Request $request, User $user, FirebasePushService $push)
     {
         $me = $request->user();
         abort_if($me->id === $user->id, 422, 'لا يمكنك إرسال طلب لنفسك');
@@ -57,10 +58,16 @@ class MobileSocialController extends Controller
             'body' => ['ar' => $me->username . ' أرسل لك طلب صداقة', 'en' => $me->username . ' sent you a friend request'],
             'meta' => ['friendship_id' => $friendship->id, 'from' => $me->id],
         ]);
+        $push->sendToUser($user, 'طلب صداقة جديد', $me->username.' أرسل لك طلب صداقة.', [
+            'route' => 'friends',
+            'type' => 'friend_request',
+            'friendship_id' => $friendship->id,
+            'sender_id' => $me->id,
+        ]);
         return response()->json(['ok' => true, 'message' => 'تم إرسال طلب الصداقة', 'friendship' => $friendship], 201);
     }
 
-    public function respond(Request $request, Friendship $friendship)
+    public function respond(Request $request, Friendship $friendship, FirebasePushService $push)
     {
         abort_unless($friendship->addressee_id === $request->user()->id && $friendship->status === 'pending', 403);
         $data = $request->validate(['status' => 'required|in:accepted,rejected']);
@@ -75,6 +82,16 @@ class MobileSocialController extends Controller
             'title' => ['ar' => 'رد على طلب الصداقة', 'en' => 'Friend request response'],
             'body' => ['ar' => $request->user()->username . ($data['status'] === 'accepted' ? ' قبل طلب الصداقة' : ' رفض طلب الصداقة')],
         ]);
+        $requester = User::find($friendship->requester_id);
+        if ($requester) {
+            $resultText = $data['status'] === 'accepted' ? 'قبل طلب صداقتك.' : 'رفض طلب صداقتك.';
+            $push->sendToUser($requester, 'رد على طلب الصداقة', $request->user()->username.' '.$resultText, [
+                'route' => 'friends',
+                'type' => 'friend_response',
+                'sender_id' => $request->user()->id,
+                'status' => $data['status'],
+            ]);
+        }
         return response()->json(['ok' => true, 'message' => $data['status'] === 'accepted' ? 'تم قبول الطلب' : 'تم رفض الطلب']);
     }
 
@@ -129,7 +146,7 @@ class MobileSocialController extends Controller
         ]);
     }
 
-    public function send(Request $request, User $user)
+    public function send(Request $request, User $user, FirebasePushService $push)
     {
         $this->assertFriends($request->user()->id, $user->id);
         $data = $request->validate(['body' => 'required|string|max:1000']);
@@ -142,6 +159,13 @@ class MobileSocialController extends Controller
             'title' => ['ar' => 'رسالة جديدة', 'en' => 'New message'],
             'body' => ['ar' => $request->user()->username . ' أرسل لك رسالة'],
             'meta' => ['sender_id' => $request->user()->id],
+        ]);
+        $preview = mb_strlen($body) > 100 ? mb_substr($body, 0, 97).'…' : $body;
+        $push->sendToUser($user, $request->user()->username, $preview, [
+            'route' => 'friend-chat:'.$request->user()->id,
+            'type' => 'private_message',
+            'sender_id' => $request->user()->id,
+            'message_id' => $message->id,
         ]);
         return response()->json(['ok' => true, 'message' => ['id' => $message->id, 'mine' => true, 'body' => $message->body, 'time' => $message->created_at?->format('H:i')]], 201);
     }

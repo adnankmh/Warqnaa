@@ -1,8 +1,8 @@
 {
-  "version": "1.65.0",
-  "build": 165,
-  "full": "1.65.0+165",
-  "release": "v165",
+  "version": "1.66.0",
+  "build": 166,
+  "full": "1.66.0+166",
+  "release": "v166",
   "channel": "production",
-  "codename": "android-workmanager-boot-fix"
+  "codename": "global-voice-social-polish"
 }

@@ -146,8 +146,13 @@ jobs:
           API_URL: ${{ vars.WARQNA_API_URL }}
           WARQNA_APP_VERSION: ${{ steps.release.outputs.version }}
           WARQNA_APP_BUILD: ${{ steps.release.outputs.build }}
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
         run: |
           EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=$WARQNA_APP_VERSION" "--dart-define=WARQNA_APP_BUILD=$WARQNA_APP_BUILD")
+          EXTRA_ARGS+=("--dart-define=FIREBASE_API_KEY=$FIREBASE_API_KEY" "--dart-define=FIREBASE_APP_ID=$FIREBASE_APP_ID" "--dart-define=FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID" "--dart-define=FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID")
           if [ -n "$API_URL" ]; then
             EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL" "--dart-define=WARQNA_PRODUCTION_MODE=true")
           else
@@ -186,6 +191,10 @@ jobs:
           REWARDED_ID: ${{ vars.ADMOB_REWARDED_ANDROID_ID }}
           WARQNA_APP_VERSION: ${{ steps.release.outputs.version }}
           WARQNA_APP_BUILD: ${{ steps.release.outputs.build }}
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
         run: |
           SAMPLE_REWARDED_ID="ca-app-pub-3940256099942544/5224354917"
           if [[ "$REWARDED_ID" =~ ^ca-app-pub-[0-9]{16}/[0-9]{10}$ ]]; then
@@ -197,6 +206,7 @@ jobs:
           fi
 
           EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=$WARQNA_APP_VERSION" "--dart-define=WARQNA_APP_BUILD=$WARQNA_APP_BUILD")
+          EXTRA_ARGS+=("--dart-define=FIREBASE_API_KEY=$FIREBASE_API_KEY" "--dart-define=FIREBASE_APP_ID=$FIREBASE_APP_ID" "--dart-define=FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID" "--dart-define=FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID")
           if [ -n "$API_URL" ]; then
             EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL" "--dart-define=WARQNA_PRODUCTION_MODE=true")
           else

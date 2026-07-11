@@ -20,6 +20,7 @@ $controllers = [
     \App\Http\Controllers\MobileSafetyController::class,
     \App\Http\Controllers\MobileSocialController::class,
     \App\Http\Controllers\MobileVoiceController::class,
+    \App\Http\Controllers\MobilePushController::class,
     \App\Http\Controllers\MobileAccountController::class,
     \App\Http\Controllers\LegalPageController::class,
 ];

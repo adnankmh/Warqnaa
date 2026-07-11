@@ -127,21 +127,60 @@ def write_application(android_dir: Path, package_name: str) -> Path:
 
 
 def add_dependency_block_if_missing(text: str) -> str:
-    dep_line_kts = '    implementation("androidx.work:work-runtime:2.9.1")'
-    dep_line_groovy = "    implementation 'androidx.work:work-runtime:2.9.1'"
-    if "androidx.work:work-runtime" in text:
+    kotlin = 'plugins {' in text and 'id("' in text
+    required = [
+        ("androidx.work:work-runtime", 'implementation("androidx.work:work-runtime:2.9.1")' if kotlin else "implementation 'androidx.work:work-runtime:2.9.1'"),
+        ("com.android.tools:desugar_jdk_libs", 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")' if kotlin else "coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"),
+        ("androidx.window:window:", 'implementation("androidx.window:window:1.0.0")' if kotlin else "implementation 'androidx.window:window:1.0.0'"),
+        ("androidx.window:window-java", 'implementation("androidx.window:window-java:1.0.0")' if kotlin else "implementation 'androidx.window:window-java:1.0.0'"),
+    ]
+    missing = [line for key, line in required if key not in text]
+    if not missing:
         return text
-    if "build.gradle.kts" in text[:0]:
-        pass
-    # The caller detects file type by text syntax; Kotlin DSL contains plugins { id("...") }.
+    indented = '\n'.join('    ' + line for line in missing)
     if re.search(r"(?m)^dependencies\s*\{", text):
-        if 'plugins {' in text and 'id("' in text:
-            return re.sub(r"(?m)^dependencies\s*\{", "dependencies {\n" + dep_line_kts, text, count=1)
-        return re.sub(r"(?m)^dependencies\s*\{", "dependencies {\n" + dep_line_groovy, text, count=1)
-    if 'plugins {' in text and 'id("' in text:
-        return text.rstrip() + "\n\ndependencies {\n" + dep_line_kts + "\n}\n"
-    return text.rstrip() + "\n\ndependencies {\n" + dep_line_groovy + "\n}\n"
+        return re.sub(r"(?m)^dependencies\s*\{", "dependencies {\n" + indented, text, count=1)
+    return text.rstrip() + "\n\ndependencies {\n" + indented + "\n}\n"
 
+
+def ensure_notification_gradle(text: str, kotlin: bool) -> str:
+    """Apply flutter_local_notifications Android requirements to generated Gradle."""
+    if kotlin:
+        text = re.sub(r'sourceCompatibility\s*=\s*JavaVersion\.VERSION_\d+', 'sourceCompatibility = JavaVersion.VERSION_17', text)
+        text = re.sub(r'targetCompatibility\s*=\s*JavaVersion\.VERSION_\d+', 'targetCompatibility = JavaVersion.VERSION_17', text)
+        text = re.sub(r'jvmTarget\s*=\s*JavaVersion\.VERSION_\d+\.toString\(\)', 'jvmTarget = JavaVersion.VERSION_17.toString()', text)
+        text = re.sub(r'jvmTarget\s*=\s*"\d+"', 'jvmTarget = "17"', text)
+        if 'isCoreLibraryDesugaringEnabled = true' not in text:
+            match = re.search(r'compileOptions\s*\{', text)
+            if match:
+                text = text[:match.end()] + '\n        isCoreLibraryDesugaringEnabled = true' + text[match.end():]
+            else:
+                android = re.search(r'android\s*\{', text)
+                if android:
+                    block = '\n    compileOptions {\n        isCoreLibraryDesugaringEnabled = true\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }\n'
+                    text = text[:android.end()] + block + text[android.end():]
+        if 'multiDexEnabled = true' not in text:
+            match = re.search(r'defaultConfig\s*\{', text)
+            if match:
+                text = text[:match.end()] + '\n        multiDexEnabled = true' + text[match.end():]
+    else:
+        text = re.sub(r'sourceCompatibility\s+JavaVersion\.VERSION_\d+', 'sourceCompatibility JavaVersion.VERSION_17', text)
+        text = re.sub(r'targetCompatibility\s+JavaVersion\.VERSION_\d+', 'targetCompatibility JavaVersion.VERSION_17', text)
+        text = re.sub(r'jvmTarget\s*=\s*["\']\d+["\']', "jvmTarget = '17'", text)
+        if 'coreLibraryDesugaringEnabled true' not in text:
+            match = re.search(r'compileOptions\s*\{', text)
+            if match:
+                text = text[:match.end()] + '\n        coreLibraryDesugaringEnabled true' + text[match.end():]
+            else:
+                android = re.search(r'android\s*\{', text)
+                if android:
+                    block = '\n    compileOptions {\n        coreLibraryDesugaringEnabled true\n        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17\n    }\n'
+                    text = text[:android.end()] + block + text[android.end():]
+        if 'multiDexEnabled true' not in text:
+            match = re.search(r'defaultConfig\s*\{', text)
+            if match:
+                text = text[:match.end()] + '\n        multiDexEnabled true' + text[match.end():]
+    return text
 
 def ensure_release_flags(text: str, kotlin: bool) -> str:
     minify = "            isMinifyEnabled = false" if kotlin else "            minifyEnabled false"
@@ -181,6 +220,7 @@ def configure_gradle(gradle: Path) -> None:
     text = gradle.read_text(encoding="utf-8")
     kotlin = gradle.name.endswith(".kts")
     text = add_dependency_block_if_missing(text)
+    text = ensure_notification_gradle(text, kotlin=kotlin)
     text = ensure_release_flags(text, kotlin=kotlin)
     gradle.write_text(text, encoding="utf-8")
 

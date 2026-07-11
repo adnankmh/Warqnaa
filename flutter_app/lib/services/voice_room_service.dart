@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'api_client.dart';
 
@@ -51,6 +52,10 @@ class VoiceRoomService extends ChangeNotifier {
   bool micEnabled = true;
   bool deafened = false;
   bool localPreview = false;
+  bool permissionGranted = kIsWeb;
+  bool speakerEnabled = true;
+  int audioInputCount = 0;
+  DateTime? lastConnectedAt;
   bool _disposed = false;
   String status = 'غير متصل';
   String? error;
@@ -83,6 +88,21 @@ class VoiceRoomService extends ChangeNotifier {
       if (kIsWeb && Uri.base.scheme != 'https' && Uri.base.host != 'localhost' && Uri.base.host != '127.0.0.1') {
         throw StateError('الغرف الصوتية على الويب تحتاج HTTPS حتى يسمح المتصفح بالميكروفون.');
       }
+      if (!kIsWeb) {
+        final permission = await Permission.microphone.request();
+        permissionGranted = permission.isGranted;
+        if (!permissionGranted) {
+          throw StateError(permission.isPermanentlyDenied
+              ? 'إذن الميكروفون مرفوض نهائياً. افتح إعدادات التطبيق ثم اسمح بالميكروفون.'
+              : 'لم يتم منح إذن الميكروفون.');
+        }
+      }
+      try {
+        final devices = await navigator.mediaDevices.enumerateDevices();
+        audioInputCount = devices.where((device) => device.kind == 'audioinput').length;
+      } catch (_) {
+        audioInputCount = 0;
+      }
       _localStream = await navigator.mediaDevices.getUserMedia({
         'audio': {
           'echoCancellation': true,
@@ -91,12 +111,19 @@ class VoiceRoomService extends ChangeNotifier {
         },
         'video': false,
       });
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        try {
+          await Helper.setSpeakerphoneOn(true);
+          speakerEnabled = true;
+        } catch (_) {}
+      }
 
       if (!serverConnected || api.token == null || api.token!.isEmpty || code.isEmpty || code.startsWith('LOCAL')) {
         localPreview = true;
         joined = true;
         joining = false;
         status = 'الميكروفون جاهز — وضع تجريبي محلي';
+        lastConnectedAt = DateTime.now();
         participants = const [];
         _notify();
         return;
@@ -109,6 +136,7 @@ class VoiceRoomService extends ChangeNotifier {
       joined = true;
       joining = false;
       status = 'الصوت متصل';
+      lastConnectedAt = DateTime.now();
       _notify();
 
       await _poll();
@@ -218,6 +246,7 @@ class VoiceRoomService extends ChangeNotifier {
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
         _peerFailures[remoteUserId] = 0;
         status = 'الصوت متصل';
+        lastConnectedAt = DateTime.now();
       } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
           state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
         final failures = (_peerFailures[remoteUserId] ?? 0) + 1;
@@ -306,6 +335,49 @@ class VoiceRoomService extends ChangeNotifier {
     if (urls is List) return urls.any((u)=>u.toString().startsWith('turn:')||u.toString().startsWith('turns:'));
     return urls.toString().startsWith('turn:')||urls.toString().startsWith('turns:');
   });
+
+
+  Future<bool> requestMicrophonePermission() async {
+    if (kIsWeb) {
+      permissionGranted = true;
+      _notify();
+      return true;
+    }
+    final status = await Permission.microphone.request();
+    permissionGranted = status.isGranted;
+    if (!permissionGranted && status.isPermanentlyDenied) {
+      error = 'إذن الميكروفون مرفوض نهائياً. افتح إعدادات التطبيق.';
+    }
+    _notify();
+    return permissionGranted;
+  }
+
+  Future<void> openPermissionSettings() async {
+    if (!kIsWeb) await openAppSettings();
+  }
+
+  Future<void> setSpeakerEnabled(bool value) async {
+    speakerEnabled = value;
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      try { await Helper.setSpeakerphoneOn(value); } catch (e) { error = 'تعذر تغيير مخرج الصوت: $e'; }
+    }
+    _notify();
+  }
+
+  Future<void> retry() async {
+    final code = roomCode;
+    await leave();
+    if (code != null && code.isNotEmpty) await join(code);
+  }
+
+  Map<String, String> get diagnostics => <String, String>{
+    'permission': permissionGranted ? 'مسموح' : 'غير مسموح',
+    'microphones': '$audioInputCount',
+    'speaker': speakerEnabled ? 'مكبر الصوت' : 'سماعة المكالمات',
+    'transport': localPreview ? 'محلي' : hasTurnServer ? 'TURN/STUN' : 'STUN فقط',
+    'peers': '${_peers.length}',
+    'lastConnected': lastConnectedAt?.toIso8601String() ?? '—',
+  };
 
   Future<void> setMicEnabled(bool value) async {
     micEnabled = value;

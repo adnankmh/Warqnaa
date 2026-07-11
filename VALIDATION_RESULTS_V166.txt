@@ -1,0 +1,32 @@
+Warqna v166 — Local Validation Results
+Release: 1.66.0+166
+Codename: global-voice-social-polish
+
+PASS — Central release-version contract
+PASS — Full source-package preflight
+PASS — No Git conflict markers or corrupt control characters
+PASS — PHP syntax audit: 240 files
+PASS — JSON syntax audit: 22 files
+PASS — YAML structural audit: 15 files
+PASS — Python compilation
+PASS — Shell syntax audit
+PASS — Dart parser audit: 17 files, 0 syntax errors
+PASS — 12 game artwork assets present
+PASS — 18 WAV sound cues present
+PASS — Android voice permissions and WebRTC source contracts
+PASS — WorkManager pre-Flutter startup guard preserved
+PASS — flutter_local_notifications desugaring/multidex/Java 17 generator smoke test
+PASS — Push token encrypted-storage routes and migration contracts
+PASS — Laravel Firebase Cloud Messaging HTTP v1 dispatcher contracts
+PASS — Notification token refresh, logout removal and notification-open routing contracts
+PASS — Legacy “الأراضي الفلسطينية” label absent from runtime source
+PASS — Play Store icon, feature graphic and screenshot dimensions
+PASS — ZIP must be extracted and revalidated before release delivery
+
+Not run locally because the container does not contain the required toolchains:
+- flutter analyze
+- flutter test
+- Android APK/AAB compilation
+- php artisan test (Composer vendor is not installed)
+
+These remain mandatory GitHub Actions gates after upload.

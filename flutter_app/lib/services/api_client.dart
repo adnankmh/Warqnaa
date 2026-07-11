@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.65.0');
-const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 165);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.66.0');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 166);
 
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})
@@ -28,6 +28,8 @@ class WarqnaApiClient {
 
   final String baseUrl;
   String? token;
+
+  String get webBaseUrl => baseUrl.replaceFirst(RegExp(r'/api/mobile/v1$'), '');
 
   String get platform => kIsWeb
       ? 'web'
@@ -46,6 +48,7 @@ class WarqnaApiClient {
         if (token != null && token!.isNotEmpty) 'Authorization': 'Bearer $token',
       };
 
+  Future<Map<String, dynamic>> health() => get('/health', authenticated: false);
   Future<Map<String, dynamic>> platformConfig() => get('/app-config?platform=$platform', authenticated: false);
   Future<Map<String, dynamic>> countries() => get('/countries', authenticated: false);
   Future<Map<String, dynamic>> startSocialAuth(String provider) => post('/social-auth/start/$provider', const {}, authenticated: false);
@@ -119,6 +122,8 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> claimDaily() => post('/rewards/daily', const {});
   Future<Map<String, dynamic>> claimRewardedAd(String verificationId) => post('/rewards/rewarded-ad', {'verification_id': verificationId, 'network': 'admob', 'reward_type': 'standard'});
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> payload) => patch('/profile', payload);
+  Future<Map<String, dynamic>> registerPushDevice(String token) => post('/push/devices', {'token': token, 'platform': platform, 'app_version': warqnaAppVersion, 'app_build': warqnaAppBuild});
+  Future<Map<String, dynamic>> removePushDevice(String token) => deleteWithBody('/push/devices', {'token': token});
   Future<Map<String, dynamic>> gameCatalog() => get('/games/catalog', authenticated: false);
   Future<Map<String, dynamic>> gameRules(String key) => get('/games/$key/rules', authenticated: false);
   Future<Map<String, dynamic>> createGame({

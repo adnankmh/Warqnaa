@@ -17,12 +17,16 @@ import 'engines/local_game_engine.dart';
 import 'services/api_client.dart';
 import 'services/rewarded_ads.dart';
 import 'services/voice_room_service.dart';
+import 'services/app_sounds.dart';
+import 'services/app_notifications.dart';
+import 'services/connection_diagnostics.dart';
 import 'models/room_launch_options.dart';
 import 'data/countries.dart';
 import 'premium_v149.dart';
 
 part 'premium_v151.dart';
 part 'production_v153.dart';
+part 'v166_polish.dart';
 
 void main() {
   // The Flutter binding and runApp must be created in the same zone. Keeping
@@ -35,6 +39,10 @@ void main() {
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
     };
+    // Register the FCM background entry point before the first frame. The
+    // registration is inert when Firebase build variables are absent.
+    PushNotifications.registerBackgroundHandler();
+
     ui.PlatformDispatcher.instance.onError = (error, stack) {
       debugPrint('Uncaught platform error: $error\n$stack');
       return true;
@@ -152,7 +160,7 @@ class _WarqnaAppState extends State<WarqnaApp> {
                 textStyle: const TextStyle(fontWeight: FontWeight.w900),
               ),
             ),
-            fontFamily: 'Arial',
+            fontFamily: controller.uiFontFamily,
           ),
           home: !controller.ready
               ? const AppLoadingScreen()
@@ -191,6 +199,9 @@ class AppController extends ChangeNotifier {
   double uiRadius = 18;
   double uiFontScale = 1.0;
   double uiChatScale = 1.0;
+  String uiFontFamily = 'Roboto';
+  String? customTableBackgroundData;
+  String? customCardBackData;
   String uiAccentHex = '#ffcf67';
   bool tableAmbientEffects = true;
   bool awayMode = false;
@@ -203,6 +214,12 @@ class AppController extends ChangeNotifier {
   String? activeCompetition;
   String? activeChallenge;
   String? activeGame;
+  String? activeRoomCode;
+  String? activeRoomName;
+  bool activeRoomVoice = false;
+  String activeRoomVisibility = 'public';
+  int activeRoomTurnSeconds = 10;
+  RoundRewardReport? lastRoundReport;
   final Set<String> rewardedMatches = <String>{};
   String localeCode = 'ar';
   String themeCode = 'dark';
@@ -210,7 +227,7 @@ class AppController extends ChangeNotifier {
   String displayName = 'Adnan';
   String email = 'adnan@warqna.local';
   String countryCode = 'PS';
-  String countryName = 'الأراضي الفلسطينية';
+  String countryName = 'فلسطين';
   int roundPoints = 0;
   int tournamentPoints = 0;
   int clubPoints = 0;
@@ -377,6 +394,7 @@ class AppController extends ChangeNotifier {
     await prefs.setString(_accountKey('selectedEmojiPack'), selectedEmojiPack);
     await prefs.setString(_accountKey('selectedEffect'), selectedEffect);
     await prefs.setString(_accountKey('selectedCover'), selectedCover);
+    await prefs.setString(_accountKey('uiFontFamily'), uiFontFamily);
     await prefs.setDouble(_accountKey('activeXpMultiplier'), activeXpMultiplier);
     await prefs.setInt(_accountKey('gamesPlayed'), gamesPlayed);
     await prefs.setInt(_accountKey('wins'), wins);
@@ -388,6 +406,11 @@ class AppController extends ChangeNotifier {
     if (activeCompetition == null) { await prefs.remove(_accountKey('activeCompetition')); } else { await prefs.setString(_accountKey('activeCompetition'), activeCompetition!); }
     if (activeChallenge == null) { await prefs.remove(_accountKey('activeChallenge')); } else { await prefs.setString(_accountKey('activeChallenge'), activeChallenge!); }
     if (activeGame == null) { await prefs.remove(_accountKey('activeGame')); } else { await prefs.setString(_accountKey('activeGame'), activeGame!); }
+    if (activeRoomCode == null) { await prefs.remove(_accountKey('activeRoomCode')); } else { await prefs.setString(_accountKey('activeRoomCode'), activeRoomCode!); }
+    if (activeRoomName == null) { await prefs.remove(_accountKey('activeRoomName')); } else { await prefs.setString(_accountKey('activeRoomName'), activeRoomName!); }
+    await prefs.setBool(_accountKey('activeRoomVoice'), activeRoomVoice);
+    await prefs.setString(_accountKey('activeRoomVisibility'), activeRoomVisibility);
+    await prefs.setInt(_accountKey('activeRoomTurnSeconds'), activeRoomTurnSeconds);
     await prefs.setStringList(_accountKey('owned'), owned.toList());
     await prefs.setString(_accountKey('gameExitCounts'), jsonEncode(gameExitCounts));
   }
@@ -419,6 +442,7 @@ class AppController extends ChangeNotifier {
   Future<void> load() async {
     try {
       await _loadUnsafe();
+      _initializeOptionalServices();
     } catch (error, stack) {
       // A stale value written by an older APK must never stop the current APK
       // from opening. Start with safe defaults and leave the user able to sign
@@ -429,8 +453,47 @@ class AppController extends ChangeNotifier {
       isAuthenticated = false;
       serverConnected = false;
       ready = true;
+      _initializeOptionalServices();
       notifyListeners();
     }
+  }
+
+  void _initializeOptionalServices() {
+    AppSounds.enabled = soundEnabled;
+    PushNotifications.onForeground = (title, body, data) {
+      notices.insert(0, AppNotice('🔔', title, body));
+      AppSounds.fire('notification');
+      notifyListeners();
+    };
+    PushNotifications.onToken = (token) => _registerPushToken(token);
+    PushNotifications.onTap = (route) {
+      if (route == null || route.isEmpty) return;
+      if (route.startsWith('room:')) {
+        final code = route.substring('room:'.length);
+        if (code.isNotEmpty) {
+          activeRoomCode = code;
+          notices.insert(0, AppNotice('🎮', v166Text(localeCode, 'activeGame'), v166Text(localeCode, 'resumeGame')));
+        }
+      } else if (route.startsWith('friend-chat:')) {
+        notices.insert(0, AppNotice('💬', v166Text(localeCode, 'friendsChat'), v166Text(localeCode, 'friendsChat')));
+      }
+      notifyListeners();
+    };
+    unawaited(_refreshPushRegistration());
+  }
+
+  Future<void> _registerPushToken(String token) async {
+    if (token.isEmpty || !serverConnected || api.token == null || api.token!.isEmpty) return;
+    try {
+      await api.registerPushDevice(token);
+    } catch (error) {
+      debugPrint('Push token registration deferred: $error');
+    }
+  }
+
+  Future<void> _refreshPushRegistration() async {
+    final token = await PushNotifications.initialize();
+    if (token != null) await _registerPushToken(token);
   }
 
   Future<void> _loadUnsafe() async {
@@ -460,6 +523,9 @@ class AppController extends ChangeNotifier {
     uiRadius = prefs.getDouble('uiRadius') ?? uiRadius;
     uiFontScale = prefs.getDouble('uiFontScale') ?? uiFontScale;
     uiChatScale = prefs.getDouble('uiChatScale') ?? uiChatScale;
+    uiFontFamily = prefs.getString('uiFontFamily') ?? uiFontFamily;
+    customTableBackgroundData = prefs.getString('customTableBackgroundData');
+    customCardBackData = prefs.getString('customCardBackData');
     uiAccentHex = prefs.getString('uiAccentHex') ?? uiAccentHex;
     tableAmbientEffects = prefs.getBool('tableAmbientEffects') ?? tableAmbientEffects;
     gamesPlayed = prefs.getInt('gamesPlayed') ?? gamesPlayed;
@@ -483,6 +549,11 @@ class AppController extends ChangeNotifier {
     activeCompetition = prefs.getString('activeCompetition');
     activeChallenge = prefs.getString('activeChallenge');
     activeGame = prefs.getString('activeGame');
+    activeRoomCode = prefs.getString('activeRoomCode');
+    activeRoomName = prefs.getString('activeRoomName');
+    activeRoomVoice = prefs.getBool('activeRoomVoice') ?? false;
+    activeRoomVisibility = prefs.getString('activeRoomVisibility') ?? 'public';
+    activeRoomTurnSeconds = prefs.getInt('activeRoomTurnSeconds') ?? 10;
     owned
       ..clear()
       ..addAll(prefs.getStringList('owned') ?? const ['emoji_fun']);
@@ -572,6 +643,9 @@ class AppController extends ChangeNotifier {
     await prefs.setDouble('uiRadius', uiRadius);
     await prefs.setDouble('uiFontScale', uiFontScale);
     await prefs.setDouble('uiChatScale', uiChatScale);
+    await prefs.setString('uiFontFamily', uiFontFamily);
+    if (customTableBackgroundData == null) { await prefs.remove('customTableBackgroundData'); } else { await prefs.setString('customTableBackgroundData', customTableBackgroundData!); }
+    if (customCardBackData == null) { await prefs.remove('customCardBackData'); } else { await prefs.setString('customCardBackData', customCardBackData!); }
     await prefs.setString('uiAccentHex', uiAccentHex);
     await prefs.setBool('tableAmbientEffects', tableAmbientEffects);
     await prefs.setInt('gamesPlayed', gamesPlayed);
@@ -587,6 +661,11 @@ class AppController extends ChangeNotifier {
     if (activeCompetition == null) { await prefs.remove('activeCompetition'); } else { await prefs.setString('activeCompetition', activeCompetition!); }
     if (activeChallenge == null) { await prefs.remove('activeChallenge'); } else { await prefs.setString('activeChallenge', activeChallenge!); }
     if (activeGame == null) { await prefs.remove('activeGame'); } else { await prefs.setString('activeGame', activeGame!); }
+    if (activeRoomCode == null) { await prefs.remove('activeRoomCode'); } else { await prefs.setString('activeRoomCode', activeRoomCode!); }
+    if (activeRoomName == null) { await prefs.remove('activeRoomName'); } else { await prefs.setString('activeRoomName', activeRoomName!); }
+    await prefs.setBool('activeRoomVoice', activeRoomVoice);
+    await prefs.setString('activeRoomVisibility', activeRoomVisibility);
+    await prefs.setInt('activeRoomTurnSeconds', activeRoomTurnSeconds);
     await prefs.setStringList('owned', owned.toList());
     await prefs.setString('storePriceOverrides', jsonEncode(storePriceOverrides));
     await prefs.setString('storeNameOverrides', jsonEncode(storeNameOverrides));
@@ -684,6 +763,7 @@ class AppController extends ChangeNotifier {
       }
       isAuthenticated = true;
       serverConnected = true;
+      unawaited(_refreshPushRegistration());
       await _save();
       notifyListeners();
       return null;
@@ -729,6 +809,7 @@ class AppController extends ChangeNotifier {
           _applySession(status);
           isAuthenticated = true;
           serverConnected = true;
+          unawaited(_refreshPushRegistration());
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('authToken', authToken!);
           await _save();
@@ -758,6 +839,7 @@ class AppController extends ChangeNotifier {
       _applySession(data);
       isAuthenticated = true;
       serverConnected = true;
+      unawaited(_refreshPushRegistration());
       await _save();
       notifyListeners();
       return null;
@@ -791,6 +873,10 @@ class AppController extends ChangeNotifier {
 
   Future<void> logout() async {
     if (serverConnected) {
+      final pushToken = PushNotifications.currentToken;
+      if (pushToken != null && pushToken.isNotEmpty) {
+        try { await api.removePushDevice(pushToken); } catch (_) {}
+      }
       try {
         await api.post('/logout', const {});
       } catch (_) {}
@@ -1036,14 +1122,27 @@ class AppController extends ChangeNotifier {
 
   void toggleSound(bool value) {
     soundEnabled = value;
+    AppSounds.enabled = value;
+    if (value) AppSounds.fire('button');
+    _save();
+    notifyListeners();
+  }
+
+  void changeFontFamily(String value) {
+    if (!const {'Roboto','Arial','serif','monospace'}.contains(value)) return;
+    uiFontFamily = value;
+    _save();
+    notifyListeners();
+  }
+
+  void adjustFontScale(double delta) {
+    uiFontScale = (uiFontScale + delta).clamp(.85, 1.35).toDouble();
     _save();
     notifyListeners();
   }
 
   Future<void> playReactionFeedback({bool strong = false}) async {
-    if (soundEnabled) {
-      try { await SystemSound.play(strong ? SystemSoundType.alert : SystemSoundType.click); } catch (_) {}
-    }
+    if (soundEnabled) AppSounds.fire(strong ? 'emoji' : 'tap');
     try {
       if (strong) { await HapticFeedback.mediumImpact(); } else { await HapticFeedback.selectionClick(); }
     } catch (_) {}
@@ -1070,6 +1169,7 @@ class AppController extends ChangeNotifier {
     if (!reusable) owned.add(product.id);
     transactions.insert(0, TokenTransaction('شراء ${nameFor(product, 'ar')}', -priceFor(product), 'الآن'));
     activateProduct(product);
+    AppSounds.fire('purchase');
     await _save();
     notifyListeners();
     return true;
@@ -1176,6 +1276,23 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<String?> uploadDesignerImage(String kind) async {
+    try {
+      final file = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1800, imageQuality: 88);
+      if (file == null) return null;
+      final bytes = await file.readAsBytes();
+      if (bytes.length > 6000000) return 'الصورة أكبر من 6MB.';
+      final data = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      if (kind == 'table') customTableBackgroundData = data; else customCardBackData = data;
+      await _save(); notifyListeners(); return null;
+    } catch (_) { return 'تعذر قراءة الصورة المختارة.'; }
+  }
+
+  void clearDesignerImage(String kind) {
+    if (kind == 'table') customTableBackgroundData = null; else customCardBackData = null;
+    _save(); notifyListeners();
+  }
+
   void changeBotDifficulty(String value) {
     if (!const {'easy', 'normal', 'pro', 'master'}.contains(value)) return;
     botDifficultyCode = value;
@@ -1269,29 +1386,63 @@ class AppController extends ChangeNotifier {
     return true;
   }
 
-  void leaveGame([String? id]) {
-    if (id == null || activeGame == id) activeGame = null;
+  void rememberActiveRoom(String gameId, {String? code, required RoomLaunchOptions options}) {
+    activeGame = gameId;
+    activeRoomCode = code?.trim().isEmpty == true ? null : code?.trim();
+    activeRoomName = options.roomName;
+    activeRoomVoice = options.voiceEnabled;
+    activeRoomVisibility = options.visibility;
+    activeRoomTurnSeconds = options.turnSeconds;
     _save();
     notifyListeners();
   }
 
-  void recordRoundProgress({required bool won, String mode = 'normal', String stage = 'round', bool away = false}) {
-    if (away) return;
+  RoomLaunchOptions activeRoomOptions() => RoomLaunchOptions(
+    roomName: activeRoomName ?? 'غرفة ورقنا',
+    voiceEnabled: activeRoomVoice,
+    visibility: activeRoomVisibility,
+    turnSeconds: activeRoomTurnSeconds,
+    roomCode: activeRoomCode,
+  );
+
+  void leaveGame([String? id]) {
+    if (id == null || activeGame == id) {
+      activeGame = null;
+      activeRoomCode = null;
+      activeRoomName = null;
+      activeRoomVoice = false;
+    }
+    _save();
+    notifyListeners();
+  }
+
+  RoundRewardReport? recordRoundProgress({required bool won, String mode = 'normal', String stage = 'round', bool away = false}) {
+    if (away) return null;
     final modeMultiplier = mode == 'sponsored' || mode == 'seasonal' ? 3.0 : mode == 'tournament' ? 2.0 : mode == 'club' ? 1.35 : 1.0;
     final pashaMultiplier = vipDays > 0 ? 2.0 : 1.0;
     final multiplier = modeMultiplier * pashaMultiplier * math.max(1.0, activeXpMultiplier);
     final earned = ((won ? 60 : 20) * multiplier).round();
+    final earnedRound = ((won ? 30 : 8) * multiplier).round();
+    var earnedTournament = 0;
+    var earnedClub = 0;
     xp += earned;
-    roundPoints += ((won ? 30 : 8) * multiplier).round();
+    roundPoints += earnedRound;
     if (mode == 'tournament' || mode == 'sponsored' || mode == 'seasonal') {
       final base = stage == 'champion' ? 1000 : stage == 'runner_up' ? 600 : stage == 'semifinal' ? 350 : stage == 'quarterfinal' ? 150 : 35;
-      tournamentPoints += (modeMultiplier >= 3 ? base * 3 : base);
+      earnedTournament = modeMultiplier >= 3 ? base * 3 : base;
+      tournamentPoints += earnedTournament;
     }
-    if (activeClub != null) clubPoints += ((won ? 20 : 5) * (mode == 'club' ? 2 : 1)).round();
+    if (activeClub != null) {
+      earnedClub = ((won ? 20 : 5) * (mode == 'club' ? 2 : 1)).round();
+      clubPoints += earnedClub;
+    }
     _recalculateLevel();
-    notices.insert(0, AppNotice('⭐', 'نقاط الجولة', '+$earned XP • مضاعف ×${multiplier.toStringAsFixed(2)}'));
+    lastRoundReport = RoundRewardReport(xp: earned, roundPoints: earnedRound, tournamentPoints: earnedTournament, clubPoints: earnedClub, multiplier: multiplier, won: won, mode: mode, stage: stage);
+    notices.insert(0, AppNotice('⭐', 'نقاط الجولة', '+$earned XP • +$earnedRound نقطة • مضاعف ×${multiplier.toStringAsFixed(2)}'));
+    AppSounds.fire(won ? 'win' : 'notification');
     _save();
     notifyListeners();
+    return lastRoundReport;
   }
 
   void rewardGameWin(String gameId) {
@@ -1434,6 +1585,7 @@ class AppController extends ChangeNotifier {
   void sendLocalMessage(LocalFriend friend, String body) {
     privateChats.putIfAbsent(friend.id, () => []);
     privateChats[friend.id]!.add(ChatMessage(displayName, body, true, '${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}'));
+    AppSounds.fire('message');
     notifyListeners();
   }
 
@@ -2231,7 +2383,7 @@ class L {
   };
 
   static String t(String lang, String key) =>
-      extra[lang]?[key] ?? data[lang]?[key] ?? extra['en']?[key] ?? data['en']?[key] ?? data['ar']?[key] ?? key;
+      v166Translations[lang]?[key] ?? extra[lang]?[key] ?? data[lang]?[key] ?? v166Translations['en']?[key] ?? extra['en']?[key] ?? data['en']?[key] ?? data['ar']?[key] ?? key;
 }
 
 class GameInfo {
@@ -2546,37 +2698,24 @@ StoreProduct? storeProductById(String id) {
   return null;
 }
 
-class AppLoadingScreen extends StatelessWidget {
+class AppLoadingScreen extends StatefulWidget {
   const AppLoadingScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 82,
-              height: 82,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary]),
-                boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: .25), blurRadius: 32)],
-              ),
-              child: const Text('W', style: TextStyle(color: Color(0xff07111c), fontSize: 38, fontWeight: FontWeight.w900)),
-            ),
-            const SizedBox(height: 20),
-            const Text('WARQNA', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4)),
-            const SizedBox(height: 18),
-            const SizedBox(width: 150, child: LinearProgressIndicator()),
-          ],
-        ),
-      ),
-    );
-  }
+  @override State<AppLoadingScreen> createState()=>_AppLoadingScreenState();
 }
+class _AppLoadingScreenState extends State<AppLoadingScreen> with SingleTickerProviderStateMixin {
+  late final AnimationController animation;
+  @override void initState(){super.initState();animation=AnimationController(vsync:this,duration:const Duration(seconds:3))..repeat();}
+  @override void dispose(){animation.dispose();super.dispose();}
+  @override Widget build(BuildContext context)=>Scaffold(body:Stack(children:[
+    Positioned.fill(child:DecoratedBox(decoration:const BoxDecoration(gradient:RadialGradient(center:Alignment.topCenter,radius:1.35,colors:[Color(0xff173552),Color(0xff07121e),Color(0xff03070c)])))),
+    Positioned.fill(child:AnimatedBuilder(animation:animation,builder:(_,__)=>CustomPaint(painter:_SplashParticles(animation.value)))),
+    Center(child:Column(mainAxisSize:MainAxisSize.min,children:[
+      RotationTransition(turns:Tween<double>(begin:-.018,end:.018).animate(CurvedAnimation(parent:animation,curve:Curves.easeInOut)),child:Container(width:118,height:118,decoration:BoxDecoration(borderRadius:BorderRadius.circular(32),gradient:const LinearGradient(colors:[Color(0xffffcf67),Color(0xff14b8a6)]),boxShadow:[BoxShadow(color:Color(0x66ffcf67),blurRadius:42,spreadRadius:4)]),child:Stack(alignment:Alignment.center,children:[const Text('W',style:TextStyle(color:Color(0xff07111c),fontSize:57,fontWeight:FontWeight.w900)),Positioned(right:13,top:9,child:Text('♠',style:TextStyle(color:Colors.black.withValues(alpha:.68),fontSize:24))),Positioned(left:13,bottom:9,child:Text('♥',style:TextStyle(color:Colors.red.shade900,fontSize:23))) ]))),
+      const SizedBox(height:22),const Text('WARQNA',style:TextStyle(fontSize:31,fontWeight:FontWeight.w900,letterSpacing:5.5)),const SizedBox(height:6),const Text('الورق • الصوت • الأصدقاء • المنافسات',style:TextStyle(color:Colors.white60,fontWeight:FontWeight.w700)),const SizedBox(height:24),SizedBox(width:210,child:LinearProgressIndicator(borderRadius:BorderRadius.circular(20),minHeight:6)),const SizedBox(height:10),const Text('نجهّز طاولتك…',style:TextStyle(fontSize:11,color:Colors.white54))
+    ])),
+  ]));
+}
+class _SplashParticles extends CustomPainter { final double progress; const _SplashParticles(this.progress); @override void paint(Canvas canvas,Size size){final paint=Paint()..color=Colors.white.withValues(alpha:.08);for(var i=0;i<18;i++){final x=((i*73.0)+(progress*size.width*(i.isEven?1:-1))).remainder(size.width);final y=(i*97.0).remainder(size.height);canvas.drawCircle(Offset(x,y),1.5+(i%3),paint);}} @override bool shouldRepaint(covariant _SplashParticles old)=>old.progress!=progress;}
 
 class LoginScreen extends StatefulWidget {
   final AppController controller;
@@ -2897,6 +3036,10 @@ class _HomeShellState extends State<HomeShell> {
         child: Column(
           children: [
             PremiumTopBar(controller: widget.controller),
+            if (widget.controller.activeGame != null) ActiveGameBanner(controller: widget.controller, onResume: () {
+              final game = gamesCatalog.where((item) => item.id == widget.controller.activeGame).firstOrNull;
+              if (game != null) openGameRoom(context, widget.controller, game, options: widget.controller.activeRoomOptions());
+            }),
             Expanded(child: IndexedStack(index: index, children: pages)),
           ],
         ),
@@ -2985,6 +3128,17 @@ class PremiumTopBar extends StatelessWidget {
               child: const Icon(Icons.notifications_none_rounded),
             ),
           ),
+          PopupMenuButton<String>(
+            tooltip: L.t(lang, 'font'),
+            icon: const Icon(Icons.font_download_outlined),
+            onSelected: controller.changeFontFamily,
+            itemBuilder: (_) => const [
+              PopupMenuItem(value:'Roboto',child:Text('Roboto')), PopupMenuItem(value:'Arial',child:Text('Arial')),
+              PopupMenuItem(value:'serif',child:Text('Serif')), PopupMenuItem(value:'monospace',child:Text('Monospace')),
+            ],
+          ),
+          IconButton(tooltip:'A−',visualDensity:VisualDensity.compact,onPressed:()=>controller.adjustFontScale(-.08),icon:const Text('A−',style:TextStyle(fontWeight:FontWeight.w900))),
+          IconButton(tooltip:'A+',visualDensity:VisualDensity.compact,onPressed:()=>controller.adjustFontScale(.08),icon:const Text('A+',style:TextStyle(fontWeight:FontWeight.w900))),
           PopupMenuButton<String>(
             tooltip: L.t(lang, 'language'),
             icon: Text(lang.toUpperCase(), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900)),
@@ -3655,14 +3809,12 @@ class GameCard extends StatelessWidget {
           gradient: LinearGradient(colors: [game.color, Theme.of(context).colorScheme.surface]),
           border: Border.all(color: Colors.white.withValues(alpha: .09)),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            Text(game.icon, style: const TextStyle(fontSize: 42)),
-            const SizedBox(height: 7),
-            Text(L.t(lang, game.id), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
-            const SizedBox(height: 4),
-            Text('${formatNumber(game.players)} لاعب', style: const TextStyle(color: Colors.white60, fontSize: 8)),
+            ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.asset(gameArtAsset(game.id), fit: BoxFit.cover, errorBuilder: (_, __, ___) => Center(child: Text(game.icon, style: const TextStyle(fontSize: 46))))),
+            DecoratedBox(decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), gradient: const LinearGradient(begin: Alignment.topCenter,end: Alignment.bottomCenter,colors:[Colors.transparent,Color(0x22000000),Color(0xee03070c)]))),
+            Positioned(left:8,right:8,bottom:8,child:Column(mainAxisSize:MainAxisSize.min,children:[Text(L.t(lang,game.id),textAlign:TextAlign.center,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:13,shadows:[Shadow(color:Colors.black,blurRadius:7)])),const SizedBox(height:3),Text('${formatNumber(game.players)} لاعب',style:const TextStyle(color:Colors.white70,fontSize:9,fontWeight:FontWeight.w700))])),
           ],
         ),
       ),
@@ -3777,6 +3929,8 @@ class ProductCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(child: Text('🪙 ${formatNumber(controller.priceFor(product))}', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 11.5))),
+                OutlinedButton.icon(onPressed:()=>showProductPreview(context,controller,product),icon:const Icon(Icons.visibility_outlined,size:16),label:Text(L.t(controller.localeCode,'preview'),style:const TextStyle(fontSize:10)),style:OutlinedButton.styleFrom(minimumSize:const Size(70,44),padding:const EdgeInsets.symmetric(horizontal:8))),
+                const SizedBox(width:5),
                 FilledButton(
                   onPressed: () async {
                     if (owned && !product.reusable) {
@@ -3807,12 +3961,34 @@ class GameRoomPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Voice rooms are server-backed so real players can exchange audio.
-    // Normal Tarneeb retains the dedicated premium table UI.
-    if (game.id == 'tarneeb' && !options.voiceEnabled && !options.joiningExisting && !controller.serverConnected) {
-      return TarneebRoomPage(controller: controller, game: game);
-    }
-    return ServerEngineRoomPage(controller: controller, game: game, options: options);
+    final room = game.id == 'tarneeb' && !options.voiceEnabled && !options.joiningExisting && !controller.serverConnected
+        ? TarneebRoomPage(controller: controller, game: game)
+        : ServerEngineRoomPage(controller: controller, game: game, options: options);
+    return PopScope<bool>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final choice = await showDialog<int>(context: context, builder: (dialogContext) => AlertDialog(
+          icon: const Icon(Icons.sports_esports_rounded, size: 42),
+          title: Text(L.t(controller.localeCode, 'activeGame')),
+          content: const Text('أنت موجود في لعبة حالياً. يمكنك العودة للرئيسية مع البقاء في الغرفة، أو مغادرة اللعبة نهائياً.'),
+          actions: [
+            TextButton(onPressed:()=>Navigator.pop(dialogContext,0),child:const Text('البقاء في اللعبة')),
+            TextButton(onPressed:()=>Navigator.pop(dialogContext,1),child:Text(L.t(controller.localeCode,'stayInRoom'))),
+            FilledButton(onPressed:()=>Navigator.pop(dialogContext,2),style:FilledButton.styleFrom(backgroundColor:Colors.redAccent),child:Text(L.t(controller.localeCode,'leaveGameNow'))),
+          ],
+        ));
+        if (!context.mounted || choice == null || choice == 0) return;
+        if (choice == 1) {
+          controller.rememberActiveRoom(game.id, code: controller.activeRoomCode, options: options);
+          Navigator.of(context).pop(false);
+        } else {
+          controller.leaveGame(game.id);
+          Navigator.of(context).pop(true);
+        }
+      },
+      child: room,
+    );
   }
 }
 
@@ -3989,7 +4165,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
       setState(() {});
       await _runBots();
     } catch (e) {
-      if (mounted) showToast(context, e.toString().replaceFirst('Bad state: ', ''));
+      if (mounted) showToast(context, friendlyErrorMessage(e, widget.controller.localeCode));
     }
   }
 
@@ -4010,9 +4186,21 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
       showToast(context, 'اختر ورقة قانونية أولاً.');
       return;
     }
-    final card = engine.humanHand.firstWhere((c) => c.code == selectedCode);
+    await _playLocalCard(selectedCode!);
+  }
+
+  Future<void> _playLocalCard(String cardCode) async {
+    if (engine.phase != TarneebPhase.playing || engine.currentSeat != 0 || botsActing) return;
+    final legalCodes = engine.legalCards(0).map((card) => card.code).toSet();
+    if (!legalCodes.contains(cardCode)) {
+      showToast(context, 'هذه الورقة غير قانونية في اللمة الحالية.');
+      AppSounds.fire('error');
+      return;
+    }
+    final card = engine.humanHand.firstWhere((item) => item.code == cardCode);
     try {
       engine.playCard(0, card);
+      AppSounds.fire('card_play');
       autoPlayedTurns = 0;
       selectedCode = null;
       seconds = 10;
@@ -4021,7 +4209,8 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
       setState(() {});
       await _runBots();
     } catch (e) {
-      if (mounted) showToast(context, e.toString().replaceFirst('Bad state: ', ''));
+      AppSounds.fire('error');
+      if (mounted) showToast(context, friendlyErrorMessage(e, widget.controller.localeCode));
     }
   }
 
@@ -4131,9 +4320,9 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
                       controller: widget.controller,
                     ),
                   ),
-                  Positioned(top: compact ? 38 : 51, left: 0, right: 0, child: Center(child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack))),
-                  Positioned(left: landscape ? 90 : 47, top: constraints.maxHeight * .41, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true)),
-                  Positioned(right: landscape ? 90 : 47, top: constraints.maxHeight * .41, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true)),
+                  Positioned(top: compact ? 38 : 51, left: 0, right: 0, child: Center(child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, controller: widget.controller))),
+                  Positioned(left: landscape ? 90 : 47, top: constraints.maxHeight * .41, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
+                  Positioned(right: landscape ? 90 : 47, top: constraints.maxHeight * .41, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
                   Positioned(top: 0, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[2], letter: 'ل', botProfile: botProfiles[2], bid: _seatBid(2))),
                   Positioned(left: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[1], letter: 'س', botProfile: botProfiles[3], bid: _seatBid(1), vertical: true)),
                   Positioned(right: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[3], letter: 'ج', botProfile: botProfiles[1], bid: _seatBid(3), vertical: true)),
@@ -4192,20 +4381,29 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
         ),
       );
     }
-    return Center(
-      child: Wrap(
-        spacing: 5,
-        runSpacing: 5,
-        alignment: WrapAlignment.center,
+    return LayoutBuilder(
+      builder: (context, constraints) => Stack(
+        clipBehavior: Clip.none,
         children: visibleTrick.map((play) {
-          return Column(
+          final child = Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(engine.playerNames[play.seat], style: const TextStyle(fontSize: 8, color: Colors.white70, fontWeight: FontWeight.w800)),
+              PlayingCard(label: play.card.label, width: 46, height: 68),
               const SizedBox(height: 2),
-              PlayingCard(label: play.card.label, width: 48, height: 70),
+              Container(
+                constraints: const BoxConstraints(maxWidth: 74),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(8)),
+                child: Text(engine.playerNames[play.seat], maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 7, color: Colors.white, fontWeight: FontWeight.w900)),
+              ),
             ],
           );
+          return switch (play.seat) {
+            0 => Positioned(bottom: 0, left: 0, right: 0, child: Center(child: child)),
+            1 => Positioned(left: 0, top: math.max(0.0, constraints.maxHeight * .36), child: child),
+            2 => Positioned(top: 0, left: 0, right: 0, child: Center(child: child)),
+            _ => Positioned(right: 0, top: math.max(0.0, constraints.maxHeight * .36), child: child),
+          };
         }).toList(),
       ),
     );
@@ -4245,6 +4443,10 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
               child: GestureDetector(
                 onTap: legal.contains(card.code) && engine.phase == TarneebPhase.playing && engine.currentSeat == 0
                     ? () => setState(() => selectedCode = selected ? null : card.code)
+                    : null,
+                onDoubleTap: legal.contains(card.code) ? () => _playLocalCard(card.code) : null,
+                onVerticalDragEnd: legal.contains(card.code)
+                    ? (details) { if ((details.primaryVelocity ?? 0) < -180) _playLocalCard(card.code); }
                     : null,
                 child: Opacity(
                   opacity: engine.phase == TarneebPhase.playing && engine.currentSeat == 0 && !legal.contains(card.code) ? .42 : 1,
@@ -4457,20 +4659,23 @@ class PremiumCardBack extends StatelessWidget {
   final String cardBackId;
   final double width;
   final double height;
-  const PremiumCardBack({super.key, required this.cardBackId, this.width = 28, this.height = 42});
+  final AppController? controller;
+  const PremiumCardBack({super.key, required this.cardBackId, this.width = 28, this.height = 42, this.controller});
 
   @override
   Widget build(BuildContext context) {
     final product = storeProductById(cardBackId);
     final c1 = product?.previewColor1 ?? const Color(0xff111827);
     final c2 = product?.previewColor2 ?? const Color(0xfffacc15);
+    final customBytes = decodeDataImage(controller?.customCardBackData);
     return Container(
       width: width,
       height: height,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(width * .18),
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c1, Color.lerp(c1, Colors.black, .35)!]),
+        gradient: customBytes == null ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c1, Color.lerp(c1, Colors.black, .35)!]) : null,
+        image: customBytes == null ? null : DecorationImage(image: MemoryImage(customBytes), fit: BoxFit.cover),
         border: Border.all(color: c2, width: 1.4),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .35), blurRadius: 5, offset: const Offset(0, 3))],
       ),
@@ -4488,13 +4693,14 @@ class PremiumCardBack extends StatelessWidget {
 class OpponentCardStack extends StatelessWidget {
   final String cardBackId;
   final bool vertical;
-  const OpponentCardStack({super.key, required this.cardBackId, this.vertical = false});
+  final AppController? controller;
+  const OpponentCardStack({super.key, required this.cardBackId, this.vertical = false, this.controller});
 
   @override
   Widget build(BuildContext context) {
     final cards = <Widget>[
       for (var i = 0; i < 5; i++)
-        Transform.translate(offset: vertical ? Offset(0, i * 3.2) : Offset(i * 3.2, 0), child: PremiumCardBack(cardBackId: cardBackId, width: 24, height: 36)),
+        Transform.translate(offset: vertical ? Offset(0, i * 3.2) : Offset(i * 3.2, 0), child: PremiumCardBack(cardBackId: cardBackId, width: 24, height: 36, controller: controller)),
     ];
     return SizedBox(width: vertical ? 24 : 38, height: vertical ? 50 : 36, child: Stack(children: cards));
   }
@@ -4513,10 +4719,12 @@ class _LuxuryTable extends StatelessWidget {
     final c1 = skin == null ? const Color(0xff0b4731) : (controller?.color1For(skin) ?? skin.previewColor1 ?? const Color(0xff0b4731));
     final c2 = skin == null ? const Color(0xffd6aa59) : (controller?.color2For(skin) ?? skin.previewColor2 ?? const Color(0xffd6aa59));
     final dark = Color.lerp(c1, Colors.black, .62)!;
+    final customBytes = decodeDataImage(controller?.customTableBackgroundData);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        gradient: RadialGradient(center: const Alignment(0, -.25), radius: .95, colors: [c2.withValues(alpha: .72), c1, dark]),
+        gradient: customBytes == null ? RadialGradient(center: const Alignment(0, -.25), radius: .95, colors: [c2.withValues(alpha: .72), c1, dark]) : null,
+        image: customBytes == null ? null : DecorationImage(image: MemoryImage(customBytes), fit: BoxFit.cover, colorFilter: const ColorFilter.mode(Color(0x33000000), BlendMode.darken)),
         border: Border.all(color: c2, width: 5),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: .62), blurRadius: 32, offset: const Offset(0, 18)),
@@ -4579,6 +4787,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
   bool reactionsOpen = false;
   ReactionItem? floatingReaction;
   bool chatOpen = true;
+  int chatSection = 0;
   bool awayMode = false;
   int autoPlayedTurns = 0;
   int seconds = 10;
@@ -4587,6 +4796,8 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
   final Set<String> progressionMarkers = <String>{};
   final serverChatController = TextEditingController();
   final List<ChatMessage> serverMessages = [];
+  bool _roomChatInitialized = false;
+  String? _lastRoomChatFingerprint;
   VoiceRoomService? voiceRoom;
   bool voicePanelExpanded = true;
 
@@ -4630,6 +4841,8 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
       error = null;
       seconds = widget.options.turnSeconds;
     });
+    widget.controller.rememberActiveRoom(widget.game.id, code: roomCode, options: widget.options);
+    AppSounds.fire('room_create');
     serverMessages
       ..clear()
       ..addAll([
@@ -4664,6 +4877,8 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
         error = null;
         seconds = int.tryParse(room?['turn_seconds']?.toString() ?? '') ?? widget.options.turnSeconds;
       });
+      widget.controller.rememberActiveRoom(widget.game.id, code: roomCode, options: widget.options.copyWith(roomCode: roomCode));
+      AppSounds.fire(widget.options.joiningExisting ? 'room_join' : 'room_create');
       await _loadRoomChat();
       await _startVoiceIfNeeded();
     } on ApiException catch (e) {
@@ -4763,11 +4978,12 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
     final winnerTeam = int.tryParse((afterState['winner_team'] ?? afterState['round_winner_team'] ?? -1).toString()) ?? -1;
     final won = winner == 'user:0' || winnerTeam == 0;
     final tournament = widget.controller.activeChallenge != null || widget.controller.activeCompetition != null;
-    widget.controller.recordRoundProgress(
+    final report = widget.controller.recordRoundProgress(
       won: won,
       mode: tournament ? 'tournament' : 'normal',
       stage: (afterPhase == 'finished' || afterPhase == 'game_over') && won ? 'champion' : 'round',
     );
+    if (report != null) WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) showRoundRewardReport(context, widget.controller, report); });
     if (won) {
       final product = storeProductById(widget.controller.selectedEffect);
       floatingReaction = ReactionItem('local_victory_$marker', product?.icon ?? '🏆', 'victory', product?.nameAr ?? 'مؤثر الفوز', product?.nameEn ?? 'Victory effect', animated: true);
@@ -4791,6 +5007,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
       }
       if (!mounted) return;
       _awardLocalProgressionTransition(beforeRoom, updated);
+      AppSounds.fire({'play_card','discard','play_tile'}.contains(action) ? 'card_play' : 'button');
       setState(() {
         room = updated;
         seconds = turnDuration;
@@ -4805,7 +5022,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
     } on ApiException catch (e) {
       if (mounted) {
         setState(() => sending = false);
-        showToast(context, e.message);
+        showToast(context, friendlyErrorMessage(e, widget.controller.localeCode));
       }
     } catch (e) {
       if (mounted) {
@@ -4829,6 +5046,22 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
           map['time']?.toString() ?? '',
         );
       }).toList();
+      if (parsed.isNotEmpty) {
+        final latest = parsed.last;
+        final fingerprint = '${latest.sender}|${latest.body}|${latest.time}';
+        if (_roomChatInitialized && fingerprint != _lastRoomChatFingerprint && !latest.mine) {
+          AppSounds.fire(latest.body.runes.length <= 4 ? 'emoji' : 'message');
+          widget.controller.notices.insert(0, AppNotice('💬', latest.sender, latest.body));
+          unawaited(PushNotifications.showLocal(
+            title: '${latest.sender} • ${L.t(widget.controller.localeCode, 'gameChat')}',
+            body: latest.body,
+            payload: 'room:$roomCode',
+          ));
+          widget.controller.notifyListeners();
+        }
+        _lastRoomChatFingerprint = fingerprint;
+      }
+      _roomChatInitialized = true;
       if (mounted) setState(() {
         serverMessages
           ..clear()
@@ -4841,6 +5074,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
     final body = serverChatController.text.trim();
     if (body.isEmpty || roomCode.isEmpty) return;
     serverChatController.clear();
+    AppSounds.fire(body.runes.length <= 4 ? 'emoji' : 'message');
     if (localSession != null) {
       serverMessages.add(ChatMessage(widget.controller.displayName, body, true, 'الآن'));
       if (mounted) setState(() {});
@@ -4860,7 +5094,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
         if (mounted) setState(() {});
       }
     } on ApiException catch (e) {
-      if (mounted) showToast(context, e.message);
+      if (mounted) showToast(context, friendlyErrorMessage(e, widget.controller.localeCode));
     }
   }
 
@@ -4943,6 +5177,12 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
                 tooltip: service?.deafened == true ? 'تشغيل صوت اللاعبين' : 'كتم سماع اللاعبين',
                 onPressed: service == null ? null : () => service.setDeafened(!service.deafened),
                 icon: Icon(service?.deafened == true ? Icons.headset_off_rounded : Icons.headphones_rounded, size: 20, color: service?.deafened == true ? Colors.redAccent : null),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: L.t(widget.controller.localeCode, 'voiceStatus'),
+                onPressed: () => showVoiceDiagnosticsDialog(context, widget.controller, service),
+                icon: const Icon(Icons.health_and_safety_outlined, size: 20),
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
@@ -5053,10 +5293,11 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
           child: Stack(
             children: [
               Positioned.fill(left: 34, right: 34, top: 34, bottom: 128, child: _LuxuryTable(trump: state['trump']?.toString(), phase: phase, skinId: widget.controller.selectedTable, controller: widget.controller)),
-              Positioned(top: 40, left: 0, right: 0, child: Center(child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack))),
-              Positioned(left: 40, top: 120, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true)),
-              if (players.length > 2) Positioned(right: 40, top: 120, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true)),
+              Positioned(top: 40, left: 0, right: 0, child: Center(child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, controller: widget.controller))),
+              Positioned(left: 40, top: 120, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
+              if (players.length > 2) Positioned(right: 40, top: 120, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
               for (var i = 0; i < players.length; i++) _serverPlayer(players[i] is Map ? Map<String, dynamic>.from(players[i] as Map) : {}, i, players.length),
+              ..._trickSeatWidgets(),
               Positioned.fill(
                 left: 80,
                 right: 80,
@@ -5127,6 +5368,29 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
     if (index == 1) return Positioned(left: 0, top: 180, child: seat);
     if (index == 2) return Positioned(top: 0, left: 0, right: 0, child: seat);
     return Positioned(right: 0, top: 180, child: seat);
+  }
+
+  List<Widget> _trickSeatWidgets() {
+    final raw = state['trick'];
+    final entries = <MapEntry<String,String>>[];
+    if (raw is Map) {
+      for (final entry in raw.entries) { entries.add(MapEntry(entry.key.toString(), entry.value.toString())); }
+    } else if (raw is List) {
+      for (final item in raw.whereType<Map>()) { entries.add(MapEntry((item['player'] ?? item['user'] ?? '').toString(), (item['card'] ?? item['tile'] ?? '').toString())); }
+    }
+    if (entries.isEmpty) return const <Widget>[];
+    final players = room?['players'] is List ? room!['players'] as List : const [];
+    final keys = players.map((raw)=>raw is Map ? (raw['key'] ?? raw['user_key'] ?? '').toString() : '').toList();
+    return entries.map((entry){
+      var index=keys.indexOf(entry.key); if(index<0) index=entries.indexOf(entry);
+      final card=PlayingCard(label:_cardLabel(entry.value),width:34,height:51);
+      final name=index<players.length && players[index] is Map ? ((players[index] as Map)['name']?.toString() ?? 'لاعب') : 'لاعب';
+      final child=Column(mainAxisSize:MainAxisSize.min,children:[card,Container(margin:const EdgeInsets.only(top:2),padding:const EdgeInsets.symmetric(horizontal:5,vertical:2),decoration:BoxDecoration(color:Colors.black87,borderRadius:BorderRadius.circular(7)),child:Text(name,maxLines:1,style:const TextStyle(fontSize:7,fontWeight:FontWeight.w900)))]);
+      if(index==0)return Positioned(bottom:132,left:0,right:0,child:Center(child:child));
+      if(index==1)return Positioned(left:96,top:176,child:child);
+      if(index==2)return Positioned(top:72,left:0,right:0,child:Center(child:child));
+      return Positioned(right:96,top:176,child:child);
+    }).toList();
   }
 
   Widget _stateSummary() {
@@ -5343,6 +5607,14 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
     );
   }
 
+  Future<void> _quickPlayCard(String card) async {
+    if (sending || (legal.isNotEmpty && !legal.contains(card))) return;
+    final match = availableActions.cast<Map<String,dynamic>?>().firstWhere((item)=>item?['card']?.toString()==card && {'play_card','discard','move_to_foundation','play_tile'}.contains(item?['type']?.toString()),orElse:()=>null);
+    final action = match?['type']?.toString() ?? ((widget.game.id.contains('hand') || widget.game.id == 'banakil') && enginePhase == 'discard' ? 'discard' : 'play_card');
+    setState(()=>selectedCard=card);
+    await _action(action, {'card':card,'tile':card});
+  }
+
   Widget _serverHand() {
     if (hand.isEmpty) return const SizedBox(height: 55, child: Center(child: Text('لا توجد أوراق ظاهرة في هذه المرحلة', style: TextStyle(color: Colors.white38, fontSize: 10))));
     return LayoutBuilder(builder: (context, constraints) {
@@ -5365,6 +5637,8 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
                 offset: Offset(0, selected ? -7 : 0),
                 child: GestureDetector(
                   onTap: () => setState(() => selectedCard = selected ? null : card),
+                  onDoubleTap: () => _quickPlayCard(card),
+                  onVerticalDragEnd: (details) { if ((details.primaryVelocity ?? 0) < -180) _quickPlayCard(card); },
                   child: Opacity(
                     opacity: legal.isNotEmpty && !legal.contains(card) ? .42 : 1,
                     child: PlayingCard(label: _cardLabel(card), width: cardWidth, height: cardHeight, selected: selected),
@@ -5706,44 +5980,52 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
         decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withValues(alpha: .08))),
         child: Column(
           children: [
-            ListTile(
-              dense: true,
-              leading: const Icon(Icons.forum),
-              title: const Text('دردشة اللعبة', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
-              subtitle: Text(localSession != null ? 'دردشة محلية داخل الجلسة' : 'مزامنة حقيقية عبر Laravel', style: const TextStyle(color: Colors.greenAccent, fontSize: 8)),
-              trailing: IconButton(onPressed: () => setState(() => chatOpen = false), icon: const Icon(Icons.close, size: 18)),
-            ),
-            Expanded(
-              child: serverMessages.isEmpty
-                  ? const Center(child: Text('ابدأ المحادثة مع لاعبي الغرفة.', style: TextStyle(color: Colors.white54, fontSize: 10)))
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      itemCount: serverMessages.length,
-                      itemBuilder: (_, index) {
-                        final message = serverMessages[index];
-                        return Align(
-                          alignment: message.mine ? Alignment.centerRight : Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 5),
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-                            decoration: BoxDecoration(color: message.mine ? Theme.of(context).colorScheme.primary.withValues(alpha: .16) : Colors.white.withValues(alpha: .055), borderRadius: BorderRadius.circular(11)),
-                            child: Text('${message.sender}: ${message.body}', style: TextStyle(fontSize: 9, height: 1.35, fontWeight: message.mine ? FontWeight.w800 : FontWeight.w500, color: message.mine ? colorFromHex(widget.controller.selectedChatColor) : Colors.white)),
-                          ),
-                        );
-                      },
-                    ),
-            ),
             Padding(
-              padding: const EdgeInsets.all(7),
-              child: Row(children: [
-                Expanded(child: TextField(controller: serverChatController, onSubmitted: (_) => _sendRoomMessage(), decoration: const InputDecoration(hintText: 'اكتب رسالة...', isDense: true))),
-                const SizedBox(width: 5),
-                IconButton.filled(onPressed: _sendRoomMessage, icon: const Icon(Icons.send, size: 17)),
+              padding: const EdgeInsets.fromLTRB(8, 7, 4, 4),
+              child: Row(children:[
+                Expanded(child:SegmentedButton<int>(segments:[ButtonSegment(value:0,icon:const Icon(Icons.forum,size:17),label:Text(L.t(widget.controller.localeCode,'gameChat'))),ButtonSegment(value:1,icon:const Icon(Icons.people_alt_outlined,size:17),label:Text(L.t(widget.controller.localeCode,'friendsChat')))],selected:{chatSection},showSelectedIcon:false,onSelectionChanged:(values)=>setState(()=>chatSection=values.first))),
+                IconButton(onPressed:()=>setState(()=>chatOpen=false),icon:const Icon(Icons.close,size:18)),
               ]),
             ),
+            if(chatSection==0) ...[
+              Expanded(
+                child: serverMessages.isEmpty
+                    ? const Center(child: Text('ابدأ المحادثة مع لاعبي الغرفة.', style: TextStyle(color: Colors.white54)))
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        itemCount: serverMessages.length,
+                        itemBuilder: (_, index) {
+                          final message = serverMessages[index];
+                          final emojiOnly=!RegExp(r'[A-Za-z0-9\u0600-\u06FF]').hasMatch(message.body) && message.body.runes.length<=8;
+                          return Align(
+                            alignment: message.mine ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                              decoration: BoxDecoration(color: message.mine ? Theme.of(context).colorScheme.primary.withValues(alpha: .16) : Colors.white.withValues(alpha: .055), borderRadius: BorderRadius.circular(13)),
+                              child: Text(emojiOnly?message.body:'${message.sender}: ${message.body}', style: TextStyle(fontSize: emojiOnly?31*widget.controller.uiChatScale:12.5*widget.controller.uiChatScale, height: 1.35, fontWeight: message.mine ? FontWeight.w800 : FontWeight.w500, color: message.mine ? colorFromHex(widget.controller.selectedChatColor) : Colors.white)),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(7),
+                child: Row(children: [
+                  IconButton.filledTonal(tooltip:'إيموجي',onPressed:()async{final emoji=await showV166EmojiPicker(context,widget.controller);if(emoji!=null){serverChatController.text=emoji;await _sendRoomMessage();}},icon:const Icon(Icons.emoji_emotions_rounded)),
+                  const SizedBox(width:5),
+                  Expanded(child: TextField(controller: serverChatController, onSubmitted: (_) => _sendRoomMessage(), style: TextStyle(fontSize:14*widget.controller.uiChatScale), decoration: const InputDecoration(hintText: 'اكتب رسالة...', isDense: true))),
+                  const SizedBox(width: 5),
+                  IconButton.filled(onPressed: _sendRoomMessage, icon: const Icon(Icons.send, size: 18)),
+                ]),
+              ),
+            ] else ...[
+              Expanded(child:ListView.separated(padding:const EdgeInsets.all(8),itemCount:widget.controller.friends.length,separatorBuilder:(_,__)=>const Divider(height:1),itemBuilder:(_,index){final friend=widget.controller.friends[index];return ListTile(dense:true,leading:Stack(children:[CircleAvatar(child:Text(friend.name.substring(0,1))),if(friend.online)const Positioned(right:0,bottom:0,child:CircleAvatar(radius:5,backgroundColor:Colors.greenAccent))]),title:Text(friend.name,style:TextStyle(fontWeight:FontWeight.w900,fontSize:13*widget.controller.uiChatScale)),subtitle:Text(friend.activity,maxLines:1,overflow:TextOverflow.ellipsis,style:TextStyle(fontSize:10*widget.controller.uiChatScale)),trailing:const Icon(Icons.chat_bubble_outline,size:19),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>PrivateChatPage(controller:widget.controller,friend:friend))));})),
+            ],
           ],
         ),
       );
+
 }
 
 
@@ -6152,7 +6434,7 @@ void showProfile(BuildContext context, AppController controller) {
       children: [
         ProfileCover(
           coverId: controller.selectedCover,
-          height: 178,
+          height: 205,
           colors: coverColorsForV151(controller, controller.selectedCover),
           child: Align(
             alignment: Alignment.bottomCenter,
@@ -6164,7 +6446,7 @@ void showProfile(BuildContext context, AppController controller) {
                   InkWell(
                     onTap: () => showAvatarPreview(context, controller),
                     borderRadius: BorderRadius.circular(60),
-                    child: Hero(tag: 'profile-avatar-${controller.username}', child: AccountAvatar(controller: controller, size: 86)),
+                    child: Hero(tag: 'profile-avatar-${controller.username}', child: AccountAvatar(controller: controller, size: 108)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -6204,6 +6486,12 @@ void showProfile(BuildContext context, AppController controller) {
             Expanded(child: ProfileMetric(value: '${controller.level}', label: 'المستوى')),
           ],
         ),
+        const SizedBox(height: 10),
+        PremiumPanel(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Row(children:[const Icon(Icons.auto_graph_rounded),const SizedBox(width:7),const Expanded(child:Text('تقدم اللاعب ونقاطه',style:TextStyle(fontWeight:FontWeight.w900))),Text('${controller.xp}/${controller.xpNext} XP',style:TextStyle(color:Theme.of(context).colorScheme.primary,fontWeight:FontWeight.w900))]),
+          const SizedBox(height:8),LinearProgressIndicator(value:controller.levelProgress,minHeight:8,borderRadius:BorderRadius.circular(20)),const SizedBox(height:9),
+          Wrap(spacing:7,runSpacing:7,children:[Chip(label:Text('🎯 ${controller.roundPoints} جولة')),Chip(label:Text('🏆 ${controller.tournamentPoints} مسابقات')),Chip(label:Text('🛡️ ${controller.clubPoints} نادي')),Chip(label:Text('⬆️ ${controller.pointsToNextLevel} للمستوى التالي'))]),
+        ]))),
         const SizedBox(height: 10),
         PremiumPanel(
           child: Padding(
@@ -6486,6 +6774,11 @@ void showSettings(BuildContext context, AppController controller) {
             ),
           ),
           const Divider(),
+          ListTile(leading:const Icon(Icons.font_download_outlined),title:Text(L.t(controller.localeCode,'font')),subtitle:Text(controller.uiFontFamily),trailing:PopupMenuButton<String>(onSelected:(value){controller.changeFontFamily(value);setLocalState((){});},itemBuilder:(_)=>const [PopupMenuItem(value:'Roboto',child:Text('Roboto')),PopupMenuItem(value:'Arial',child:Text('Arial')),PopupMenuItem(value:'serif',child:Text('Serif')),PopupMenuItem(value:'monospace',child:Text('Monospace'))])),
+          ListTile(leading:const Icon(Icons.format_size),title:Text(L.t(controller.localeCode,'fontSize')),subtitle:Text('${(controller.uiFontScale*100).round()}%'),trailing:Wrap(spacing:4,children:[IconButton.filledTonal(onPressed:(){controller.adjustFontScale(-.08);setLocalState((){});},icon:const Text('A−')),IconButton.filledTonal(onPressed:(){controller.adjustFontScale(.08);setLocalState((){});},icon:const Text('A+'))])),
+          ListTile(leading:const Icon(Icons.health_and_safety_outlined),title:Text(L.t(controller.localeCode,'connectionCheck')),subtitle:const Text('الخادم والإنترنت والميكروفون'),trailing:const Icon(Icons.chevron_right),onTap:()=>showConnectionDiagnosticsDialog(context,controller)),
+          ListTile(leading:const Icon(Icons.privacy_tip_outlined),title:Text(L.t(controller.localeCode,'privacyPolicy')),trailing:const Icon(Icons.chevron_right),onTap:()=>showPrivacyPolicyPage(context,controller)),
+          const Divider(),
           ListTile(leading: const Icon(Icons.language), title: Text(L.t(controller.localeCode, 'language')), subtitle: Text(controller.localeCode.toUpperCase()), trailing: PopupMenuButton<String>(onSelected: (v) { controller.changeLocale(v); setLocalState(() {}); }, itemBuilder: (_) => const [PopupMenuItem(value:'ar',child:Text('العربية')),PopupMenuItem(value:'en',child:Text('English')),PopupMenuItem(value:'de',child:Text('Deutsch')),PopupMenuItem(value:'tr',child:Text('Türkçe')),PopupMenuItem(value:'fr',child:Text('Français')),PopupMenuItem(value:'es',child:Text('Español'))])),
           ListTile(
             leading: const Icon(Icons.palette_outlined),
@@ -6634,8 +6927,8 @@ Future<void> openGameRoom(BuildContext context, AppController controller, GameIn
   final previousLandscape = controller.landscapeMode;
   await controller.setLandscapeMode(true);
   if (!context.mounted) return;
-  await Navigator.push(context, MaterialPageRoute(builder: (_) => GameRoomPage(controller: controller, game: game, options: options)));
-  controller.leaveGame(game.id);
+  final leftRoom = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => GameRoomPage(controller: controller, game: game, options: options)));
+  if (leftRoom == true) controller.leaveGame(game.id); else controller.rememberActiveRoom(game.id, code: controller.activeRoomCode, options: options);
   if (!previousLandscape) await controller.setLandscapeMode(false);
 }
 
@@ -7696,6 +7989,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
     padding: const EdgeInsets.all(12),
     children: [
       const _AdminInfo(text:'استوديو مرئي لإدارة الشكل العام بدون كتابة كود. المعاينة تُطبق فوراً على الأزرار والخطوط والحواف والطاولات.'),
+      const SizedBox(height: 10),
+      PremiumPanel(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+        const Text('رفع صور المصمم الشامل',style:TextStyle(fontWeight:FontWeight.w900,fontSize:16)),const SizedBox(height:8),
+        Row(children:[Expanded(child:FilledButton.tonalIcon(onPressed:()async{final e=await widget.controller.uploadDesignerImage('table');if(mounted)showToast(context,e??'تم اعتماد خلفية الطاولة.');setState((){});},icon:const Icon(Icons.table_restaurant),label:const Text('خلفية الطاولة'))),const SizedBox(width:7),Expanded(child:FilledButton.tonalIcon(onPressed:()async{final e=await widget.controller.uploadDesignerImage('cards');if(mounted)showToast(context,e??'تم اعتماد صورة ظهر الورق.');setState((){});},icon:const Icon(Icons.style),label:const Text('ظهر الورق')))]),
+        if(widget.controller.customTableBackgroundData!=null||widget.controller.customCardBackData!=null) TextButton.icon(onPressed:(){widget.controller.clearDesignerImage('table');widget.controller.clearDesignerImage('cards');setState((){});},icon:const Icon(Icons.delete_outline),label:const Text('حذف الصور المخصصة')),
+      ]))),
       const SizedBox(height: 10),
       PremiumPanel(child: Padding(padding: const EdgeInsets.all(14), child: Column(children: [
         Container(height: 110, alignment: Alignment.center, decoration: BoxDecoration(gradient: LinearGradient(colors:[Theme.of(context).colorScheme.primary.withValues(alpha:.25), Colors.white.withValues(alpha:.03)]), borderRadius: BorderRadius.circular(widget.controller.uiRadius)), child: FilledButton.icon(onPressed:(){}, icon:const Icon(Icons.auto_awesome), label:const Text('معاينة مباشرة'))),

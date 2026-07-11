@@ -1,0 +1,40 @@
+{
+  "release": "Warqna v166",
+  "version": "1.66.0",
+  "build": 166,
+  "base_release": "v165",
+  "codename": "global-voice-social-polish",
+  "focus": [
+    "Android WebRTC microphone, speaker, ICE buffering and diagnostics",
+    "18 game sound cues and large categorized emoji",
+    "active-room continuity, direct room entry and quick card play",
+    "seat-positioned trick cards and round-points reports",
+    "unified game and friends chat with larger accessible text",
+    "profile, store, admin, localization and font controls",
+    "Firebase client registration plus Laravel FCM HTTP v1 dispatcher",
+    "privacy policy and Play Store media pack"
+  ],
+  "required_files": [
+    "flutter_app/lib/v166_polish.dart",
+    "flutter_app/lib/services/app_sounds.dart",
+    "flutter_app/lib/services/app_notifications.dart",
+    "flutter_app/lib/services/connection_diagnostics.dart",
+    "flutter_app/lib/services/voice_room_service.dart",
+    "backend-laravel/app/Http/Controllers/MobilePushController.php",
+    "backend-laravel/database/migrations/2026_07_12_000166_create_push_devices_table.php",
+    "play_store_assets/icon-512.png",
+    "play_store_assets/feature-graphic-1024x500.png",
+    "backend-laravel/app/Services/Notifications/FirebasePushService.php",
+    "backend-laravel/config/push.php",
+    "backend-laravel/tests/Feature/V166GlobalPolishContractTest.php",
+    "VALIDATION_RESULTS_V166.txt"
+  ],
+  "guides": {
+    "arabic": "START_HERE_V166_AR.md",
+    "github": "GITHUB_UPLOAD_V166_AR.md",
+    "voice_and_push": "VOICE_ANDROID_PUSH_SETUP_V166_AR.md",
+    "play_store": "PLAY_STORE_ASSETS_V166_AR.md",
+    "windows": "CHECK_V166_WINDOWS.bat",
+    "unix": "check-v166.sh"
+  }
+}

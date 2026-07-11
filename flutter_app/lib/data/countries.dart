@@ -34,7 +34,7 @@ const List<CountryInfo> allCountries = <CountryInfo>[
   CountryInfo('ID', 'إندونيسيا', 'Indonesia', '🇮🇩'),
   CountryInfo('IR', 'إيران', 'Iran', '🇮🇷'),
   CountryInfo('IT', 'إيطاليا', 'Italy', '🇮🇹'),
-  CountryInfo('PS', 'الأراضي الفلسطينية', 'Palestinian Territories', '🇵🇸'),
+  CountryInfo('PS', 'فلسطين', 'Palestinian Territories', '🇵🇸'),
   CountryInfo('AR', 'الأرجنتين', 'Argentina', '🇦🇷'),
   CountryInfo('JO', 'الأردن', 'Jordan', '🇯🇴'),
   CountryInfo('TF', 'الأقاليم الجنوبية الفرنسية', 'French Southern Territories', '🇹🇫'),
@@ -259,4 +259,4 @@ const List<CountryInfo> allCountries = <CountryInfo>[
 ]
 ;
 
-CountryInfo countryByCode(String? code) => allCountries.firstWhere((c) => c.code == (code ?? 'PS').toUpperCase(), orElse: () => const CountryInfo('PS','الأراضي الفلسطينية','Palestinian Territories','🇵🇸'));
+CountryInfo countryByCode(String? code) => allCountries.firstWhere((c) => c.code == (code ?? 'PS').toUpperCase(), orElse: () => const CountryInfo('PS','فلسطين','Palestinian Territories','🇵🇸'));

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\{DB,Hash,Schema};
 use Illuminate\Support\Str;
 use App\Services\Platform\ProductionConfigService;
 use App\Services\Progression\ProgressionService;
+use App\Services\Notifications\FirebasePushService;
 
 class MobileGameController extends Controller
 {
@@ -346,7 +347,7 @@ class MobileGameController extends Controller
         ]);
     }
 
-    public function sendChat(Request $request, Room $room)
+    public function sendChat(Request $request, Room $room, FirebasePushService $push)
     {
         $this->authorizeRoom($request, $room);
         $data = $request->validate(['body' => 'required|string|max:500']);
@@ -357,6 +358,27 @@ class MobileGameController extends Controller
             'room_id' => $room->id,
             'body' => $body,
         ]);
+
+        $senderName = $request->user()->profile?->display_name ?: $request->user()->username;
+        $preview = mb_strlen($body) > 100 ? mb_substr($body, 0, 97).'…' : $body;
+        $room->players()
+            ->with('user.pushDevices')
+            ->where('is_bot', false)
+            ->where('connected', true)
+            ->whereNotNull('user_id')
+            ->where('user_id', '!=', $request->user()->id)
+            ->get()
+            ->pluck('user')
+            ->filter()
+            ->each(function (User $recipient) use ($push, $senderName, $preview, $room, $message) {
+                $push->sendToUser($recipient, 'دردشة اللعبة • '.$senderName, $preview, [
+                    'route' => 'room:'.$room->code,
+                    'type' => 'room_message',
+                    'room_code' => $room->code,
+                    'message_id' => $message->id,
+                ]);
+            });
+
         return response()->json([
             'ok' => true,
             'message' => [

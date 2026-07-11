@@ -88,6 +88,14 @@ def main() -> None:
         fail("Android compileSdk is not 36")
     if "androidx.work:work-runtime" not in gradle_text:
         fail("Direct WorkManager runtime dependency is missing")
+    if "coreLibraryDesugaring" not in gradle_text or "desugar_jdk_libs:2.1.4" not in gradle_text:
+        fail("flutter_local_notifications core library desugaring dependency is missing")
+    if not re.search(r"isCoreLibraryDesugaringEnabled\s*=\s*true|coreLibraryDesugaringEnabled\s+true", gradle_text):
+        fail("Core library desugaring is not enabled")
+    if not re.search(r"multiDexEnabled\s*=\s*true|multiDexEnabled\s+true", gradle_text):
+        fail("Android multidex is not enabled")
+    if "JavaVersion.VERSION_17" not in gradle_text:
+        fail("Android Java compatibility is not 17")
     if not re.search(r"isMinifyEnabled\s*=\s*false|minifyEnabled\s+false", gradle_text):
         fail("Release minification is not explicitly disabled")
     if not re.search(r"isShrinkResources\s*=\s*false|shrinkResources\s+false", gradle_text):
@@ -95,7 +103,7 @@ def main() -> None:
 
     print(
         "[PASS] Android startup contract: valid App ID, launcher, permissions, "
-        "SDK levels and WorkManager pre-Flutter guard"
+        "SDK levels, notification desugaring and WorkManager pre-Flutter guard"
     )
 
 

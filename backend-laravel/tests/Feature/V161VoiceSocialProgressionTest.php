@@ -23,7 +23,7 @@ class V161VoiceSocialProgressionTest extends TestCase
     public function test_round_progress_is_idempotent_and_pasha_doubles_once(): void
     {
         $user = User::create(['username'=>'progression','email'=>'progression@example.test','password'=>Hash::make('password')]);
-        $user->profile()->create(['display_name'=>'Progression','country_code'=>'PS','country_name'=>'الأراضي الفلسطينية','level'=>1,'xp'=>0,'pasha_days'=>3650,'xp_boost_multiplier'=>1]);
+        $user->profile()->create(['display_name'=>'Progression','country_code'=>'PS','country_name'=>'فلسطين','level'=>1,'xp'=>0,'pasha_days'=>3650,'xp_boost_multiplier'=>1]);
         $service = app(ProgressionService::class);
 
         $first = $service->award($user, 'test:round:1', ['event_type'=>'round_complete','mode'=>'normal','won'=>true]);

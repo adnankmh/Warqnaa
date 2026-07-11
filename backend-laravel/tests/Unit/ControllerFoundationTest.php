@@ -19,6 +19,7 @@ final class ControllerFoundationTest extends TestCase
         self::assertTrue(is_subclass_of(\App\Http\Controllers\MobileSafetyController::class, Controller::class));
         self::assertTrue(is_subclass_of(\App\Http\Controllers\MobileSocialController::class, Controller::class));
         self::assertTrue(is_subclass_of(\App\Http\Controllers\MobileVoiceController::class, Controller::class));
+        self::assertTrue(is_subclass_of(\App\Http\Controllers\MobilePushController::class, Controller::class));
         self::assertTrue(is_subclass_of(\App\Http\Controllers\MobileAccountController::class, Controller::class));
         self::assertTrue(is_subclass_of(\App\Http\Controllers\LegalPageController::class, Controller::class));
     }

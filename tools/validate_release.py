@@ -75,6 +75,21 @@ def check_required_files() -> None:
         "backend-laravel/tests/Feature/V161VoiceSocialProgressionTest.php",
         "flutter_app/lib/data/countries.dart",
         "flutter_app/lib/services/voice_room_service.dart",
+        "flutter_app/lib/v166_polish.dart",
+        "flutter_app/lib/services/app_sounds.dart",
+        "flutter_app/lib/services/app_notifications.dart",
+        "flutter_app/lib/services/connection_diagnostics.dart",
+        "backend-laravel/app/Http/Controllers/MobilePushController.php",
+        "backend-laravel/app/Models/PushDevice.php",
+        "backend-laravel/app/Services/Notifications/FirebasePushService.php",
+        "backend-laravel/config/push.php",
+        "backend-laravel/database/migrations/2026_07_12_000166_create_push_devices_table.php",
+        "backend-laravel/tests/Feature/V166GlobalPolishContractTest.php",
+        "VOICE_ANDROID_PUSH_SETUP_V166_AR.md",
+        "VALIDATION_RESULTS_V166.txt",
+        "PLAY_STORE_ASSETS_V166_AR.md",
+        "play_store_assets/icon-512.png",
+        "play_store_assets/feature-graphic-1024x500.png",
         "backend-laravel/app/Http/Controllers/SocialAuthController.php",
         "VOICE_AND_SOCIAL_SETUP_V161_AR.md",
         "backend-laravel/app/Services/Account/AccountCancellationService.php",
@@ -287,6 +302,7 @@ def check_http_controller_foundation() -> None:
         "MobileSafetyController::class",
         "MobileSocialController::class",
         "MobileVoiceController::class",
+        "MobilePushController::class",
         "MobileAccountController::class",
         "LegalPageController::class",
     ]:
@@ -749,6 +765,176 @@ def check_v165_android_workmanager_boot_guard() -> None:
         fail("v165 report must document the logcat crash signature")
     print("[OK] v165 Android WorkManager pre-Flutter boot guard")
 
+
+def check_v166_global_polish() -> None:
+    pubspec = read("flutter_app/pubspec.yaml")
+    for needle in [
+        "permission_handler: ^12.0.3",
+        "audioplayers: ^6.8.1",
+        "flutter_local_notifications: ^22.0.1",
+        "firebase_core: ^4.11.0",
+        "firebase_messaging: ^16.4.1",
+        "assets/images/games/",
+        "assets/sounds/",
+    ]:
+        if needle not in pubspec:
+            fail(f"v166 Flutter dependency/asset contract missing: {needle}")
+
+    game_ids = [
+        "hand", "trix", "tarneeb", "basra", "baloot", "banakil",
+        "trix_complex", "syrian_tarneeb", "tarneeb_400",
+        "trix_partner", "hand_partner", "saudi_hand",
+    ]
+    for game_id in game_ids:
+        path = ROOT / f"flutter_app/assets/images/games/{game_id}.png"
+        if not path.is_file() or path.stat().st_size < 10_000:
+            fail(f"v166 game artwork missing or too small: {path.relative_to(ROOT)}")
+    sound_files = list((ROOT / "flutter_app/assets/sounds").glob("*.wav"))
+    if len(sound_files) < 18:
+        fail(f"v166 requires at least 18 game sound cues; found {len(sound_files)}")
+
+    main = read("flutter_app/lib/main.dart")
+    polish = read("flutter_app/lib/v166_polish.dart")
+    voice = read("flutter_app/lib/services/voice_room_service.dart")
+    notifications = read("flutter_app/lib/services/app_notifications.dart")
+    api = read("flutter_app/lib/services/api_client.dart")
+    for needle in [
+        "part 'v166_polish.dart';",
+        "PushNotifications.registerBackgroundHandler();",
+        "ActiveGameBanner",
+        "rememberActiveRoom",
+        "onDoubleTap:",
+        "onVerticalDragEnd:",
+        "_playLocalCard",
+        "_quickPlayCard",
+        "_trickSeatWidgets()",
+        "showRoundRewardReport",
+        "showV166EmojiPicker",
+        "SegmentedButton<int>",
+        "changeFontFamily",
+        "adjustFontScale",
+        "customTableBackgroundData",
+        "customCardBackData",
+        "showPrivacyPolicy",
+        "Preview",
+    ]:
+        if needle not in main and needle not in polish:
+            fail(f"v166 UI/gameplay contract missing: {needle}")
+    for needle in [
+        "Permission.microphone.request()",
+        "Helper.setSpeakerphoneOn",
+        "_pendingCandidates",
+        "_reconnectPeer",
+        "hasTurnServer",
+        "diagnostics",
+    ]:
+        if needle not in voice:
+            fail(f"v166 Android voice contract missing: {needle}")
+    for needle in [
+        "FirebaseMessaging.onBackgroundMessage",
+        "AndroidNotificationDetails",
+        "requestNotificationsPermission",
+        "if (kIsWeb)",
+        "onTokenRefresh",
+        "static String? get currentToken",
+    ]:
+        if needle not in notifications:
+            fail(f"v166 notification contract missing: {needle}")
+    for needle in ["registerPushDevice", "removePushDevice", "Future<Map<String, dynamic>> health()"]:
+        if needle not in api:
+            fail(f"v166 API client contract missing: {needle}")
+
+    require("backend-laravel/routes/api.php", [
+        "Route::post('/push/devices'",
+        "Route::delete('/push/devices'",
+    ])
+    require("backend-laravel/app/Models/PushDevice.php", [
+        "'token' => 'encrypted'",
+        "protected $hidden = ['token']",
+    ])
+    require("backend-laravel/app/Services/Notifications/FirebasePushService.php", [
+        "https://fcm.googleapis.com/v1/projects/",
+        "openssl_sign",
+        "sendToUser",
+        "UNREGISTERED",
+    ])
+    require("backend-laravel/config/push.php", [
+        "FIREBASE_SERVICE_ACCOUNT_B64",
+        "PUSH_NOTIFICATIONS_ENABLED",
+    ])
+    require("backend-laravel/app/Http/Controllers/MobileSocialController.php", [
+        "FirebasePushService",
+        "'type' => 'private_message'",
+        "friend-chat:",
+    ])
+    require("backend-laravel/app/Http/Controllers/MobileGameController.php", [
+        "FirebasePushService",
+        "'type' => 'room_message'",
+        "'route' => 'room:'",
+    ])
+    require("backend-laravel/.env.production.example", [
+        "FIREBASE_SERVICE_ACCOUNT_B64=",
+        "FIREBASE_PROJECT_ID=",
+    ])
+    require("tools/configure_android_startup.py", [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.BLUETOOTH_CONNECT",
+    ])
+    require("tools/configure_android_workmanager_guard.py", [
+        "desugar_jdk_libs:2.1.4",
+        "isCoreLibraryDesugaringEnabled = true",
+        "multiDexEnabled = true",
+        "JavaVersion.VERSION_17",
+    ])
+    require("tools/verify_android_startup.py", [
+        "Core library desugaring is not enabled",
+        "Android multidex is not enabled",
+    ])
+    workflow = read(".github/workflows/flutter-android.yml")
+    for needle in [
+        "FIREBASE_API_KEY",
+        "FIREBASE_APP_ID",
+        "FIREBASE_MESSAGING_SENDER_ID",
+        "FIREBASE_PROJECT_ID",
+        "configure_android_workmanager_guard.py",
+    ]:
+        if needle not in workflow:
+            fail(f"v166 Android workflow contract missing: {needle}")
+
+    legacy_palestine_label = "الأراضي" + " الفلسطينية"
+    for path in iter_text_files():
+        if path.suffix.lower() in {".md", ".txt"} or path == ROOT / "tools/validate_release.py":
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if legacy_palestine_label in text:
+            fail(f"Legacy Palestine label remains in {path.relative_to(ROOT)}")
+
+    play_assets = {
+        "icon-512.png": (512, 512),
+        "feature-graphic-1024x500.png": (1024, 500),
+        "screenshot-01-games.png": None,
+        "screenshot-02-voice.png": None,
+        "screenshot-03-social.png": None,
+    }
+    try:
+        from PIL import Image
+        for name, expected in play_assets.items():
+            path = ROOT / "play_store_assets" / name
+            if not path.is_file():
+                fail(f"Play Store asset missing: {name}")
+            with Image.open(path) as image:
+                if expected is not None and image.size != expected:
+                    fail(f"Play Store asset has wrong dimensions: {name}={image.size}, expected={expected}")
+    except ImportError:
+        for name in play_assets:
+            if not (ROOT / "play_store_assets" / name).is_file():
+                fail(f"Play Store asset missing: {name}")
+
+    print("[OK] v166 voice, gameplay, social, accessibility, store, push and Play Store polish contracts")
+
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -783,6 +969,7 @@ def main() -> None:
     check_v163_ci_regressions()
     check_v164_android_startup_safety()
     check_v165_android_workmanager_boot_guard()
+    check_v166_global_polish()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

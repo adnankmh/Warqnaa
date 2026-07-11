@@ -12,7 +12,8 @@ use App\Http\Controllers\{
     MobileSafetyController,
     MobileModerationController,
     MobileAuthRecoveryController,
-    SocialAuthController
+    SocialAuthController,
+    MobilePushController
 };
 
 // Backward-compatible public aliases for older Flutter/PWA builds. They
@@ -46,6 +47,8 @@ Route::prefix('mobile/v1')->group(function () {
         Route::get('/notifications', [MobileApiController::class, 'notifications']);
         Route::patch('/notifications/{id}/read', [MobileApiController::class, 'markNotification']);
         Route::delete('/notifications/{id}', [MobileApiController::class, 'deleteNotification']);
+        Route::post('/push/devices', [MobilePushController::class, 'store']);
+        Route::delete('/push/devices', [MobilePushController::class, 'destroy']);
         Route::post('/rewards/daily', [MobileApiController::class, 'claimDaily'])->middleware('throttle:warqna-sensitive');
         Route::post('/rewards/rewarded-ad', [MobileApiController::class, 'claimRewardedAd'])->middleware('throttle:warqna-sensitive');
 
