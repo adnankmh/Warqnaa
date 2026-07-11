@@ -24,30 +24,36 @@ import 'premium_v149.dart';
 part 'premium_v151.dart';
 part 'production_v153.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Never allow an optional SDK (ads, analytics, platform plug-ins) to keep
-  // the application from painting its first frame. This is especially
-  // important for release APKs where a missing vendor configuration used to
-  // terminate the process before the login screen appeared.
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-  };
-  ui.PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('Uncaught platform error: $error\n$stack');
-    return true;
-  };
-
+void main() {
+  // The Flutter binding and runApp must be created in the same zone. Keeping
+  // the boot path synchronous also guarantees that the first frame is not
+  // blocked by SharedPreferences, AdMob, WebRTC, networking, or any optional
+  // platform plug-in.
   runZonedGuarded(() {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+    };
+    ui.PlatformDispatcher.instance.onError = (error, stack) {
+      debugPrint('Uncaught platform error: $error\n$stack');
+      return true;
+    };
+    ErrorWidget.builder = (details) => Material(
+          color: const Color(0xff101620),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Warqna recovered from a screen error.\n${details.exceptionAsString()}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        );
+
     runApp(const WarqnaApp());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(RewardedAds.initialize()
-          .timeout(const Duration(seconds: 8))
-          .catchError((error, stack) {
-        debugPrint('Optional ads initialization skipped: $error');
-      }));
-    });
   }, (error, stack) {
     debugPrint('Application zone error: $error\n$stack');
   });
@@ -66,7 +72,10 @@ class _WarqnaAppState extends State<WarqnaApp> {
   @override
   void initState() {
     super.initState();
-    controller = AppController()..load();
+    controller = AppController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(controller.load());
+    });
   }
 
   @override
@@ -408,6 +417,23 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> load() async {
+    try {
+      await _loadUnsafe();
+    } catch (error, stack) {
+      // A stale value written by an older APK must never stop the current APK
+      // from opening. Start with safe defaults and leave the user able to sign
+      // in; the original data remains untouched for diagnostics.
+      debugPrint('Safe boot ignored incompatible local state: $error\n$stack');
+      authToken = null;
+      api.token = null;
+      isAuthenticated = false;
+      serverConnected = false;
+      ready = true;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _loadUnsafe() async {
     final prefs = await SharedPreferences.getInstance();
     localeCode = prefs.getString('locale') ?? localeCode;
     themeCode = prefs.getString('theme') ?? themeCode;
@@ -449,7 +475,11 @@ class AppController extends ChangeNotifier {
     _resetAdCounterIfNeeded();
     claimedGiftSteps
       ..clear()
-      ..addAll((prefs.getStringList('claimedGiftSteps') ?? const <String>[]).map(int.parse));
+      ..addAll(
+        (prefs.getStringList('claimedGiftSteps') ?? const <String>[])
+            .map(int.tryParse)
+            .whereType<int>(),
+      );
     activeCompetition = prefs.getString('activeCompetition');
     activeChallenge = prefs.getString('activeChallenge');
     activeGame = prefs.getString('activeGame');

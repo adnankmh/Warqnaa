@@ -1,0 +1,28 @@
+{
+  "product": "Warqna",
+  "version": "1.64.0",
+  "build": 164,
+  "channel": "production",
+  "codename": "android-startup-safe",
+  "release_date": "2026-07-11",
+  "platforms": [
+    "web",
+    "android",
+    "ios",
+    "laravel"
+  ],
+  "highlights": [
+    "Hardened Android launch path before the first Flutter frame",
+    "Uses a guaranteed valid Google sample AdMob app ID for the downloadable APK",
+    "Validates production AdMob app and rewarded IDs before building the Play AAB",
+    "Removed automatic Mobile Ads initialization from application startup",
+    "Loads SharedPreferences only after the first frame and recovers from stale data",
+    "Runs Flutter binding setup and runApp in the same guarded zone",
+    "Adds Android manifest and APK signing/integrity preflight checks"
+  ],
+  "external_configuration_required": [
+    "WARQNA_API_URL should point to the deployed HTTPS Laravel API",
+    "ADMOB_ANDROID_APP_ID must be an AdMob app ID containing ~ for production AAB ads",
+    "ADMOB_REWARDED_ANDROID_ID must be a rewarded unit ID containing / for production AAB ads"
+  ]
+}

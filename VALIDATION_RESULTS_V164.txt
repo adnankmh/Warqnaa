@@ -1,0 +1,22 @@
+Warqna v164 validation results
+Date: 2026-07-11
+Version: 1.64.0+164
+
+PASS - tools/verify_release_versions.py
+PASS - tools/validate_release.py
+PASS - PHP syntax: 272 files
+PASS - JSON parse: 20 files
+PASS - YAML structural audit: 15 files
+PASS - Python bytecode compilation for release tools
+PASS - Android manifest sanitizer with invalid input fallback
+PASS - Android startup verifier: App ID, MainActivity, permissions, minSdk 24, compileSdk 36
+PASS - Flutter first-frame startup source contract
+PASS - No automatic AdMob initialization during application boot
+PASS - Safe SharedPreferences recovery contract
+PASS - Git conflict and secret scans
+
+Not executed in this packaging container:
+- flutter analyze / flutter test (Flutter SDK unavailable)
+- Android emulator launch test (Android emulator unavailable)
+- php artisan test (Composer vendor dependencies unavailable)
+These remain authoritative in GitHub Actions and on-device verification.

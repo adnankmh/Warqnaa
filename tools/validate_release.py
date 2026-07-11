@@ -87,6 +87,10 @@ def check_required_files() -> None:
         ".github/workflows/flutter-web-pages.yml",
         ".github/workflows/flutter-ios.yml",
         "tools/verify_flutter_lock.py",
+        "tools/configure_android_startup.py",
+        "tools/verify_android_startup.py",
+        "ANDROID_APK_STARTUP_FIX_V164_AR.md",
+        "CAPTURE_ANDROID_CRASH_LOG_WINDOWS.bat",
         f"START_HERE_V{EXPECTED_BUILD}_AR.md",
         f"GITHUB_UPLOAD_V{EXPECTED_BUILD}_AR.md",
         f"RELEASE_MANIFEST_V{EXPECTED_BUILD}.json",
@@ -487,7 +491,7 @@ def check_v161_voice_social_progression() -> None:
         fail("Voice service contains a compatibility or duplicate-else regression")
 
     main = read("flutter_app/lib/main.dart")
-    for needle in ["runZonedGuarded", "addPostFrameCallback", "RewardedAds.initialize()", "vipDays = math.max(vipDays, 3650)", "recordRoundProgress", "showCountryPicker", "final completedRound = engine.round"]:
+    for needle in ["runZonedGuarded", "addPostFrameCallback", "RewardedAds.show()", "vipDays = math.max(vipDays, 3650)", "recordRoundProgress", "showCountryPicker", "final completedRound = engine.round"]:
         if needle not in main:
             fail(f"Flutter startup/profile contract missing: {needle}")
 
@@ -651,6 +655,66 @@ def check_v163_ci_regressions() -> None:
 
     print("[OK] v163 StorePage controller and account-cancellation validation regressions")
 
+
+def check_v164_android_startup_safety() -> None:
+    main = read("flutter_app/lib/main.dart")
+    for needle in [
+        "void main()",
+        "runZonedGuarded(() {",
+        "WidgetsFlutterBinding.ensureInitialized();",
+        "runApp(const WarqnaApp());",
+        "controller = AppController();",
+        "unawaited(controller.load());",
+        "Future<void> _loadUnsafe() async",
+        "Safe boot ignored incompatible local state",
+        ".map(int.tryParse)",
+        ".whereType<int>()",
+    ]:
+        if needle not in main:
+            fail(f"v164 safe Flutter boot contract missing: {needle}")
+    if "RewardedAds.initialize()" in main:
+        fail("AdMob initialization returned to the application startup path")
+    binding = main.find("WidgetsFlutterBinding.ensureInitialized();")
+    zone = main.find("runZonedGuarded(() {")
+    app = main.find("runApp(const WarqnaApp());")
+    if zone < 0 or binding < zone or app < binding:
+        fail("Flutter binding and runApp are not in the same guarded startup zone")
+
+    configure = read("tools/configure_android_startup.py")
+    verify = read("tools/verify_android_startup.py")
+    workflow = read(".github/workflows/flutter-android.yml")
+    for needle in [
+        "SAMPLE_APP_ID = \"ca-app-pub-3940256099942544~3347511713\"",
+        "APP_ID_RE = re.compile",
+        "mode == \"safe-apk\"",
+        "production variable absent or invalid",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.RECORD_AUDIO",
+    ]:
+        if needle not in configure:
+            fail(f"Android manifest sanitizer contract missing: {needle}")
+    for needle in [
+        "AdMob application ID is absent or malformed",
+        "MainActivity is missing or not exported",
+        "Android minSdk is not 24",
+        "Android compileSdk is not 36",
+    ]:
+        if needle not in verify:
+            fail(f"Android startup verifier contract missing: {needle}")
+    for needle in [
+        "--mode safe-apk",
+        "warqna-v${WARQNA_APP_BUILD}-safe.apk",
+        "--mode production-aab",
+        "^ca-app-pub-[0-9]{16}/[0-9]{10}$",
+        "apksigner\" verify --verbose",
+        "zipalign\" -c -P 16",
+    ]:
+        if needle not in workflow:
+            fail(f"Android safe-build workflow contract missing: {needle}")
+    if 'app_id = os.environ.get(\'ADMOB_APP_ID\'' in workflow:
+        fail("Unvalidated direct AdMob App ID injection returned")
+    print("[OK] v164 first-frame boot, AdMob manifest sanitization and safe APK contracts")
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -683,6 +747,7 @@ def main() -> None:
     check_v161_voice_social_progression()
     check_v162_account_cancellation_and_analyzer()
     check_v163_ci_regressions()
+    check_v164_android_startup_safety()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")
