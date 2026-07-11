@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\{Game,Message,Room,RoomPlayer};
 use App\Services\GameEngine\{EngineRegistry,GameFactory,GameRuleContract};
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\{DB,Hash};
+use Illuminate\Support\Facades\{DB,Hash,Schema};
 use Illuminate\Support\Str;
 use App\Services\Platform\ProductionConfigService;
 
@@ -13,7 +13,16 @@ class MobileGameController extends Controller
 {
     public function catalog(Request $request)
     {
-        $dbGames = Game::query()->where('active', true)->get()->keyBy('key');
+        // Public catalog must stay available during first deployment and
+        // maintenance windows even when the database has not been migrated yet.
+        $dbGames = collect();
+        try {
+            if (Schema::hasTable('games')) {
+                $dbGames = Game::query()->where('active', true)->get()->keyBy('key');
+            }
+        } catch (\Throwable) {
+            $dbGames = collect();
+        }
         $catalog = collect(EngineRegistry::all())->map(function (array $meta, string $key) use ($dbGames) {
             $game = $dbGames->get($key);
             return [

@@ -131,20 +131,14 @@ jobs:
               groovy_gradle.write_text(gradle, encoding='utf-8')
           PYCODE
 
-      - name: Resolve Flutter packages
+      - name: Resolve and verify Flutter packages
         working-directory: flutter_app
         run: |
           flutter clean
           flutter pub get
-          grep -A2 '^  google_mobile_ads:' pubspec.lock || true
-          if ! grep -A2 '^  google_mobile_ads:' pubspec.lock | grep -q 'version: "7.0.0"'; then
-            echo "Expected google_mobile_ads 7.0.0, but a different version was resolved."
-            exit 1
-          fi
-          if ! grep -A2 '^  flutter_webrtc:' pubspec.lock | grep -q 'version: "1.4.0"'; then
-            echo "Expected flutter_webrtc 1.4.0, but a different version was resolved."
-            exit 1
-          fi
+          python3 ../tools/verify_flutter_lock.py pubspec.lock \
+            google_mobile_ads=7.0.0 \
+            flutter_webrtc=1.4.0
 
       - name: Configure optional Google Play upload signing
         working-directory: flutter_app
@@ -179,7 +173,7 @@ jobs:
           API_URL: ${{ vars.WARQNA_API_URL }}
           REWARDED_ID: ${{ vars.ADMOB_REWARDED_ANDROID_ID }}
         run: |
-          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.57.0" "--dart-define=WARQNA_APP_BUILD=157")
+          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.58.0" "--dart-define=WARQNA_APP_BUILD=158")
           if [ -n "$API_URL" ]; then
             EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL" "--dart-define=WARQNA_PRODUCTION_MODE=true")
           else
@@ -202,7 +196,7 @@ jobs:
       - name: Upload APK and AAB
         uses: actions/upload-artifact@v6
         with:
-          name: warqna-v157-android
+          name: warqna-v158-android
           if-no-files-found: error
           retention-days: 14
           path: |

@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Validate source package and reject merge markers
         run: python3 tools/validate_release.py
@@ -71,7 +71,7 @@ jobs:
         working-directory: flutter_app
         run: |
           API_URL="${{ vars.WARQNA_API_URL }}"
-          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.57.0" "--dart-define=WARQNA_APP_BUILD=157")
+          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=1.58.0" "--dart-define=WARQNA_APP_BUILD=158")
           if [ -n "$API_URL" ]; then
             EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL" "--dart-define=WARQNA_PRODUCTION_MODE=true")
           else

@@ -8,21 +8,27 @@ use App\Services\GameEngine\GameFactory;
 
 class V122CatalogAndEnginesTest extends TestCase
 {
-    public function test_v122_catalog_contains_many_social_card_games(): void
+    public function test_current_curated_catalog_matches_product_contract(): void
     {
-        $games = GameCatalog::all();
-        $this->assertGreaterThanOrEqual(40, count($games));
-        foreach(['tarneeb','hand','trix','baloot','domino','ludo','jackaroo','spades','hearts','rummy','concan','kout4','basra','oono','chess'] as $key){
-            $this->assertArrayHasKey($key, $games);
+        $games=GameCatalog::all();
+        $expected=[
+            'tarneeb','syrian_tarneeb','tarneeb_400',
+            'trix','trix_partner','trix_complex',
+            'hand','hand_partner','saudi_hand','banakil','baloot','basra',
+        ];
+        $this->assertSame($expected,array_keys($games));
+        foreach(['domino','ludo','jackaroo','chess','backgammon','solitaire_multiplayer'] as $removed){
+            $this->assertArrayNotHasKey($removed,$games);
         }
     }
 
-    public function test_v122_game_factory_can_create_engines_for_catalog(): void
+    public function test_every_curated_game_has_a_real_engine_object(): void
     {
         foreach(array_keys(GameCatalog::all()) as $key){
-            $engine = GameFactory::make($key);
-            $this->assertIsObject($engine, $key.' has no engine object');
-            $this->assertTrue(method_exists($engine,'initialState'), $key.' engine has no initialState');
+            $engine=GameFactory::make($key);
+            $this->assertTrue(method_exists($engine,'initialState'),$key.' engine has no initialState');
+            $this->assertTrue(method_exists($engine,'validate'),$key.' engine has no validate');
+            $this->assertTrue(method_exists($engine,'apply'),$key.' engine has no apply');
         }
     }
 }

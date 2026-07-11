@@ -1,7 +1,20 @@
 <?php
 use Illuminate\Support\Str;
 $db = env('DB_DATABASE', database_path('database.sqlite'));
-if (env('DB_CONNECTION','sqlite') === 'sqlite' && $db && !str_starts_with($db, '/') && !preg_match('/^[A-Za-z]:[\\\\\/]/', $db)) {
+$isSqlite = env('DB_CONNECTION', 'sqlite') === 'sqlite';
+
+// Preserve SQLite's in-memory token and URI filenames. Converting `:memory:`
+// into base_path(':memory:') makes Laravel look for a literal file and breaks
+// PHPUnit before migrations can run.
+if (
+    $isSqlite
+    && is_string($db)
+    && $db !== ''
+    && $db !== ':memory:'
+    && !str_starts_with($db, 'file:')
+    && !str_starts_with($db, '/')
+    && !preg_match('~^[A-Za-z]:[/\\\\]~', $db)
+) {
     $db = base_path($db);
 }
 return [

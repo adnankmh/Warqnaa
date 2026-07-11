@@ -5,14 +5,17 @@ require_once __DIR__.'/TarneebStandalone/TarneebEngine.php';
 
 use App\Services\GameEngine\TarneebStandalone\TarneebEngine;
 use App\Services\GameEngine\TarneebStandalone\TarneebException;
+use App\Services\WarqnaPro\PlayActionNormalizer;
 
 class TarneebRules implements GameRuleContract
 {
     private TarneebEngine $engine;
+    private PlayActionNormalizer $normalizer;
 
     public function __construct()
     {
         $this->engine = new TarneebEngine();
+        $this->normalizer = new PlayActionNormalizer();
     }
 
     public function initialState(array $players, array $options=[]): array
@@ -191,7 +194,113 @@ class TarneebRules implements GameRuleContract
 
     private function toStandalone(array $state): ?array
     {
-        return isset($state['_tarneeb_v2']) && is_array($state['_tarneeb_v2']) ? $state['_tarneeb_v2'] : null;
+        $players=array_values(array_map('strval',$state['players'] ?? []));
+        if(count($players)<4) return null;
+
+        if(isset($state['_tarneeb_v2']) && is_array($state['_tarneeb_v2'])){
+            $standalone=$state['_tarneeb_v2'];
+        }else{
+            $enginePlayers=[];
+            foreach(array_slice($players,0,4) as $player){
+                $enginePlayers[]=['id'=>$player,'name'=>$this->shortName($player),'bot'=>str_starts_with($player,'bot:')];
+            }
+            $target=(int)($state['target'] ?? 41);
+            if(!in_array($target,[31,41,61],true)) $target=41;
+            $standalone=$this->engine->newGameWithTarget($enginePlayers,$target,1,[
+                'turnSeconds'=>max(5,min(10,(int)($state['turn_timeout_seconds'] ?? 7))),
+                'targetScore'=>$target,
+                'redealOnAllPass'=>true,
+                'sortHands'=>true,
+                'allowBotForAway'=>true,
+                'maxMissedTurnsBeforeAway'=>3,
+            ]);
+        }
+
+        // Keep the authoritative engine representation synchronized with the
+        // public state. This supports rooms created by older Warqna releases
+        // and test/admin tools that legitimately edit the public projection.
+        $seatByPlayer=[];
+        foreach(($standalone['players'] ?? []) as $seat=>$player){
+            $seatByPlayer[(string)($player['id'] ?? '')]=(int)$seat;
+        }
+        if(!$seatByPlayer){
+            foreach(array_slice($players,0,4) as $seat=>$player) $seatByPlayer[$player]=$seat;
+        }
+
+        $phase=(string)($state['phase'] ?? ($standalone['phase'] ?? 'bidding'));
+        $standalone['phase']=match($phase){'finished'=>'round_end',default=>$phase};
+
+        if(isset($state['turn'],$seatByPlayer[(string)$state['turn']])){
+            $standalone['currentSeat']=$seatByPlayer[(string)$state['turn']];
+        }
+        if(isset($state['dealer'],$seatByPlayer[(string)$state['dealer']])){
+            $standalone['dealerSeat']=$seatByPlayer[(string)$state['dealer']];
+        }
+
+        if(isset($state['hands']) && is_array($state['hands'])){
+            foreach($seatByPlayer as $player=>$seat){
+                if(array_key_exists($player,$state['hands'])){
+                    $standalone['hands'][$seat]=array_values(array_filter(array_map(
+                        fn($card)=>$this->toShortCard((string)$card),
+                        (array)$state['hands'][$player]
+                    )));
+                }
+            }
+        }
+
+        if(array_key_exists('trump',$state)){
+            $trump=(string)($state['trump'] ?? '');
+            $standalone['trump']=$trump==='' ? null : $this->toShortSuit($trump);
+        }
+
+        if(isset($state['trick']) && is_array($state['trick'])){
+            $standalone['trick']=[];
+            foreach($state['trick'] as $player=>$card){
+                if(!isset($seatByPlayer[(string)$player])) continue;
+                $seat=$seatByPlayer[(string)$player];
+                $standalone['trick'][]=[
+                    'seat'=>$seat,
+                    'team'=>$standalone['players'][$seat]['team'] ?? ($seat%2),
+                    'card'=>$this->toShortCard((string)$card),
+                    'at'=>time(),
+                ];
+            }
+        }
+
+        if(isset($state['score']) && is_array($state['score'])){
+            $standalone['scores']=[
+                0=>(int)($state['score']['teamA'] ?? $state['score'][0] ?? 0),
+                1=>(int)($state['score']['teamB'] ?? $state['score'][1] ?? 0),
+            ];
+        }
+        if(isset($state['round_tricks']) && is_array($state['round_tricks'])){
+            $standalone['roundTricks']=[
+                0=>(int)($state['round_tricks']['teamA'] ?? $state['round_tricks'][0] ?? 0),
+                1=>(int)($state['round_tricks']['teamB'] ?? $state['round_tricks'][1] ?? 0),
+            ];
+        }
+
+        $passed=[0=>false,1=>false,2=>false,3=>false];
+        foreach((array)($state['passed'] ?? []) as $player=>$value){
+            if($value && isset($seatByPlayer[(string)$player])) $passed[$seatByPlayer[(string)$player]]=true;
+        }
+        $bid=$state['bid'] ?? null;
+        if(is_array($bid) && isset($bid['player'],$seatByPlayer[(string)$bid['player']])){
+            $seat=$seatByPlayer[(string)$bid['player']];
+            $standalone['bid']=[
+                'seat'=>$seat,
+                'team'=>$seat%2,
+                'amount'=>(int)($bid['value'] ?? $bid['amount'] ?? 0),
+                'passed'=>$passed,
+                'history'=>$standalone['bid']['history'] ?? [],
+            ];
+        }elseif(!isset($standalone['bid']) || !is_array($standalone['bid'])){
+            $standalone['bid']=['seat'=>null,'team'=>null,'amount'=>0,'passed'=>$passed,'history'=>[]];
+        }else{
+            $standalone['bid']['passed']=$passed;
+        }
+
+        return $standalone;
     }
 
     private function messagesFromEvents(array $s): array
@@ -246,34 +355,23 @@ class TarneebRules implements GameRuleContract
 
     private function canonicalCard(string $card,array $hand): ?string
     {
-        if(in_array($card,$hand,true)) return $card;
-        $short=$this->toShortCard($card);
-        foreach($hand as $h) if($this->toShortCard((string)$h)===$short) return (string)$h;
-        return null;
+        return $this->normalizer->canonicalCard($card,$hand);
     }
 
     private function longCards(array $cards): array { return array_map(fn($c)=>$this->toLongCard((string)$c),$cards); }
-    private function toLongCard(string $c): string
+    private function toLongCard(string $card): string
     {
-        $c=strtoupper(trim($c));
-        $p=explode('_',$c);
-        if(count($p)<2) return $c;
-        return $p[0].'_'.$this->toLongSuit($p[1]);
+        $normalized=$this->normalizer->normalizeCardId($card);
+        $parts=explode('_',$normalized,2);
+        if(count($parts)!==2) return strtoupper(trim($card));
+        return strtoupper($parts[0]).'_'.$this->normalizer->normalizeSuit($parts[1]);
     }
-    private function toShortCard(string $c): string
+    private function toShortCard(string $card): string
     {
-        $c=trim((string)$c);
-        $c=str_replace(['clubs','♣','سنك','شجرة'],'C',$c);
-        $c=str_replace(['diamonds','♦','ديناري'],'D',$c);
-        $c=str_replace(['spades','♠','بستوني'],'S',$c);
-        $c=str_replace(['hearts','♥','كبة'],'H',$c);
-        $c=str_replace(['-',' '],['_','_'],$c);
-        $p=array_values(array_filter(explode('_',$c),fn($x)=>$x!==''));
-        if(count($p)>=2){
-            if(in_array(strtoupper($p[0]),['C','D','S','H'],true)) return strtoupper(end($p)).'_'.strtoupper($p[0]);
-            return strtoupper($p[0]).'_'.$this->toShortSuit((string)end($p));
-        }
-        return strtoupper($c);
+        $normalized=$this->normalizer->normalizeCardId($card);
+        $parts=explode('_',$normalized,2);
+        if(count($parts)!==2) return strtoupper(trim($card));
+        return strtoupper($parts[0]).'_'.$this->toShortSuit($parts[1]);
     }
     private function toLongSuit(string $s): string
     {

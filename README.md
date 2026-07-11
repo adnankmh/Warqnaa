@@ -1,23 +1,23 @@
-# Warqna v157 — Android CI & PHPUnit Suite Hotfix
+# Warqna v158 — CI Lock Parser & Laravel Quality Hotfix
 
-حزمة المصدر الكاملة لتطبيق Warqna بإصدار `1.57.0+157`.
+حزمة المصدر الكاملة لتطبيق Warqna بإصدار `1.58.0+158`، مبنية على v157 مع الحفاظ على جميع الميزات الحالية.
 
-تتضمن جميع ميزات v156 مع إصلاح فشل PHPUnit بسبب غياب `tests/Unit`، وإصلاح فشل إعداد Java/Gradle في GitHub Actions قبل إنشاء مشروع Android.
+يعالج هذا الإصدار جذريًا فحص إصدارات Flutter الخاطئ، وقاعدة SQLite داخل الذاكرة في PHPUnit، وتوافق API/PWA، ومحرك الطرنيب وصيغ أوراق اللعب، ويحدّث الاختبارات القديمة لتطابق عقد المنتج الحالي ذي 12 لعبة مختارة.
 
 ابدأ من:
 
-- `START_HERE_V157_AR.md`
-- `GITHUB_UPLOAD_V157_AR.md`
-- `QUALITY_REPORT_V157_AR.md`
+- `START_HERE_V158_AR.md`
+- `GITHUB_UPLOAD_V158_AR.md`
+- `QUALITY_REPORT_V158_AR.md`
 
 فحص Windows:
 
 ```bat
-CHECK_V157_WINDOWS.bat
+CHECK_V158_WINDOWS.bat
 ```
 
 فحص Linux/macOS:
 
 ```bash
-./check-v157.sh
+./check-v158.sh
 ```

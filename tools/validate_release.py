@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
-"""Warqna release preflight that uses only the Python standard library."""
+"""Warqna v158 source-package preflight using the Python standard library.
+
+Framework-level Laravel and Flutter tests remain authoritative in GitHub Actions.
+This preflight rejects known regressions before a commit reaches CI.
+"""
 from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_VERSION = "1.57.0"
-EXPECTED_BUILD = 157
+EXPECTED_VERSION = "1.58.0"
+EXPECTED_BUILD = 158
 TEXT_SUFFIXES = {
     ".dart", ".php", ".py", ".js", ".ts", ".yml", ".yaml", ".json",
     ".md", ".html", ".css", ".xml", ".gradle", ".properties", ".sh", ".bat",
@@ -23,12 +28,65 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
+def read(rel: str) -> str:
+    path = ROOT / rel
+    if not path.is_file():
+        fail(f"Required file missing: {rel}")
+    return path.read_text(encoding="utf-8")
+
+
 def iter_text_files():
     for path in ROOT.rglob("*"):
         if not path.is_file() or any(part in SKIP_DIRS for part in path.parts):
             continue
         if path.suffix.lower() in TEXT_SUFFIXES or path.name in {"Dockerfile", ".gitignore"}:
             yield path
+
+
+def require(rel: str, needles: list[str]) -> None:
+    text = read(rel)
+    for needle in needles:
+        if needle not in text:
+            fail(f"Missing contract in {rel}: {needle}")
+
+
+def forbid(rel: str, needles: list[str]) -> None:
+    text = read(rel)
+    for needle in needles:
+        if needle in text:
+            fail(f"Forbidden regression in {rel}: {needle}")
+
+
+def check_required_files() -> None:
+    required = [
+        "flutter_app/lib/main.dart",
+        "flutter_app/pubspec.yaml",
+        "flutter_app/lib/services/api_client.dart",
+        "backend-laravel/artisan",
+        "backend-laravel/composer.json",
+        "backend-laravel/phpunit.xml",
+        "backend-laravel/config/database.php",
+        "backend-laravel/app/Services/WarqnaPro/PlayActionNormalizer.php",
+        "backend-laravel/app/Services/GameEngine/TarneebRules.php",
+        "backend-laravel/tests/Unit/EnvironmentSanityTest.php",
+        "backend-laravel/database/migrations/2026_07_11_000158_ci_lock_and_laravel_quality_hotfix.php",
+        ".github/workflows/backend-ci.yml",
+        ".github/workflows/flutter-android.yml",
+        ".github/workflows/flutter-web-pages.yml",
+        ".github/workflows/flutter-ios.yml",
+        "tools/verify_flutter_lock.py",
+        "START_HERE_V158_AR.md",
+        "GITHUB_UPLOAD_V158_AR.md",
+        "RELEASE_MANIFEST_V158.json",
+        "QUALITY_REPORT_V158_AR.md",
+        "CHECK_V158_WINDOWS.bat",
+        "check-v158.sh",
+        "START_WARQNA_V158_WINDOWS.bat",
+    ]
+    missing = [item for item in required if not (ROOT / item).is_file()]
+    if missing:
+        fail("Missing release files: " + ", ".join(missing))
+    print("[OK] Required v158 release files")
 
 
 def check_conflicts() -> None:
@@ -47,40 +105,36 @@ def check_conflicts() -> None:
 
 
 def check_login_fix() -> None:
-    path = ROOT / "flutter_app/lib/main.dart"
-    text = path.read_text(encoding="utf-8")
-    required = [
+    require("flutter_app/lib/main.dart", [
         "Future<String?> login(String loginId, String password",
         "return this.login(loginId, password, offline: true);",
         "final fallback = await this.login(loginId, password, offline: true);",
-    ]
-    for needle in required:
-        if needle not in text:
-            fail(f"Missing merge-safe login implementation: {needle}")
-    forbidden = [
+    ])
+    forbid("flutter_app/lib/main.dart", [
         "Future<String?> login(String login, String password",
         "return login(login, password, offline: true);",
         "await login(login, password, offline: true);",
-    ]
-    for needle in forbidden:
-        if needle in text:
-            fail(f"Unsafe shadowed login call remains: {needle}")
-    print("[OK] Login fallback is merge-safe and unambiguous")
+    ])
+    print("[OK] Merge-safe login fallback")
 
 
 def check_versions() -> None:
     checks = {
-        ROOT / "flutter_app/pubspec.yaml": f"version: {EXPECTED_VERSION}+{EXPECTED_BUILD}",
-        ROOT / "flutter_app/lib/services/api_client.dart": f"defaultValue: '{EXPECTED_VERSION}'",
-        ROOT / "backend-laravel/config/warqna.php": f"env('WARQNA_VERSION', '{EXPECTED_VERSION}')",
-        ROOT / ".github/workflows/flutter-android.yml": f"WARQNA_APP_BUILD={EXPECTED_BUILD}",
-        ROOT / ".github/workflows/flutter-web-pages.yml": f"WARQNA_APP_BUILD={EXPECTED_BUILD}",
+        "flutter_app/pubspec.yaml": f"version: {EXPECTED_VERSION}+{EXPECTED_BUILD}",
+        "flutter_app/lib/services/api_client.dart": f"defaultValue: '{EXPECTED_VERSION}'",
+        "backend-laravel/config/warqna.php": f"env('WARQNA_VERSION', '{EXPECTED_VERSION}')",
+        "backend-laravel/.env.example": f"WARQNA_BUILD={EXPECTED_BUILD}",
+        "backend-laravel/.env.production.example": f"WARQNA_VERSION={EXPECTED_VERSION}",
+        ".github/workflows/flutter-android.yml": f"WARQNA_APP_BUILD={EXPECTED_BUILD}",
+        ".github/workflows/flutter-web-pages.yml": f"WARQNA_APP_BUILD={EXPECTED_BUILD}",
+        ".github/workflows/flutter-ios.yml": f"WARQNA_APP_BUILD={EXPECTED_BUILD}",
+        ".github/workflows/production-release-check.yml": f"version: {EXPECTED_VERSION}+{EXPECTED_BUILD}",
     }
-    for path, needle in checks.items():
-        if not path.is_file():
-            fail(f"Required file missing: {path.relative_to(ROOT)}")
-        if needle not in path.read_text(encoding="utf-8"):
-            fail(f"Version mismatch in {path.relative_to(ROOT)}; expected {needle}")
+    for rel, needle in checks.items():
+        if needle not in read(rel):
+            fail(f"Version mismatch in {rel}; expected {needle}")
+    require("backend-laravel/config/warqna.php", [f"env('WARQNA_BUILD', {EXPECTED_BUILD})"])
+    require("flutter_app/lib/services/api_client.dart", [f"defaultValue: {EXPECTED_BUILD}"])
     print(f"[OK] Version consistency {EXPECTED_VERSION}+{EXPECTED_BUILD}")
 
 
@@ -97,6 +151,21 @@ def check_json() -> None:
     print(f"[OK] JSON syntax ({count} files)")
 
 
+def check_yaml_basics() -> None:
+    count = 0
+    for pattern in ("*.yml", "*.yaml"):
+        for path in ROOT.rglob(pattern):
+            if any(part in SKIP_DIRS for part in path.parts):
+                continue
+            text = path.read_text(encoding="utf-8")
+            if "\t" in text:
+                fail(f"YAML contains tab indentation: {path.relative_to(ROOT)}")
+            if path.parent.name == "workflows" and not re.search(r"(?m)^name:\s*.+$", text):
+                fail(f"Workflow has no top-level name: {path.relative_to(ROOT)}")
+            count += 1
+    print(f"[OK] YAML structural audit ({count} files)")
+
+
 def check_secrets() -> None:
     forbidden_names = {".env", "key.properties", "upload-keystore.jks"}
     found = []
@@ -106,117 +175,182 @@ def check_secrets() -> None:
         if path.name in forbidden_names or path.suffix.lower() in {".jks", ".keystore", ".p12", ".pem"}:
             found.append(str(path.relative_to(ROOT)))
     if found:
-        fail("Secret-bearing files must not ship in the source package: " + ", ".join(found))
-    print("[OK] No committed runtime secrets or signing files")
+        fail("Secret-bearing files must not ship: " + ", ".join(found))
+    print("[OK] No runtime secrets or signing files")
 
 
+def check_flutter_lock_verification() -> None:
+    pubspec = read("flutter_app/pubspec.yaml")
+    for needle in ["google_mobile_ads: 7.0.0", "flutter_webrtc: 1.4.0"]:
+        if needle not in pubspec:
+            fail(f"Pinned Flutter dependency missing: {needle}")
 
-def check_ci_hotfixes() -> None:
-    composer_path = ROOT / "backend-laravel/composer.json"
-    composer = json.loads(composer_path.read_text(encoding="utf-8"))
+    workflow = read(".github/workflows/flutter-android.yml")
+    for needle in [
+        "python3 ../tools/verify_flutter_lock.py pubspec.lock",
+        "google_mobile_ads=7.0.0",
+        "flutter_webrtc=1.4.0",
+        "name: warqna-v158-android",
+    ]:
+        if needle not in workflow:
+            fail(f"Android lock verification incomplete: {needle}")
+    if "grep -A2" in workflow:
+        fail("Brittle grep -A2 lockfile verification returned")
+
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/verify_flutter_lock.py"), "--self-test"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Lock parser self-test failed: " + result.stdout.strip())
+    print("[OK] Robust Flutter pubspec.lock parser and pinned dependencies")
+
+
+def check_sqlite_memory_contract() -> None:
+    db = read("backend-laravel/config/database.php")
+    for needle in ["$db !== ':memory:'", "!str_starts_with($db, 'file:')", "$db = base_path($db);"]:
+        if needle not in db:
+            fail(f"SQLite memory/URI guard incomplete: {needle}")
+    phpunit = read("backend-laravel/phpunit.xml")
+    if '<env name="DB_DATABASE" value=":memory:"/>' not in phpunit:
+        fail("PHPUnit is not configured for SQLite :memory:")
+    if re.search(r"\$db\s*=\s*base_path\([\'\"]:memory:[\'\"]\)", db):
+        fail("SQLite :memory: is still converted to a filesystem path")
+    print("[OK] SQLite :memory: and URI preservation")
+
+
+def check_backend_ci() -> None:
+    composer = json.loads(read("backend-laravel/composer.json"))
     if composer.get("license") != "proprietary":
-        fail('composer.json must declare license "proprietary" for strict validation')
-
-    workflow_path = ROOT / ".github/workflows/backend-ci.yml"
-    workflow = workflow_path.read_text(encoding="utf-8")
-    required = [
+        fail('composer.json must declare license "proprietary"')
+    workflow = read(".github/workflows/backend-ci.yml")
+    for needle in [
         "composer validate --no-check-lock --strict",
+        "test -d tests/Feature",
+        "test -d tests/Unit",
+        "php artisan migrate:fresh --seed --force",
+        "php artisan test",
         "cp .env.production.example .env",
-        "DB_PASSWORD=ci-placeholder",
         "docker compose -f docker-compose.production.yml config",
         "rm -f .env",
-    ]
-    for needle in required:
-        if needle not in workflow:
-            fail(f"Backend CI hotfix is incomplete: {needle}")
-    if (ROOT / "backend-laravel/.env").exists():
-        fail("A runtime backend-laravel/.env must not be committed")
-    print("[OK] Composer strict-validation and Compose CI environment hotfixes")
-
-
-def check_v156_regressions() -> None:
-    engine = (ROOT / "flutter_app/lib/engines/tarneeb_engine.dart").read_text(encoding="utf-8")
-    for needle in [
-        "if (biddingSeat == null || contract == null)",
-        "phase = TarneebPhase.roundEnd;",
-        "تم حفظ آخر لَمّة بأمان",
     ]:
-        if needle not in engine:
-            fail(f"Tarneeb final-trick guard missing: {needle}")
-
-    migration_144 = (ROOT / "backend-laravel/database/migrations/2026_07_10_000144_expand_store_item_category.php").read_text(encoding="utf-8")
-    for needle in ["category_v156", "dropColumn('category')", "renameColumn('category_v156', 'category')"]:
-        if needle not in migration_144:
-            fail(f"Store category migration is incomplete: {needle}")
-
-    migration_145 = (ROOT / "backend-laravel/database/migrations/2026_07_10_000145_curated_mobile_games.php").read_text(encoding="utf-8")
-    if re.search(r"'Premium (?:Dark|Classic|Purple)'\s*,\s*'theme'", migration_145):
-        fail("Migration 145 still writes unsupported category 'theme'")
-
-    database_config = (ROOT / "backend-laravel/config/database.php").read_text(encoding="utf-8")
-    if "'pgsql' => [" not in database_config:
-        fail("Production PostgreSQL connection is missing from config/database.php")
-
-    store = (ROOT / "backend-laravel/app/Http/Controllers/StoreController.php").read_text(encoding="utf-8")
-    if "profile_cover" not in store or "active_profile_cover" not in store:
-        fail("Profile-cover activation support is incomplete")
-
-    print("[OK] Tarneeb, store migration, profile-cover and PostgreSQL regressions")
+        if needle not in workflow:
+            fail(f"Backend CI contract incomplete: {needle}")
+    print("[OK] Composer, PHPUnit, migration and Docker CI contracts")
 
 
-def check_v157_ci_regressions() -> None:
-    phpunit = (ROOT / "backend-laravel/phpunit.xml").read_text(encoding="utf-8")
-    if "<directory>tests/Unit</directory>" not in phpunit:
-        fail("PHPUnit Unit suite is not configured")
+def check_gameplay_fixes() -> None:
+    normalizer = read("backend-laravel/app/Services/WarqnaPro/PlayActionNormalizer.php")
+    for needle in [
+        "private const SUIT_ALIASES",
+        "public function normalizeCardId",
+        "public function canonicalCard",
+        "preg_split('/[_\\s\\-\\/|:]+/u'",
+        "A_clubs becoming a corrupted value",
+    ]:
+        if needle not in normalizer:
+            fail(f"Card normalizer regression guard missing: {needle}")
+    # The old implementation used chained str_replace calls that could turn
+    # `clubs` into a malformed value after replacing the single-letter alias.
+    if re.search(r"str_replace\([^\n]+['\"]c['\"]", normalizer, re.I):
+        fail("Recursive single-letter card replacement returned")
 
-    unit_test = ROOT / "backend-laravel/tests/Unit/EnvironmentSanityTest.php"
-    if not unit_test.is_file():
-        fail("Configured PHPUnit Unit directory has no committed sanity test")
-
-    backend_ci = (ROOT / ".github/workflows/backend-ci.yml").read_text(encoding="utf-8")
-    for needle in ["test -d tests/Feature", "test -d tests/Unit", "php artisan test"]:
-        if needle not in backend_ci:
-            fail(f"Backend PHPUnit CI guard is incomplete: {needle}")
-
-    android = (ROOT / ".github/workflows/flutter-android.yml").read_text(encoding="utf-8")
-    for needle in ["actions/checkout@v5", "actions/setup-java@v5", "actions/upload-artifact@v6", "name: warqna-v157-android"]:
-        if needle not in android:
-            fail(f"Android CI hotfix is incomplete: {needle}")
-    java_block = android.split("- name: Set up Java 17", 1)[1].split("- name:", 1)[0]
-    if "cache: gradle" in java_block:
-        fail("setup-java still enables Gradle caching before the generated Android project exists")
-
-    api = (ROOT / "flutter_app/lib/services/api_client.dart").read_text(encoding="utf-8")
-    if "defaultValue: 157" not in api:
-        fail("Flutter API build fallback is not aligned to build 157")
-
-    print("[OK] PHPUnit suite and Android setup-java/Gradle CI regressions")
+    tarneeb = read("backend-laravel/app/Services/GameEngine/TarneebRules.php")
+    for needle in [
+        "private PlayActionNormalizer $normalizer;",
+        "if(isset($state['_tarneeb_v2'])",
+        "Keep the authoritative engine representation synchronized",
+        "return $this->normalizer->canonicalCard($card,$hand);",
+    ]:
+        if needle not in tarneeb:
+            fail(f"Tarneeb compatibility fix missing: {needle}")
+    print("[OK] Unicode card normalization and Tarneeb state compatibility")
 
 
-def check_required_files() -> None:
-    required = [
-        "flutter_app/lib/main.dart",
-        "flutter_app/lib/production_v153.dart",
-        "backend-laravel/artisan",
-        "backend-laravel/composer.json",
-        ".github/workflows/flutter-web-pages.yml",
-        ".github/workflows/flutter-android.yml",
-        "START_HERE_V157_AR.md",
-        "RELEASE_MANIFEST_V157.json",
-        "backend-laravel/database/migrations/2026_07_10_000144_expand_store_item_category.php",
-        "backend-laravel/database/migrations/2026_07_11_000156_tests_migrations_hotfix.php",
-        "backend-laravel/database/migrations/2026_07_11_000157_ci_android_phpunit_hotfix.php",
-        "backend-laravel/tests/Unit/EnvironmentSanityTest.php",
-        "GITHUB_UPLOAD_V157_AR.md",
+def check_api_pwa_contracts() -> None:
+    require("backend-laravel/routes/api.php", [
+        "Route::prefix('mobile')->group",
+        "legacyHealth",
+        "legacyBootstrap",
+        "legacyGames",
+        "Route::prefix('mobile/v1')->group",
+    ])
+    require("backend-laravel/app/Http/Controllers/MobileGameController.php", [
+        "if (Schema::hasTable('games'))",
+        "maintenance windows even when the database has not been migrated yet",
+        "$dbGames = collect();",
+    ])
+    require("backend-laravel/routes/web.php", [
+        "Route::get('/manifest.webmanifest'",
+        "Route::get('/sw.js'",
+        "Route::get('/offline.html'",
+        "Keep the static sitemap valid even when the database is unavailable",
+    ])
+    for rel in [
+        "backend-laravel/public/manifest.webmanifest",
+        "backend-laravel/public/sw.js",
+        "backend-laravel/public/offline.html",
+    ]:
+        if not (ROOT / rel).is_file():
+            fail(f"PWA asset missing: {rel}")
+    print("[OK] Versioned/legacy Mobile API and explicit PWA routes")
+
+
+def check_product_contract_tests() -> None:
+    catalog = read("backend-laravel/app/Services/Games/GameCatalog.php")
+    # Count only top-level catalog entries in the literal return block.
+    block = catalog.split("return [", 1)[1].split("];", 1)[0]
+    keys = re.findall(r"(?m)^\s{12}'([a-z0-9_]+)'\s*=>\s*\[", block)
+    expected = [
+        "tarneeb", "syrian_tarneeb", "tarneeb_400", "trix", "trix_partner",
+        "trix_complex", "hand", "hand_partner", "saudi_hand", "banakil", "baloot", "basra",
     ]
-    missing = [item for item in required if not (ROOT / item).is_file()]
-    if missing:
-        fail("Missing release files: " + ", ".join(missing))
-    print("[OK] Required release files are present")
+    if keys != expected:
+        fail(f"Current curated game contract changed unexpectedly: {keys}")
+
+    require("backend-laravel/tests/Feature/V122CatalogAndEnginesTest.php", [
+        "$this->assertSame($expected,array_keys($games));",
+        "'domino','ludo','jackaroo','chess'",
+    ])
+    require("backend-laravel/tests/Feature/V131PremiumFinalFixesTest.php", [
+        "assertCount(12,GameCatalog::all())",
+    ])
+    require("backend-laravel/tests/Feature/V128StoreGameplayNavTest.php", [
+        "assertCount(50,$service->tableSkins())",
+        "assertCount(40,$service->cardBacks())",
+    ])
+    require("backend-laravel/resources/views/store/index.blade.php", [
+        'data-warqna-store-contract="v158"',
+    ])
+
+    stale_patterns = [
+        ("backend-laravel/tests/Feature/V122CatalogAndEnginesTest.php", "assertGreaterThanOrEqual(40"),
+        ("backend-laravel/tests/Feature/V131PremiumFinalFixesTest.php", "assertCount(15"),
+        ("backend-laravel/tests/Feature/V128StoreGameplayNavTest.php", "assertCount(40,$service->tableSkins())"),
+    ]
+    for rel, needle in stale_patterns:
+        if needle in read(rel):
+            fail(f"Stale historical test contract remains in {rel}: {needle}")
+    print("[OK] Current 12-game, 50-table, 40-card-back product contract")
+
+
+def check_android_ci_order() -> None:
+    workflow = read(".github/workflows/flutter-android.yml")
+    for needle in ["actions/checkout@v5", "actions/setup-java@v5", "actions/upload-artifact@v6"]:
+        if needle not in workflow:
+            fail(f"Android official action version missing: {needle}")
+    java_block = workflow.split("- name: Set up Java 17", 1)[1].split("- name:", 1)[0]
+    if "cache: gradle" in java_block:
+        fail("setup-java still caches Gradle before the Android project exists")
+    if workflow.index("Create a clean Android platform") > workflow.index("Resolve and verify Flutter packages"):
+        fail("Android platform must exist before package/build-dependent phases")
+    print("[OK] Android project generation and Java/Gradle CI order")
 
 
 def check_dart_structure() -> None:
-    # Lightweight delimiter audit; the authoritative analyzer runs in GitHub Actions.
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
         scrubbed = re.sub(r"//.*?$|/\*.*?\*/|'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"", "", text, flags=re.M | re.S)
@@ -227,18 +361,23 @@ def check_dart_structure() -> None:
 
 
 def main() -> None:
-    print(f"Warqna v{EXPECTED_VERSION} build {EXPECTED_BUILD} preflight")
+    print(f"Warqna {EXPECTED_VERSION}+{EXPECTED_BUILD} preflight")
     check_required_files()
     check_conflicts()
     check_login_fix()
     check_versions()
     check_json()
-    check_ci_hotfixes()
-    check_v156_regressions()
-    check_v157_ci_regressions()
+    check_yaml_basics()
+    check_flutter_lock_verification()
+    check_sqlite_memory_contract()
+    check_backend_ci()
+    check_gameplay_fixes()
+    check_api_pwa_contracts()
+    check_product_contract_tests()
+    check_android_ci_order()
     check_secrets()
     check_dart_structure()
-    print("[PASS] Source package preflight completed successfully")
+    print("[PASS] Warqna v158 source-package preflight completed successfully")
 
 
 if __name__ == "__main__":

@@ -27,16 +27,38 @@ Route::get('/robots.txt', function(){
 
 Route::get('/sitemap.xml', function(){
     $urls=[url('/'),url('/games'),url('/game-rules'),url('/store'),url('/about'),url('/contact')];
-    if(\Illuminate\Support\Facades\Schema::hasTable('games')){
-        foreach(\App\Models\Game::where('active',true)->get() as $g){
-            $urls[]=route('rooms.index',$g->key);
+    // The sitemap must remain available during first deployment, migrations,
+    // maintenance windows and database outages. Dynamic game URLs are added
+    // only when the table can be queried safely.
+    try {
+        if(\Illuminate\Support\Facades\Schema::hasTable('games')){
+            foreach(\App\Models\Game::where('active',true)->get() as $g){
+                $urls[]=url('/games/'.rawurlencode((string)$g->key).'/rooms');
+            }
         }
+    } catch (\Throwable) {
+        // Keep the static sitemap valid even when the database is unavailable.
     }
     $xml='<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
     foreach(array_unique($urls) as $u){$xml.='<url><loc>'.e($u).'</loc><changefreq>daily</changefreq><priority>0.8</priority></url>'."\n";}
     $xml.='</urlset>';
-    return response($xml,200)->header('Content-Type','application/xml');
+    return response($xml,200)->header('Content-Type','application/xml; charset=UTF-8');
 });
+
+// Explicit PWA routes make feature tests and non-Apache deployments behave
+// exactly like production web servers that normally serve these files.
+Route::get('/manifest.webmanifest', fn()=>response()->file(public_path('manifest.webmanifest'),[
+    'Content-Type'=>'application/manifest+json; charset=UTF-8',
+    'Cache-Control'=>'public, max-age=3600',
+]))->name('pwa.manifest');
+Route::get('/sw.js', fn()=>response()->file(public_path('sw.js'),[
+    'Content-Type'=>'application/javascript; charset=UTF-8',
+    'Cache-Control'=>'no-cache, no-store, must-revalidate',
+]))->name('pwa.service-worker');
+Route::get('/offline.html', fn()=>response()->file(public_path('offline.html'),[
+    'Content-Type'=>'text/html; charset=UTF-8',
+    'Cache-Control'=>'public, max-age=3600',
+]))->name('pwa.offline');
 
 
 Route::get('/password/reset', [MobileAuthRecoveryController::class, 'showResetForm'])->name('password.reset.form');

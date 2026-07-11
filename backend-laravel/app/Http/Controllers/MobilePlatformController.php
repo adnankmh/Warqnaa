@@ -18,9 +18,40 @@ class MobilePlatformController extends Controller
         return response()->json([
             'ok' => true,
             'service' => 'warqna-api',
-            'version' => config('warqna.version', '1.57.0'),
-            'build' => (int) config('warqna.build', 156),
+            'version' => config('warqna.version', '1.58.0'),
+            'build' => (int) config('warqna.build', 158),
             'time' => now()->toIso8601String(),
+        ]);
+    }
+
+    public function legacyHealth()
+    {
+        return response()->json([
+            'ok' => true,
+            'version' => config('warqna.version', '1.58.0'),
+            'pwa' => true,
+            'icons' => true,
+            'offline' => true,
+            'time' => now()->toIso8601String(),
+        ]);
+    }
+
+    public function legacyBootstrap()
+    {
+        return response()->json([
+            'ok' => true,
+            'app' => config('app.name', 'Warqna Zone'),
+            'version' => config('warqna.version', '1.58.0'),
+            'apk_ready' => (bool) config('warqna_mobile.apk_ready', true),
+            'mobile' => config('warqna_mobile.features', []),
+        ]);
+    }
+
+    public function legacyGames()
+    {
+        return response()->json([
+            'ok' => true,
+            'games' => \App\Services\Games\GameCatalog::all(),
         ]);
     }
 }

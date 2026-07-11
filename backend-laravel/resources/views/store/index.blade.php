@@ -20,7 +20,7 @@ $firstActive='pasha';
 foreach($labels as $k=>$v){ if($k!=='inventory' && (($items[$k] ?? collect())->count())){ $firstActive=$k; break; } }
 @endphp
 
-<section class="store-separated-v127" id="storeV127">
+<section class="store-separated-v127" id="storeV127" data-warqna-store-contract="v158">
  <header class="store-separated-hero-v127">
   <div>
    <span class="v127-kicker">Warqna Store</span>

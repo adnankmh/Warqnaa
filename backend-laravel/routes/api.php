@@ -14,6 +14,14 @@ use App\Http\Controllers\{
     MobileAuthRecoveryController
 };
 
+// Backward-compatible public aliases for older Flutter/PWA builds. They
+// expose only health, app capability flags and the curated game catalog.
+Route::prefix('mobile')->group(function () {
+    Route::get('/health', [MobilePlatformController::class, 'legacyHealth']);
+    Route::get('/bootstrap', [MobilePlatformController::class, 'legacyBootstrap']);
+    Route::get('/games', [MobilePlatformController::class, 'legacyGames']);
+});
+
 Route::prefix('mobile/v1')->group(function () {
     Route::get('/health', [MobilePlatformController::class, 'health']);
     Route::get('/app-config', [MobilePlatformController::class, 'config']);

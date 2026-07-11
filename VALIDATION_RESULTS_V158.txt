@@ -1,0 +1,23 @@
+Warqna v158 Validation Results
+==============================
+Version: 1.58.0+158
+Package files: 835
+
+PASSED
+- Source preflight: tools/validate_release.py
+- No Git conflict markers
+- Exact Flutter dependency declarations: google_mobile_ads 7.0.0, flutter_webrtc 1.4.0
+- Robust pubspec.lock parser self-test
+- No grep -A2 lockfile check in Android workflow
+- SQLite config runtime probes: :memory:, SQLite URI, relative file, Windows absolute path
+- PHP syntax: 219 files
+- Isolated PHP gameplay smoke tests: localized card normalization, Tarneeb bidding/trump, legacy state, follow-suit
+- Product contract: 12 curated games, 50 table skins, 40 card backs
+- JSON syntax: 14 files
+- YAML parse/structural validation: 15 files
+- Python compile and shell syntax checks
+- No runtime .env, signing keys, or committed secrets
+
+CI EXECUTION AFTER UPLOAD
+- GitHub Actions will run composer install, migrations, php artisan test, Flutter analyze/test, and Android/Web/iOS builds using the pinned toolchains.
+- Composer and Flutter are not installed in this packaging environment, so their full framework/toolchain suites were not falsely claimed as locally executed.

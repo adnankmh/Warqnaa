@@ -1,0 +1,36 @@
+{
+  "name": "Warqna",
+  "version": "1.58.0",
+  "build": 158,
+  "channel": "production-ci-lock-laravel-quality-hotfix",
+  "package_type": "full-source-ci-validated",
+  "base_release": "1.57.0+157",
+  "preserves_previous_features": true,
+  "product_contract": {
+    "curated_games": 12,
+    "table_skins": 50,
+    "card_backs": 40
+  },
+  "hotfixes": [
+    "flutter-lockfile-parser",
+    "sqlite-memory-database",
+    "mobile-api-compatibility",
+    "pwa-explicit-routes",
+    "tarneeb-state-compatibility",
+    "unicode-card-normalization",
+    "current-product-test-contract",
+    "version-build-consistency"
+  ],
+  "platforms": [
+    "web",
+    "android",
+    "ios",
+    "laravel-api"
+  ],
+  "entrypoints": {
+    "arabic_guide": "START_HERE_V158_AR.md",
+    "github_upload": "GITHUB_UPLOAD_V158_AR.md",
+    "windows_validation": "CHECK_V158_WINDOWS.bat",
+    "unix_validation": "check-v158.sh"
+  }
+}
