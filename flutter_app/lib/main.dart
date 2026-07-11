@@ -538,7 +538,7 @@ class AppController extends ChangeNotifier {
     if (login.trim().isEmpty || password.isEmpty) return 'أدخل اسم المستخدم وكلمة المرور.';
     final loopbackApi = api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost');
     if (!offline && kIsWeb && loopbackApi) {
-      return login(username, password, offline: true);
+      return this.login(login, password, offline: true);
     }
     if (offline) {
       final normalized = login.trim().toLowerCase();
@@ -605,14 +605,14 @@ class AppController extends ChangeNotifier {
       notifyListeners();
       return null;
     } on ApiException catch (e) {
-      final fallback = await login(username, password, offline: true);
+      final fallback = await this.login(login, password, offline: true);
       if (fallback == null) {
         notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
         return null;
       }
       return e.message;
     } catch (_) {
-      final fallback = await login(username, password, offline: true);
+      final fallback = await this.login(login, password, offline: true);
       if (fallback == null) {
         notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
         return null;
