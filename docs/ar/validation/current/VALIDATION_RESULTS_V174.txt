@@ -1,0 +1,48 @@
+WARQNA V174 — VALIDATION RESULTS
+================================
+Release: 1.74.0+174
+Date: 2026-07-12
+Base release: V173
+
+RESULT: SOURCE-PACKAGE PREFLIGHT PASSED
+
+Completed checks
+----------------
+[PASS] PHP syntax lint: 229 Laravel application, route, database and test files.
+[PASS] Python helper compilation.
+[PASS] Bash script syntax.
+[PASS] Release metadata consistency across Flutter, Laravel, CI and environment examples.
+[PASS] JSON syntax: 39 files.
+[PASS] YAML structural audit: 15 files.
+[PASS] Clean-root, conflict-marker, control-character, secret and signing-file checks.
+[PASS] Flutter/Dart delimiter structure.
+[PASS] V169, V170, V171, V172 and V173 regression source contracts.
+[PASS] V174 direct room opening after creation.
+[PASS] V174 notification routing for foreground, background and terminated app launches.
+[PASS] V174 direct transfer from a previous room to an invited room, with best-effort server leave.
+[PASS] V174 saved orientation preference; portrait is default and landscape is only player-selected.
+[PASS] V174 social login method and provider polling contract.
+[PASS] V174 server-authoritative per-round progression payload and client update contract.
+[PASS] Human-player progression only; bots are skipped and receive zero progression fields.
+[PASS] XP requirement multipliers: 40–50 ×1.20, 51–59 ×1.30, 60–69 ×1.50,
+       70–79 ×1.80, 80–89 ×2.20, 90–100 ×6.00.
+[PASS] Legacy Laravel catalog tests updated from 90 to the additive 140-table total.
+[PASS] Daily-pack date assertion made database-portable with whereDate.
+[PASS] Competition test fixture made idempotent with Game::updateOrCreate.
+
+Original Flutter analyzer issues addressed
+------------------------------------------
+[FIXED] AppController.loginWithSocialProvider is defined and connected to the UI.
+[FIXED] Legacy private methods are explicitly retained without unused-element warnings.
+[FIXED] Dead social-login branch removed.
+[FIXED] ChangeNotifier protected notifyListeners calls removed from the extension and replaced
+        with AppController.publishChanges().
+[FIXED] Async BuildContext usage is guarded with the owning context's mounted state.
+
+Execution limitations in this packaging environment
+---------------------------------------------------
+[NOT RUN LOCALLY] flutter analyze / APK / AAB build: Flutter and Dart SDK are unavailable here.
+[NOT RUN LOCALLY] php artisan test: Composer vendor dependencies are not included and Composer
+                  is unavailable here.
+
+The GitHub Actions workflows in this package are configured to run both runtime gates after upload.

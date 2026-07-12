@@ -1,2 +1,2 @@
 @echo off
-call "%~dp0scripts\windows\current\CHECK_V173_WINDOWS.bat"
+call "%~dp0scripts\windows\current\CHECK_V174_WINDOWS.bat"

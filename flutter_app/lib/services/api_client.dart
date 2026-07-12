@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.73.0');
-const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 173);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.74.0');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 174);
 
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})
@@ -163,6 +163,7 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> availableRooms(String game) => get('/games/$game/rooms');
   Future<Map<String, dynamic>> joinGame(String code, {String? password}) =>
       post('/games/session/$code/join', {if (password != null && password.isNotEmpty) 'password': password});
+  Future<Map<String, dynamic>> gameSessionPreview(String code) => get('/games/session/$code/preview');
   Future<Map<String, dynamic>> gameSession(String code) => get('/games/session/$code');
   Future<Map<String, dynamic>> gameAction(String code, String action, [Map<String, dynamic>? payload, int? stateRevision]) {
     final clientActionId = '${DateTime.now().microsecondsSinceEpoch}-${code.hashCode}-${action.hashCode}';

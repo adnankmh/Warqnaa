@@ -69,6 +69,7 @@ Route::prefix('mobile/v1')->group(function () {
         Route::get('/games/{gameKey}/rooms', [MobileGameController::class, 'rooms']);
         Route::post('/games/session', [MobileGameController::class, 'create'])->middleware('throttle:warqna-sensitive');
         Route::post('/games/session/{room:code}/join', [MobileGameController::class, 'join']);
+        Route::get('/games/session/{room:code}/preview', [MobileGameController::class, 'preview']);
         Route::get('/games/session/{room:code}', [MobileGameController::class, 'show']);
         Route::post('/games/session/{room:code}/action', [MobileGameController::class, 'action']);
         Route::post('/games/session/{room:code}/timeout', [MobileGameController::class, 'timeout']);

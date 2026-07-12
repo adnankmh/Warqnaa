@@ -113,7 +113,7 @@ def main() -> None:
         "part 'v173_global.dart';",
         "unawaited(initializeWarqnaRewardedAdsAfterFirstFrame());",
         "if (!serverConnected) return false;",
-        "التسجيل المحلي غير متاح في Warqna V173",
+        "التسجيل المحلي غير متاح في Warqna V174",
         "OnlineRequiredScreenV173",
     ])
     if "coins -= BigInt.from(priceFor(product));" in main_dart:

@@ -22,7 +22,17 @@ class XpService
         $early = [1=>100,2=>220,3=>360,4=>500,5=>650,6=>800,7=>1000];
         if (isset($early[$safe])) return $early[$safe];
         $high = $safe - 7;
-        return 1000 + ($high * 220) + ($high * $high * 35);
+        $base = 1000 + ($high * 220) + ($high * $high * 35);
+        $multiplier = match (true) {
+            $safe >= 40 && $safe <= 50 => 1.20,
+            $safe >= 51 && $safe <= 59 => 1.30,
+            $safe >= 60 && $safe <= 69 => 1.50,
+            $safe >= 70 && $safe <= 79 => 1.80,
+            $safe >= 80 && $safe <= 89 => 2.20,
+            $safe >= 90 && $safe <= 100 => 6.00,
+            default => 1.00,
+        };
+        return (int) round($base * $multiplier);
     }
 
     public function rewardForLevel(int $level): int

@@ -64,10 +64,15 @@ class ProgressionService
                 'event_type'=>$eventType,'mode'=>$mode,'base_points'=>$base,'multiplier'=>$multiplier,
                 'awarded_xp'=>$levelResult['earned_xp'],'round_points'=>$roundPoints,
                 'tournament_points'=>$tournamentPoints,'club_points'=>$clubPoints,
-                'meta'=>array_merge($context,['pasha_multiplier'=>$pashaMultiplier,'booster_multiplier'=>$boosterMultiplier]),
+                'meta'=>array_merge($context,[
+                    'pasha_multiplier'=>$pashaMultiplier,
+                    'booster_multiplier'=>$boosterMultiplier,
+                    'level_result'=>$levelResult,
+                    'player_name'=>$profile->display_name ?: $user->username,
+                ]),
             ]);
 
-            return $this->payload($event, false) + ['level'=>$levelResult];
+            return $this->payload($event, false);
         });
     }
 
@@ -102,8 +107,21 @@ class ProgressionService
 
     private function payload(ProgressionEvent $event, bool $duplicate): array
     {
-        return ['ok'=>true,'duplicate'=>$duplicate,'event_key'=>$event->event_key,'xp'=>(int)$event->awarded_xp,
-            'round_points'=>(int)$event->round_points,'tournament_points'=>(int)$event->tournament_points,
-            'club_points'=>(int)$event->club_points,'multiplier'=>(float)$event->multiplier];
+        $meta = is_array($event->meta) ? $event->meta : [];
+        return [
+            'ok'=>true,
+            'duplicate'=>$duplicate,
+            'event_key'=>$event->event_key,
+            'xp'=>(int)$event->awarded_xp,
+            'round_points'=>(int)$event->round_points,
+            'tournament_points'=>(int)$event->tournament_points,
+            'club_points'=>(int)$event->club_points,
+            'multiplier'=>(float)$event->multiplier,
+            'won'=>(bool)($meta['won'] ?? false),
+            'mode'=>(string)($meta['mode'] ?? $event->mode ?? 'normal'),
+            'stage'=>(string)($meta['stage'] ?? 'round'),
+            'player_name'=>(string)($meta['player_name'] ?? ''),
+            'level'=>is_array($meta['level_result'] ?? null) ? $meta['level_result'] : null,
+        ];
     }
 }

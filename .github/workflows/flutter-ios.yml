@@ -90,6 +90,7 @@ jobs:
           python3 ../tools/test_v171_controller_references.py
           python3 ../tools/test_v172_brand_table_contract.py
           python3 ../tools/test_v173_online_engagement_contract.py
+          python3 ../tools/test_v174_direct_invite_xp_contract.py
           bash ../tools/flutter_analyze_ci.sh
           flutter test
           flutter build ios --release --no-codesign "${EXTRA_ARGS[@]}"

@@ -53,6 +53,7 @@ jobs:
           python3 ../tools/test_v171_controller_references.py
           python3 ../tools/test_v172_brand_table_contract.py
           python3 ../tools/test_v173_online_engagement_contract.py
+          python3 ../tools/test_v174_direct_invite_xp_contract.py
 
       - name: Verify Flutter API compatibility contract
         working-directory: flutter_app

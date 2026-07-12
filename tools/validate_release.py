@@ -101,6 +101,8 @@ def check_required_files() -> None:
         "tools/test_v171_controller_references.py",
         "tools/test_v172_brand_table_contract.py",
         "tools/test_v173_online_engagement_contract.py",
+        "tools/test_v174_direct_invite_xp_contract.py",
+        "backend-laravel/tests/Feature/V174DirectInviteOrientationXpTest.php",
         "flutter_app/lib/v173_global.dart",
         "backend-laravel/resources/data/v173_store_catalog.json",
         "backend-laravel/app/Services/WarqnaPro/DailyPackService.php",
@@ -212,7 +214,7 @@ def check_login_fix() -> None:
     if EXPECTED_BUILD >= 173:
         require("flutter_app/lib/main.dart", [
             "Future<String?> login(String loginId, String password",
-            "التسجيل المحلي غير متاح في Warqna V173",
+            "التسجيل المحلي غير متاح في Warqna V174",
             "OnlineRequiredScreenV173",
         ])
         forbid("flutter_app/lib/main.dart", [
@@ -494,13 +496,13 @@ def check_product_contract_tests() -> None:
         "assertCount(12,GameCatalog::all())",
     ])
     require("backend-laravel/tests/Feature/V128StoreGameplayNavTest.php", [
-        "assertCount(90,$service->tableSkins())",
+        "assertCount(140,$service->tableSkins())",
         "assertCount(40,$service->cardBacks())",
     ])
-    require("backend-laravel/tests/Feature/V132TarneebEngineAndLuxuryFixesTest.php", ["assertCount(90,$store->tableSkins())"])
-    require("backend-laravel/tests/Feature/V134CriticalFixesTest.php", ["assertCount(90,$store->tableSkins())"])
+    require("backend-laravel/tests/Feature/V132TarneebEngineAndLuxuryFixesTest.php", ["assertCount(140,$store->tableSkins())"])
+    require("backend-laravel/tests/Feature/V134CriticalFixesTest.php", ["assertCount(140,$store->tableSkins())"])
     require("backend-laravel/tests/Feature/V172BrandTableCatalogTest.php", [
-        "assertCount(90, $tables)",
+        "assertCount(140, $tables)",
         "assertCount(40, $reference)",
         "table_reference_40",
     ])
@@ -516,7 +518,7 @@ def check_product_contract_tests() -> None:
     for rel, needle in stale_patterns:
         if needle in read(rel):
             fail(f"Stale historical test contract remains in {rel}: {needle}")
-    print("[OK] Current 12-game, 90-table (50 legacy + 40 additive), 40-card-back product contract")
+    print("[OK] Current 12-game, 140-table additive catalog and 40-card-back product contract")
 
 
 def check_release_and_wallet_regressions() -> None:
@@ -1178,6 +1180,28 @@ def check_v173_online_engagement_contract() -> None:
     print(result.stdout.strip())
     print("[OK] v173 online-only engagement, 14 Pasha colors, 50 new tables, ads, tickets, daily packs and universal designer")
 
+def check_v174_direct_invite_xp_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v174_direct_invite_xp_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna v174 direct invite/orientation/XP contract failed: " + result.stdout.strip())
+
+    for rel in [
+        ".github/workflows/flutter-web-pages.yml",
+        ".github/workflows/flutter-android.yml",
+        ".github/workflows/flutter-ios.yml",
+        ".github/workflows/production-release-check.yml",
+    ]:
+        require(rel, ["test_v174_direct_invite_xp_contract.py"])
+    print(result.stdout.strip())
+    print("[OK] v174 direct invite navigation, stable orientation and authoritative human-player XP")
+
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -1221,6 +1245,7 @@ def main() -> None:
     check_v171_controller_reference_contract()
     check_v172_brand_table_contract()
     check_v173_online_engagement_contract()
+    check_v174_direct_invite_xp_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

@@ -1,0 +1,33 @@
+{
+  "release": "Warqna v173",
+  "version": "1.73.0",
+  "build": 173,
+  "base_release": "v172",
+  "codename": "online-pasha-tickets-and-50-table-expansion",
+  "mode": "online-only",
+  "focus": [
+    "add 14 server-backed Pasha fez styles",
+    "preserve 90 existing tables and append 50 HD tables",
+    "add discounted competition tickets and server-authoritative daily packs",
+    "expand competitions, challenges and club operations",
+    "add a universal admin designer with CRUD APIs",
+    "initialize rewarded ads safely after the first frame"
+  ],
+  "counts": {
+    "legacy_and_v172_tables": 90,
+    "new_royal_tables": 30,
+    "new_showcase_tables": 20,
+    "total_tables": 140,
+    "pasha_styles": 14,
+    "competition_ticket_denominations": 14,
+    "v173_catalog_items": 78
+  },
+  "ticket_discount_percent": 10,
+  "guides": {
+    "start": "docs/ar/releases/current/START_HERE_V173_AR.md",
+    "release_notes": "docs/ar/releases/current/RELEASE_NOTES_V173_AR.md",
+    "github": "docs/ar/deployment/GITHUB_UPLOAD_V173_AR.md",
+    "quality": "docs/ar/reports/current/QUALITY_REPORT_V173_AR.md",
+    "validation": "docs/ar/validation/current/VALIDATION_RESULTS_V173.txt"
+  }
+}

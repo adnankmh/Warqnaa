@@ -29,6 +29,8 @@ part 'v166_polish.dart';
 part 'v170_global.dart';
 part 'v173_global.dart';
 
+final GlobalKey<NavigatorState> warqnaNavigatorKey = GlobalKey<NavigatorState>();
+
 void main() {
   // The Flutter binding and runApp must be created in the same zone. Keeping
   // the boot path synchronous also guarantees that the first frame is not
@@ -94,6 +96,7 @@ class _WarqnaAppState extends State<WarqnaApp> {
       builder: (context, _) {
         final palette = AppPalette.fromCode(controller.themeCode);
         return MaterialApp(
+          navigatorKey: warqnaNavigatorKey,
           debugShowCheckedModeBanner: false,
           locale: Locale(controller.localeCode),
           supportedLocales: const [
@@ -181,6 +184,8 @@ class _WarqnaAppState extends State<WarqnaApp> {
 class AppController extends ChangeNotifier {
   final WarqnaApiClient api = WarqnaApiClient();
 
+  void publishChanges() => notifyListeners();
+
   bool ready = false;
   bool isAuthenticated = false;
   bool isAdmin = false;
@@ -247,6 +252,10 @@ class AppController extends ChangeNotifier {
   int tournamentPoints = 0;
   int clubPoints = 0;
   String? authToken;
+  int? userId;
+  String? pendingNavigationRoute;
+  bool _routeNavigationInProgress = false;
+  final Set<String> _seenServerProgressionEvents = <String>{};
   BigInt coins = BigInt.from(125680);
   int level = 28;
   int xp = 18560;
@@ -295,6 +304,7 @@ class AppController extends ChangeNotifier {
   String get _accountPrefix => 'warqna.account.${username.trim().toLowerCase()}.';
   String _accountKey(String key) => '$_accountPrefix$key';
 
+  // ignore: unused_element
   Future<void> _loadAccountState(
     SharedPreferences prefs, {
     String? defaultCoins,
@@ -430,13 +440,15 @@ class AppController extends ChangeNotifier {
     await prefs.setString(_accountKey('gameExitCounts'), jsonEncode(gameExitCounts));
   }
 
+  // ignore: unused_element
   Future<String?> _registerLocal(String user, String mail, String password) async {
-    return 'يتطلب إنشاء الحساب اتصالاً فعلياً بالإنترنت والخادم. التسجيل المحلي غير متاح في Warqna V173.';
+    return 'يتطلب إنشاء الحساب اتصالاً فعلياً بالإنترنت والخادم. التسجيل المحلي غير متاح في Warqna V174.';
   }
 
   Future<void> load() async {
     try {
       await _loadUnsafe();
+      await _applyPreferredOrientation();
       _initializeOptionalServices();
     } catch (error, stack) {
       // A stale value written by an older APK must never stop the current APK
@@ -457,25 +469,111 @@ class AppController extends ChangeNotifier {
     AppSounds.enabled = soundEnabled;
     unawaited(initializeWarqnaRewardedAdsAfterFirstFrame());
     PushNotifications.onForeground = (title, body, data) {
-      notices.insert(0, AppNotice('🔔', title, body));
+      final route = data['route']?.toString();
+      notices.insert(0, AppNotice('🔔', title, body, route: route));
       AppSounds.fire('notification');
       notifyListeners();
     };
     PushNotifications.onToken = (token) => _registerPushToken(token);
-    PushNotifications.onTap = (route) {
-      if (route == null || route.isEmpty) return;
-      if (route.startsWith('room:')) {
-        final code = route.substring('room:'.length);
-        if (code.isNotEmpty) {
-          activeRoomCode = code;
-          notices.insert(0, AppNotice('🎮', L.t(localeCode, 'activeGame'), L.t(localeCode, 'resumeGame')));
-        }
-      } else if (route.startsWith('friend-chat:')) {
-        notices.insert(0, AppNotice('💬', L.t(localeCode, 'friendsChat'), L.t(localeCode, 'friendsChat')));
-      }
-      notifyListeners();
-    };
+    PushNotifications.onTap = queueNavigationRoute;
     unawaited(_refreshPushRegistration());
+    unawaited(openPendingNavigationRoute());
+  }
+
+  void queueNavigationRoute(String? route) {
+    final normalized = route?.trim() ?? '';
+    if (normalized.isEmpty) return;
+    pendingNavigationRoute = normalized;
+    if (normalized.startsWith('room:')) {
+      notices.insert(0, AppNotice('🎮', L.t(localeCode, 'activeGame'), L.t(localeCode, 'resumeGame'), route: normalized));
+    } else if (normalized.startsWith('friend-chat:')) {
+      notices.insert(0, AppNotice('💬', L.t(localeCode, 'friendsChat'), L.t(localeCode, 'friendsChat'), route: normalized));
+    }
+    notifyListeners();
+    unawaited(openPendingNavigationRoute());
+  }
+
+  Future<void> _prepareDirectInviteTransfer(String targetCode, String targetGameId) async {
+    final previousCode = activeRoomCode?.trim().toUpperCase();
+    final switchingRoom = previousCode != null && previousCode.isNotEmpty && previousCode != targetCode;
+    final switchingGame = activeGame != null && activeGame != targetGameId;
+    if (switchingRoom) {
+      try {
+        await api.leaveGame(previousCode);
+      } catch (_) {
+        // The invitation must still open even when the former room already expired.
+      }
+    }
+    if (switchingRoom || switchingGame) leaveGame();
+  }
+
+  Future<void> openPendingNavigationRoute() async {
+    if (_routeNavigationInProgress || !ready || !isAuthenticated || !serverConnected) return;
+    final route = pendingNavigationRoute?.trim() ?? '';
+    if (route.isEmpty) return;
+    if (!route.startsWith('room:')) {
+      pendingNavigationRoute = null;
+      notifyListeners();
+      return;
+    }
+
+    final parts = route.split(':');
+    final code = parts.length > 1 ? parts[1].trim().toUpperCase() : '';
+    if (code.isEmpty) {
+      pendingNavigationRoute = null;
+      notifyListeners();
+      return;
+    }
+
+    _routeNavigationInProgress = true;
+    try {
+      String gameId = parts.length > 2 ? parts[2].trim() : '';
+      Map<String, dynamic> previewRoom = <String, dynamic>{};
+      if (gameId.isEmpty) {
+        final preview = await api.gameSessionPreview(code);
+        if (preview['room'] is Map) previewRoom = Map<String, dynamic>.from(preview['room'] as Map);
+        gameId = previewRoom['game']?.toString() ?? '';
+      }
+      GameInfo? game;
+      for (final candidate in gamesCatalog) {
+        if (candidate.id == gameId) {
+          game = candidate;
+          break;
+        }
+      }
+      if (game == null) throw const ApiException('تعذر تحديد نوع اللعبة المرتبطة بالدعوة.');
+
+      final navigationContext = warqnaNavigatorKey.currentContext;
+      if (navigationContext == null || !navigationContext.mounted) return;
+      await _prepareDirectInviteTransfer(code, game.id);
+      if (!navigationContext.mounted) return;
+      pendingNavigationRoute = null;
+      activeRoomCode = code;
+      notifyListeners();
+      await openGameRoom(
+        navigationContext,
+        this,
+        game,
+        options: RoomLaunchOptions(
+          roomCode: code,
+          roomName: previewRoom['room_name']?.toString() ?? 'غرفة ورقنا',
+          voiceEnabled: previewRoom['voice_enabled'] == true,
+          visibility: previewRoom['visibility']?.toString() ?? 'public',
+          turnSeconds: int.tryParse(previewRoom['turn_seconds']?.toString() ?? '') ?? 10,
+          minLevel: int.tryParse(previewRoom['min_level']?.toString() ?? '') ?? 1,
+          allowOwnerKick: previewRoom['allow_owner_kick'] != false,
+          playerCount: int.tryParse(previewRoom['max_players']?.toString() ?? '') ?? 4,
+        ),
+      );
+    } on ApiException catch (error) {
+      notices.insert(0, AppNotice('⚠️', 'تعذر فتح دعوة اللعبة', error.message, route: route));
+      notifyListeners();
+    } catch (_) {
+      notices.insert(0, AppNotice('⚠️', 'تعذر فتح دعوة اللعبة', 'تحقق من اتصال الإنترنت ثم اضغط على الإشعار مرة أخرى.', route: route));
+      notifyListeners();
+    } finally {
+      _routeNavigationInProgress = false;
+    }
   }
 
   Future<void> _registerPushToken(String token) async {
@@ -604,6 +702,7 @@ class AppController extends ChangeNotifier {
     unawaited(startConnectivityMonitorV173());
     ready = true;
     notifyListeners();
+    unawaited(openPendingNavigationRoute());
   }
 
   Future<void> _save() async {
@@ -695,7 +794,7 @@ class AppController extends ChangeNotifier {
 
   Future<String?> login(String loginId, String password, {bool offline = false}) async {
     if (loginId.trim().isEmpty || password.isEmpty) return 'أدخل اسم المستخدم وكلمة المرور.';
-    if (offline) return 'Warqna V173 تعمل عبر الإنترنت فقط.';
+    if (offline) return 'Warqna V174 تعمل عبر الإنترنت فقط.';
     try {
       final data = await api.login(loginId.trim(), password);
       authToken = data['token']?.toString();
@@ -716,6 +815,7 @@ class AppController extends ChangeNotifier {
       unawaited(startConnectivityMonitorV173());
       await _save();
       notifyListeners();
+      unawaited(openPendingNavigationRoute());
       return null;
     } on ApiException catch (e) {
       return e.message;
@@ -737,11 +837,54 @@ class AppController extends ChangeNotifier {
       unawaited(startConnectivityMonitorV173());
       await _save();
       notifyListeners();
+      unawaited(openPendingNavigationRoute());
       return null;
     } on ApiException catch (e) {
       return e.message;
     } catch (_) {
       return 'تعذر إنشاء الحساب لأن الخادم أو الإنترنت غير متاح.';
+    }
+  }
+
+  Future<String?> loginWithSocialProvider(String provider) async {
+    if (!const {'google', 'apple', 'facebook'}.contains(provider)) return 'مزود تسجيل الدخول غير مدعوم.';
+    try {
+      final start = await api.startSocialAuth(provider);
+      final state = start['state']?.toString() ?? '';
+      final authorizeUrl = start['authorize_url']?.toString() ?? '';
+      if (state.isEmpty || authorizeUrl.isEmpty) return start['message']?.toString() ?? 'تعذر بدء تسجيل الدخول.';
+      final opened = await launchUrl(Uri.parse(authorizeUrl), mode: LaunchMode.externalApplication);
+      if (!opened) return 'تعذر فتح صفحة تسجيل الدخول الخارجية.';
+
+      final deadline = DateTime.now().add(const Duration(minutes: 3));
+      while (DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(seconds: 2));
+        final status = await api.socialAuthStatus(state);
+        final value = status['status']?.toString() ?? 'pending';
+        if (value == 'completed') {
+          authToken = status['token']?.toString();
+          if (authToken == null || authToken!.isEmpty) return 'لم يُرجع الخادم جلسة دخول صالحة.';
+          api.token = authToken;
+          final session = await api.bootstrap();
+          _applySession(session);
+          isAuthenticated = true;
+          serverConnected = true;
+          unawaited(_refreshPushRegistration());
+          unawaited(startConnectivityMonitorV173());
+          await _save();
+          notifyListeners();
+          unawaited(openPendingNavigationRoute());
+          return null;
+        }
+        if (const {'failed', 'expired', 'consumed'}.contains(value)) {
+          return status['error']?.toString() ?? 'لم يكتمل تسجيل الدخول عبر المزود.';
+        }
+      }
+      return 'انتهت مهلة تسجيل الدخول. حاول مرة أخرى.';
+    } on ApiException catch (error) {
+      return error.message;
+    } catch (_) {
+      return 'تعذر الاتصال بخدمة تسجيل الدخول حالياً.';
     }
   }
 
@@ -777,6 +920,7 @@ class AppController extends ChangeNotifier {
     final user = data['user'];
     final wallet = data['wallet'];
     if (user is Map) {
+      userId = int.tryParse(user['id']?.toString() ?? '') ?? userId;
       username = user['username']?.toString() ?? username;
       displayName = user['display_name']?.toString() ?? user['name']?.toString() ?? username;
       email = user['email']?.toString() ?? email;
@@ -852,7 +996,69 @@ class AppController extends ChangeNotifier {
     final fixed = early[safe];
     if (fixed != null) return fixed;
     final high = safe - 7;
-    return 1000 + (high * 220) + (high * high * 35);
+    final base = 1000 + (high * 220) + (high * high * 35);
+    final multiplier = switch (safe) {
+      >= 40 && <= 50 => 1.20,
+      >= 51 && <= 59 => 1.30,
+      >= 60 && <= 69 => 1.50,
+      >= 70 && <= 79 => 1.80,
+      >= 80 && <= 89 => 2.20,
+      >= 90 && <= 100 => 6.00,
+      _ => 1.00,
+    };
+    return (base * multiplier).round();
+  }
+
+  RoundRewardReport? consumeServerProgression(Map<String, dynamic> roomData) {
+    final currentUserId = userId;
+    if (currentUserId == null) return null;
+    final rawState = roomData['state'];
+    if (rawState is! Map) return null;
+    final rawPopups = rawState['progression_popup'];
+    if (rawPopups is! Map) return null;
+    final rawOwn = rawPopups['user:$currentUserId'];
+    if (rawOwn is! Map) return null;
+    final own = Map<String, dynamic>.from(rawOwn);
+    final eventKey = own['event_key']?.toString() ?? '';
+    if (eventKey.isEmpty || !_seenServerProgressionEvents.add(eventKey)) return null;
+
+    final earnedXp = int.tryParse(own['xp']?.toString() ?? '') ?? 0;
+    final earnedRound = int.tryParse(own['round_points']?.toString() ?? '') ?? 0;
+    final earnedTournament = int.tryParse(own['tournament_points']?.toString() ?? '') ?? 0;
+    final earnedClub = int.tryParse(own['club_points']?.toString() ?? '') ?? 0;
+    final multiplier = double.tryParse(own['multiplier']?.toString() ?? '') ?? 1.0;
+    final won = own['won'] == true || own['won'] == 1;
+    final mode = own['mode']?.toString() ?? 'normal';
+    final stage = own['stage']?.toString() ?? 'round';
+
+    xp += earnedXp;
+    roundPoints += earnedRound;
+    tournamentPoints += earnedTournament;
+    clubPoints += earnedClub;
+    _recalculateLevel();
+    final levelData = own['level'];
+    if (levelData is Map) {
+      final serverLevel = int.tryParse(levelData['new_level']?.toString() ?? '');
+      if (serverLevel != null && serverLevel > level) {
+        level = serverLevel;
+        xpNext = xpNeededForLevel(level);
+      }
+    }
+    final report = RoundRewardReport(
+      xp: earnedXp,
+      roundPoints: earnedRound,
+      tournamentPoints: earnedTournament,
+      clubPoints: earnedClub,
+      multiplier: multiplier,
+      won: won,
+      mode: mode,
+      stage: stage,
+    );
+    lastRoundReport = report;
+    notices.insert(0, AppNotice('⚡', 'نقاط الجولة', '+$earnedXp XP • +$earnedRound نقطة جولة'));
+    unawaited(_save());
+    notifyListeners();
+    return report;
   }
 
   void _recalculateLevel() {
@@ -903,6 +1109,7 @@ class AppController extends ChangeNotifier {
     return math.max(0, 5 - rewardedAdClaimsToday);
   }
 
+  // ignore: unused_element
   void _applyLocalLoginStreak() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -1274,28 +1481,26 @@ class AppController extends ChangeNotifier {
   double get winRate => gamesPlayed <= 0 ? 0 : (wins / gamesPlayed) * 100;
   int get losses => math.max(0, gamesPlayed - wins);
 
-  Future<void> toggleOrientationMode() async {
-    landscapeMode = !landscapeMode;
+  Future<void> _applyPreferredOrientation() async {
     try {
       await SystemChrome.setPreferredOrientations(
         landscapeMode
             ? <DeviceOrientation>[DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]
-            : <DeviceOrientation>[DeviceOrientation.portraitUp, DeviceOrientation.portraitDown],
+            : <DeviceOrientation>[DeviceOrientation.portraitUp],
       );
     } catch (_) {}
+  }
+
+  Future<void> toggleOrientationMode() async {
+    landscapeMode = !landscapeMode;
+    await _applyPreferredOrientation();
     await _save();
     notifyListeners();
   }
 
   Future<void> setLandscapeMode(bool value) async {
     landscapeMode = value;
-    try {
-      await SystemChrome.setPreferredOrientations(
-        value
-            ? <DeviceOrientation>[DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]
-            : <DeviceOrientation>[DeviceOrientation.portraitUp, DeviceOrientation.portraitDown],
-      );
-    } catch (_) {}
+    await _applyPreferredOrientation();
     await _save();
     notifyListeners();
   }
@@ -1579,9 +1784,10 @@ class AppNotice {
   final String icon;
   final String title;
   final String body;
+  final String? route;
   bool read;
 
-  AppNotice(this.icon, this.title, this.body, {this.read = false});
+  AppNotice(this.icon, this.title, this.body, {this.read = false, this.route});
 }
 
 class TokenTransaction {
@@ -2973,10 +3179,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               label: Text(registerMode ? authTextV151(lang, 'create') : authTextV151(lang, 'secure')),
                               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                             ),
-                            if (!registerMode && false) ...[
+                            if (!registerMode) ...[
                               const SizedBox(height: 10),
                               OutlinedButton.icon(
-                                onPressed: busy || warqnaProductionMode ? null : chooseDemoAccount,
+                                onPressed: null,
                                 icon: const Icon(Icons.groups_2_outlined),
                                 label: Text(authTextV151(lang, 'chooseDemo')),
                                 style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
@@ -2992,7 +3198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Expanded(child: OutlinedButton.icon(onPressed: busy ? null : () => socialLogin('facebook'), icon: const Text('f', style: TextStyle(fontWeight: FontWeight.w900)), label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Facebook', maxLines: 1, softWrap: false, style: TextStyle(fontSize: 9))))),
                               ]),
                               const SizedBox(height: 7),
-                              FilledButton.tonalIcon(onPressed: busy || warqnaProductionMode ? null : widget.controller.loginAsGuest, icon: const Icon(Icons.person_outline_rounded), label: Text(authTextV151(lang, 'guest'))) ,
+                              FilledButton.tonalIcon(onPressed: null, icon: const Icon(Icons.person_outline_rounded), label: Text(authTextV151(lang, 'guest'))) ,
                               const SizedBox(height: 5),
                               Text(authTextV151(lang, 'providerNote'), textAlign: TextAlign.center, style: TextStyle(color: palette.gold.withValues(alpha: .9), fontSize: 9, height: 1.5)),
                             ],
@@ -4793,29 +4999,13 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
     if (mounted) setState(() {});
   }
 
-  Future<void> _openLocalRoom([String? reason]) async {
-    localSession = LocalGameSession(gameId: widget.game.id, humanName: widget.controller.displayName, difficulty: widget.controller.botDifficultyCode, playerCount: widget.options.playerCount);
-    if (!mounted) return;
-    setState(() {
-      room = localSession!.room();
-      loading = false;
-      error = null;
-      seconds = widget.options.turnSeconds;
-    });
-    widget.controller.rememberActiveRoom(widget.game.id, code: roomCode, options: widget.options);
-    AppSounds.fire('room_create');
-    serverMessages
-      ..clear()
-      ..addAll([
-        ChatMessage('النظام', reason ?? 'بدأت جلسة محلية كاملة. عند ربط Laravel تتحول الجلسة تلقائياً إلى لعب متزامن بين الأجهزة.', false, 'الآن'),
-        ChatMessage('سامر', 'بالتوفيق! 👋', false, 'الآن'),
-      ]);
-    await _startVoiceIfNeeded();
-  }
-
   Future<void> _create() async {
     if (!widget.controller.serverConnected) {
-      await _openLocalRoom();
+      if (!mounted) return;
+      setState(() {
+        loading = false;
+        error = 'اللعبة تعمل عبر الإنترنت فقط. أعد الاتصال بالخادم ثم حاول مجدداً.';
+      });
       return;
     }
     try {
@@ -4847,25 +5037,19 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
       await _startVoiceIfNeeded();
       _scheduleServerAutoNextRound();
     } on ApiException catch (e) {
-      if (widget.options.joiningExisting) {
-        if (!mounted) return;
-        setState(() {
-          loading = false;
-          error = e.message;
-        });
-        return;
-      }
-      await _openLocalRoom('الخادم غير متاح؛ تم تشغيل المحرك المحلي تلقائياً دون تعطيل اللعبة.');
+      if (!mounted) return;
+      setState(() {
+        loading = false;
+        error = e.message;
+      });
     } catch (_) {
-      if (widget.options.joiningExisting) {
-        if (!mounted) return;
-        setState(() {
-          loading = false;
-          error = 'تعذر الانضمام إلى الغرفة. تحقق من الرمز والاتصال بالخادم.';
-        });
-        return;
-      }
-      await _openLocalRoom('الخادم غير متاح؛ تم تشغيل المحرك المحلي تلقائياً دون تعطيل اللعبة.');
+      if (!mounted) return;
+      setState(() {
+        loading = false;
+        error = widget.options.joiningExisting
+            ? 'تعذر الانضمام إلى الغرفة. تحقق من الرمز والاتصال بالخادم.'
+            : 'تعذر إنشاء الغرفة على الخادم. تحقق من الإنترنت ثم حاول مجدداً.';
+      });
     }
   }
 
@@ -4924,16 +5108,26 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
     if (seconds <= 0) _timeout();
   }
 
+  void _showServerProgressionReport(RoundRewardReport? report) {
+    if (report == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) showRoundRewardReport(context, widget.controller, report);
+    });
+  }
+
   Future<void> _timeout() async {
     if (roomCode.isEmpty || sending) return;
     sending = true;
+    RoundRewardReport? serverReport;
     try {
       if (localSession != null) {
         final updated = localSession!.timeout();
         if (mounted) setState(() { room = Map<String, dynamic>.from(updated); seconds = turnDuration; selectedCard = null; });
       } else {
         final data = await widget.controller.api.gameTimeout(roomCode);
-        if (mounted) setState(() { room = Map<String, dynamic>.from(data['room'] as Map); seconds = turnDuration; selectedCard = null; });
+        final updated = Map<String, dynamic>.from(data['room'] as Map);
+        serverReport = widget.controller.consumeServerProgression(updated);
+        if (mounted) setState(() { room = updated; seconds = turnDuration; selectedCard = null; });
       }
       if (awayMode) {
         autoPlayedTurns += 1;
@@ -4951,6 +5145,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
       if (mounted) setState(() => seconds = turnDuration);
     }
     sending = false;
+    _showServerProgressionReport(serverReport);
     _scheduleServerAutoNextRound();
   }
 
@@ -4998,6 +5193,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
       }
       if (!mounted) return;
       _awardLocalProgressionTransition(beforeRoom, updated);
+      final serverReport = localSession == null ? widget.controller.consumeServerProgression(updated) : null;
       AppSounds.fire({'play_card','discard','play_tile'}.contains(action) ? 'card_play' : 'button');
       setState(() {
         room = updated;
@@ -5006,6 +5202,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
         sending = false;
         autoPlayedTurns = 0;
       });
+      _showServerProgressionReport(serverReport);
       _scheduleServerAutoNextRound();
       final currentState = state;
       if (currentState['game_over'] == true && currentState['winner']?.toString() == 'user:0' && !awayMode) {
@@ -5372,7 +5569,10 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
     try {
       final data = await widget.controller.api.gameSession(roomCode);
       if (mounted && data['room'] is Map) {
-        setState(() => room = Map<String, dynamic>.from(data['room'] as Map));
+        final updated = Map<String, dynamic>.from(data['room'] as Map);
+        final report = widget.controller.consumeServerProgression(updated);
+        setState(() => room = updated);
+        _showServerProgressionReport(report);
         _scheduleServerAutoNextRound();
       }
     } catch (_) {}
@@ -6717,11 +6917,18 @@ void showNotifications(BuildContext context, AppController controller) {
           if (controller.notices.isEmpty) const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('لا توجد إشعارات'))),
           ...controller.notices.map((notice) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: PremiumListTile(
-              icon: notice.icon,
-              title: notice.title,
-              subtitle: notice.body,
-              action: IconButton(onPressed: () { controller.removeNotice(notice); setLocalState(() {}); }, icon: const Icon(Icons.delete_outline)),
+            child: InkWell(
+              onTap: notice.route == null ? null : () {
+                Navigator.pop(context);
+                controller.queueNavigationRoute(notice.route);
+              },
+              borderRadius: BorderRadius.circular(18),
+              child: PremiumListTile(
+                icon: notice.icon,
+                title: notice.title,
+                subtitle: notice.route == null ? notice.body : '${notice.body}\nاضغط للدخول مباشرة إلى اللعبة',
+                action: IconButton(onPressed: () { controller.removeNotice(notice); setLocalState(() {}); }, icon: const Icon(Icons.delete_outline)),
+              ),
             ),
           )),
         ],
@@ -7027,8 +7234,6 @@ Future<void> openGameRoom(BuildContext context, AppController controller, GameIn
     showToast(context, 'أنت داخل لعبة أخرى. غادر اللعبة الحالية قبل بدء لعبة جديدة.');
     return;
   }
-  final previousLandscape = controller.landscapeMode;
-  await controller.setLandscapeMode(true);
   if (!context.mounted) return;
   final leftRoom = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => GameRoomPage(controller: controller, game: game, options: options)));
   if (leftRoom == true) {
@@ -7036,8 +7241,8 @@ Future<void> openGameRoom(BuildContext context, AppController controller, GameIn
   } else {
     controller.rememberActiveRoom(game.id, code: controller.activeRoomCode, options: options);
   }
-  if (!previousLandscape) await controller.setLandscapeMode(false);
 }
+
 
 void showChallenges(BuildContext context, AppController controller) {
   // Legacy v170 contract symbol retained: showChallengesV170
@@ -7252,6 +7457,7 @@ class _GameModeCard extends StatelessWidget {
 }
 
 void showCreateRoom(BuildContext context, AppController controller, GameInfo game, {bool initialVoice = false}) {
+  final parentContext = context;
   final nameController = TextEditingController(text: '${L.t(controller.localeCode, game.id)} • ${controller.displayName}');
   final passwordController = TextEditingController();
   var visibility = 'public';
@@ -7263,7 +7469,7 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
   showPremiumSheet(
     context,
     child: StatefulBuilder(
-      builder: (context, setLocalState) => Column(
+      builder: (sheetContext, setLocalState) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(L.t(controller.localeCode, 'createRoom'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
@@ -7342,11 +7548,11 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
           FilledButton.icon(
             onPressed: () async {
               if (nameController.text.trim().isEmpty) {
-                showToast(context, L.t(controller.localeCode, 'enterRoomName'));
+                showToast(sheetContext, L.t(controller.localeCode, 'enterRoomName'));
                 return;
               }
               if (visibility == 'private' && passwordController.text.trim().length < 3) {
-                showToast(context, L.t(controller.localeCode, 'enterRoomPassword'));
+                showToast(sheetContext, L.t(controller.localeCode, 'enterRoomPassword'));
                 return;
               }
               final options = RoomLaunchOptions(
@@ -7359,8 +7565,11 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
                 allowOwnerKick: allowOwnerKick,
                 playerCount: playerCount,
               );
-              Navigator.pop(context);
-              await openGameRoom(context, controller, game, options: options);
+              Navigator.pop(sheetContext);
+              await Future<void>.delayed(Duration.zero);
+              final navigationContext = warqnaNavigatorKey.currentContext ?? parentContext;
+              if (!navigationContext.mounted) return;
+              await openGameRoom(navigationContext, controller, game, options: options);
             },
             icon: Icon(voiceEnabled ? Icons.mic_rounded : Icons.play_arrow_rounded),
             label: Text(voiceEnabled ? L.t(controller.localeCode, 'createVoiceRoom') : L.t(controller.localeCode, 'createNormalRoom')),
