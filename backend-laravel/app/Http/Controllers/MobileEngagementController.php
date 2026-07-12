@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\{AdminDesignerEntity,ChallengeDefinition,CompetitionTicket,DailyPackClaim,Tournament};
+use App\Services\WarqnaPro\{CompetitionService,DailyPackService};
+use Illuminate\Http\Request;
+use RuntimeException;
+
+class MobileEngagementController extends Controller
+{
+    public function center(Request $request)
+    {
+        $user = $request->user();
+        return response()->json([
+            'ok'=>true,
+            'online_only'=>true,
+            'tickets'=>$this->tickets($user->id),
+            'daily_pack'=>$this->packStatus($user->id),
+            'challenges'=>ChallengeDefinition::where('active', true)->orderBy('sort_order')->get(),
+            'competitions'=>Tournament::whereIn('status', ['open','running'])->withCount('entries')->orderByDesc('featured')->orderBy('starts_at')->get(),
+            'designer'=>AdminDesignerEntity::where('active', true)->orderBy('entity_type')->orderBy('sort_order')->get()->groupBy('entity_type'),
+            'champion_rank_points'=>(int)($user->profile?->champion_rank_points ?? 0),
+        ]);
+    }
+
+    public function openDailyPack(Request $request, DailyPackService $packs)
+    {
+        try {
+            $reward = $packs->open($request->user());
+        } catch (RuntimeException $e) {
+            return response()->json(['ok'=>false,'message'=>$e->getMessage()], 409);
+        }
+        return response()->json([
+            'ok'=>true,
+            'message'=>'تم فتح الحزمة اليومية بنجاح',
+            'reward'=>$reward,
+            'wallet'=>$this->walletPayload($request->user()->fresh()),
+            'tickets'=>$this->tickets($request->user()->id),
+        ]);
+    }
+
+    public function joinCompetition(Request $request, string $competitionKey, CompetitionService $competitions)
+    {
+        $data = $request->validate(['entry_fee'=>'required|integer|min:0|max:1000000000','entry_mode'=>'nullable|in:auto,ticket,tokens,ad']);
+        try {
+            $result = $competitions->join($request->user(), $competitionKey, (int)$data['entry_fee']);
+        } catch (RuntimeException $e) {
+            return response()->json(['ok'=>false,'message'=>$e->getMessage()], 422);
+        }
+        return response()->json([
+            'ok'=>true,
+            'message'=>'تم التسجيل في المنافسة',
+            ...$result,
+            'tickets'=>$this->tickets($request->user()->id),
+            'wallet'=>$this->walletPayload($request->user()->fresh()),
+            'rank_points'=>(int)($request->user()->profile?->champion_rank_points ?? 0),
+        ]);
+    }
+
+    /** @return array<string,int> */
+    private function tickets(int $userId): array
+    {
+        return CompetitionTicket::where('user_id', $userId)->pluck('quantity', 'denomination')->map(fn($value)=>(int)$value)->all();
+    }
+
+    /** @return array<string,mixed> */
+    private function packStatus(int $userId): array
+    {
+        $claim = DailyPackClaim::where('user_id', $userId)->latest('claim_date')->first();
+        return [
+            'available'=>!$claim || !$claim->claim_date?->isToday(),
+            'last_opened'=>$claim?->claim_date?->toDateString(),
+            'last_reward'=>data_get($claim?->payload, 'label_ar'),
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    private function walletPayload($user): array
+    {
+        $wallet = $user->wallet()->firstOrCreate(['user_id'=>$user->id], ['tokens'=>50,'gems'=>0]);
+        return ['tokens'=>(string)$wallet->tokens,'gems'=>(string)$wallet->gems];
+    }
+}

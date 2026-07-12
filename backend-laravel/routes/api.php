@@ -13,7 +13,8 @@ use App\Http\Controllers\{
     MobileModerationController,
     MobileAuthRecoveryController,
     SocialAuthController,
-    MobilePushController
+    MobilePushController,
+    MobileEngagementController
 };
 
 // Backward-compatible public aliases for older Flutter/PWA builds. They
@@ -51,6 +52,9 @@ Route::prefix('mobile/v1')->group(function () {
         Route::delete('/push/devices', [MobilePushController::class, 'destroy']);
         Route::post('/rewards/daily', [MobileApiController::class, 'claimDaily'])->middleware('throttle:warqna-sensitive');
         Route::post('/rewards/rewarded-ad', [MobileApiController::class, 'claimRewardedAd'])->middleware('throttle:warqna-sensitive');
+        Route::get('/engagement/center', [MobileEngagementController::class, 'center']);
+        Route::post('/packs/daily/open', [MobileEngagementController::class, 'openDailyPack'])->middleware('throttle:warqna-sensitive');
+        Route::post('/competitions/{competitionKey}/join', [MobileEngagementController::class, 'joinCompetition'])->middleware('throttle:warqna-sensitive');
 
         Route::get('/account/export', [MobileAccountController::class, 'export'])->middleware('throttle:warqna-sensitive');
         Route::get('/account/sessions', [MobileAccountController::class, 'sessions']);
@@ -99,6 +103,9 @@ Route::prefix('mobile/v1')->group(function () {
         Route::post('/admin/users/{user}/action', [MobileAdminController::class, 'userAction']);
         Route::patch('/admin/feature-flags/{flag}', [MobileAdminController::class, 'updateFeatureFlag']);
         Route::post('/admin/releases', [MobileAdminController::class, 'createRelease']);
+        Route::get('/admin/designer', [MobileAdminController::class, 'designerIndex']);
+        Route::patch('/admin/designer/{entityType}/{key}', [MobileAdminController::class, 'upsertDesigner']);
+        Route::delete('/admin/designer/{entity}', [MobileAdminController::class, 'deleteDesigner']);
         Route::get('/admin/moderation/reports', [MobileModerationController::class, 'index']);
         Route::patch('/admin/moderation/reports/{report}', [MobileModerationController::class, 'resolve']);
 

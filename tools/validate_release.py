@@ -100,6 +100,14 @@ def check_required_files() -> None:
         "tools/test_flutter_ci_contract.py",
         "tools/test_v171_controller_references.py",
         "tools/test_v172_brand_table_contract.py",
+        "tools/test_v173_online_engagement_contract.py",
+        "flutter_app/lib/v173_global.dart",
+        "backend-laravel/resources/data/v173_store_catalog.json",
+        "backend-laravel/app/Services/WarqnaPro/DailyPackService.php",
+        "backend-laravel/app/Services/WarqnaPro/CompetitionService.php",
+        "backend-laravel/app/Http/Controllers/MobileEngagementController.php",
+        "backend-laravel/database/migrations/2026_07_12_000173_online_competitions_tickets_packs_designer.php",
+        "backend-laravel/tests/Feature/V173OnlineEngagementTest.php",
         "tools/apply_brand_assets.py",
         "flutter_app/assets/images/brand/warqna_logo.png",
         "flutter_app/assets/images/tables/reference/catalog.json",
@@ -201,6 +209,22 @@ def check_text_control_characters() -> None:
 
 
 def check_login_fix() -> None:
+    if EXPECTED_BUILD >= 173:
+        require("flutter_app/lib/main.dart", [
+            "Future<String?> login(String loginId, String password",
+            "التسجيل المحلي غير متاح في Warqna V173",
+            "OnlineRequiredScreenV173",
+        ])
+        forbid("flutter_app/lib/main.dart", [
+            "Future<String?> login(String login, String password",
+            "return login(loginId, password, offline: true);",
+            "final fallback = await login(loginId, password, offline: true);",
+            "return this.login(loginId, password, offline: true);",
+            "await this.login(loginId, password, offline: true);",
+        ])
+        print("[OK] v173 online-only login and registration contract")
+        return
+
     require("flutter_app/lib/main.dart", [
         "Future<String?> login(String loginId, String password",
         "return login(loginId, password, offline: true);",
@@ -1131,6 +1155,29 @@ def check_v172_brand_table_contract() -> None:
     print("[OK] v172 additive Warqna brand, 40-table HD collection, and legacy CI compatibility")
 
 
+
+def check_v173_online_engagement_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v173_online_engagement_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna v173 online engagement contract failed: " + result.stdout.strip())
+
+    for rel in [
+        ".github/workflows/flutter-web-pages.yml",
+        ".github/workflows/flutter-android.yml",
+        ".github/workflows/flutter-ios.yml",
+        ".github/workflows/production-release-check.yml",
+    ]:
+        require(rel, ["test_v173_online_engagement_contract.py"])
+    require("flutter_app/pubspec.yaml", ["assets/images/pasha/v173/", "assets/images/tables/v173/royal/", "assets/images/tables/v173/showcase/"])
+    print(result.stdout.strip())
+    print("[OK] v173 online-only engagement, 14 Pasha colors, 50 new tables, ads, tickets, daily packs and universal designer")
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -1173,6 +1220,7 @@ def main() -> None:
     check_v170_responsive_gameplay_security()
     check_v171_controller_reference_contract()
     check_v172_brand_table_contract()
+    check_v173_online_engagement_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

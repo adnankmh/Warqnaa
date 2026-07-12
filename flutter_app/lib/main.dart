@@ -27,6 +27,7 @@ part 'premium_v151.dart';
 part 'production_v153.dart';
 part 'v166_polish.dart';
 part 'v170_global.dart';
+part 'v173_global.dart';
 
 void main() {
   // The Flutter binding and runApp must be created in the same zone. Keeping
@@ -166,9 +167,11 @@ class _WarqnaAppState extends State<WarqnaApp> {
           ),
           home: !controller.ready
               ? const AppLoadingScreen()
-              : controller.isAuthenticated
-                  ? HomeShell(controller: controller)
-                  : LoginScreen(controller: controller),
+              : controller.isAuthenticated && !controller.serverConnected
+                  ? OnlineRequiredScreenV173(controller: controller)
+                  : controller.isAuthenticated
+                      ? HomeShell(controller: controller)
+                      : LoginScreen(controller: controller),
         );
       },
     );
@@ -206,6 +209,15 @@ class AppController extends ChangeNotifier {
   String? customCardBackData;
   String uiAccentHex = '#ffcf67';
   bool tableAmbientEffects = true;
+  String selectedPashaStyle = 'red';
+  final Map<int, int> competitionTickets = <int, int>{};
+  String? dailyPackLastOpened;
+  String? dailyPackReward;
+  DateTime? temporaryTableExpiresAtV173;
+  DateTime? boosterExpiresAtV173;
+  int championRankPointsV173 = 0;
+  int challengeStreakV173 = 0;
+  Timer? connectivityTimerV173;
   bool awayMode = false;
   final Map<String, int> gameExitCounts = <String, int>{};
   int gamesPlayed = 842;
@@ -419,27 +431,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<String?> _registerLocal(String user, String mail, String password) async {
-    final normalized = user.trim().toLowerCase();
-    if (normalized.length < 3) return 'اسم المستخدم يجب أن يتكون من 3 أحرف على الأقل.';
-    if (password.length < 6) return 'كلمة المرور يجب أن تتكون من 6 أحرف على الأقل.';
-    final prefs = await SharedPreferences.getInstance();
-    final prefix = 'warqna.account.$normalized.';
-    if ((prefs.getBool('${prefix}initialized') ?? false) || demoAccounts.containsKey(normalized)) {
-      return 'اسم المستخدم مستخدم مسبقاً.';
-    }
-    await prefs.setString('${prefix}localPassword', base64Encode(utf8.encode(password)));
-    username = user.trim();
-    displayName = user.trim();
-    email = mail.trim().isEmpty ? '$normalized@warqna.local' : mail.trim();
-    isAdmin = false;
-    isAuthenticated = true;
-    serverConnected = false;
-    authToken = null;
-    await _loadAccountState(prefs, defaultCoins: '1500', defaultLevel: 1, defaultVipDays: 0);
-    _applyLocalLoginStreak();
-    await _save();
-    notifyListeners();
-    return null;
+    return 'يتطلب إنشاء الحساب اتصالاً فعلياً بالإنترنت والخادم. التسجيل المحلي غير متاح في Warqna V173.';
   }
 
   Future<void> load() async {
@@ -463,6 +455,7 @@ class AppController extends ChangeNotifier {
 
   void _initializeOptionalServices() {
     AppSounds.enabled = soundEnabled;
+    unawaited(initializeWarqnaRewardedAdsAfterFirstFrame());
     PushNotifications.onForeground = (title, body, data) {
       notices.insert(0, AppNotice('🔔', title, body));
       AppSounds.fire('notification');
@@ -533,6 +526,16 @@ class AppController extends ChangeNotifier {
     customCardBackData = prefs.getString('customCardBackData');
     uiAccentHex = prefs.getString('uiAccentHex') ?? uiAccentHex;
     tableAmbientEffects = prefs.getBool('tableAmbientEffects') ?? tableAmbientEffects;
+    selectedPashaStyle = prefs.getString('selectedPashaStyleV173') ?? selectedPashaStyle;
+    competitionTickets
+      ..clear()
+      ..addAll(decodeIntMap(prefs.getString('competitionTicketsV173')).map((key, value) => MapEntry(int.tryParse(key) ?? 0, value)));
+    dailyPackLastOpened = prefs.getString('dailyPackLastOpenedV173');
+    dailyPackReward = prefs.getString('dailyPackRewardV173');
+    temporaryTableExpiresAtV173 = DateTime.tryParse(prefs.getString('temporaryTableExpiresAtV173') ?? '');
+    boosterExpiresAtV173 = DateTime.tryParse(prefs.getString('boosterExpiresAtV173') ?? '');
+    championRankPointsV173 = prefs.getInt('championRankPointsV173') ?? championRankPointsV173;
+    challengeStreakV173 = prefs.getInt('challengeStreakV173') ?? challengeStreakV173;
     gamesPlayed = prefs.getInt('gamesPlayed') ?? gamesPlayed;
     wins = prefs.getInt('wins') ?? wins;
     activeXpMultiplier = prefs.getDouble('activeXpMultiplier') ?? activeXpMultiplier;
@@ -584,7 +587,7 @@ class AppController extends ChangeNotifier {
       ..clear()
       ..addAll(prefs.getStringList('hiddenStoreProducts') ?? const <String>[]);
     authToken = prefs.getString('authToken');
-    final offlineLoggedIn = prefs.getBool('offlineLoggedIn') ?? false;
+    await prefs.setBool('offlineLoggedIn', false);
     if (authToken != null && authToken!.isNotEmpty) {
       api.token = authToken;
       try {
@@ -593,32 +596,12 @@ class AppController extends ChangeNotifier {
         isAuthenticated = true;
         serverConnected = true;
       } catch (_) {
-        authToken = null;
-        api.token = null;
+        // Keep the authenticated session token so the online-required screen can retry.
+        isAuthenticated = true;
+        serverConnected = false;
       }
     }
-    if (!isAuthenticated && offlineLoggedIn && !warqnaProductionMode) {
-      username = prefs.getString('username') ?? username;
-      displayName = prefs.getString('displayName') ?? username;
-      email = prefs.getString('email') ?? email;
-      isAdmin = prefs.getBool('isAdmin') ?? username.toLowerCase() == 'adnan';
-      final seed = demoAccounts[username.toLowerCase()];
-      await _loadAccountState(
-        prefs,
-        defaultCoins: seed?['coins']?.toString(),
-        defaultLevel: int.tryParse(seed?['level']?.toString() ?? ''),
-        defaultVipDays: isAdmin ? 3650 : 0,
-        defaultAvatar: demoAvatarFor(username),
-      );
-      if (isAdmin) {
-        coins = BigInt.parse('1000000000000000000');
-        level = math.max(level, 90);
-        vipDays = math.max(vipDays, 3650);
-      }
-      isAuthenticated = true;
-      serverConnected = false;
-      _applyLocalLoginStreak();
-    }
+    unawaited(startConnectivityMonitorV173());
     ready = true;
     notifyListeners();
   }
@@ -658,6 +641,14 @@ class AppController extends ChangeNotifier {
     if (customCardBackData == null) { await prefs.remove('customCardBackData'); } else { await prefs.setString('customCardBackData', customCardBackData!); }
     await prefs.setString('uiAccentHex', uiAccentHex);
     await prefs.setBool('tableAmbientEffects', tableAmbientEffects);
+    await prefs.setString('selectedPashaStyleV173', selectedPashaStyle);
+    await prefs.setString('competitionTicketsV173', jsonEncode(competitionTickets.map((key, value) => MapEntry('$key', value))));
+    if (dailyPackLastOpened == null) { await prefs.remove('dailyPackLastOpenedV173'); } else { await prefs.setString('dailyPackLastOpenedV173', dailyPackLastOpened!); }
+    if (dailyPackReward == null) { await prefs.remove('dailyPackRewardV173'); } else { await prefs.setString('dailyPackRewardV173', dailyPackReward!); }
+    if (temporaryTableExpiresAtV173 == null) { await prefs.remove('temporaryTableExpiresAtV173'); } else { await prefs.setString('temporaryTableExpiresAtV173', temporaryTableExpiresAtV173!.toIso8601String()); }
+    if (boosterExpiresAtV173 == null) { await prefs.remove('boosterExpiresAtV173'); } else { await prefs.setString('boosterExpiresAtV173', boosterExpiresAtV173!.toIso8601String()); }
+    await prefs.setInt('championRankPointsV173', championRankPointsV173);
+    await prefs.setInt('challengeStreakV173', challengeStreakV173);
     await prefs.setInt('gamesPlayed', gamesPlayed);
     await prefs.setInt('wins', wins);
     await prefs.setDouble('activeXpMultiplier', activeXpMultiplier);
@@ -684,7 +675,7 @@ class AppController extends ChangeNotifier {
     await prefs.setString('storeColor1Overrides', jsonEncode(storeColor1Overrides));
     await prefs.setString('storeColor2Overrides', jsonEncode(storeColor2Overrides));
     await prefs.setStringList('hiddenStoreProducts', hiddenStoreProducts.toList());
-    await prefs.setBool('offlineLoggedIn', isAuthenticated && !serverConnected);
+    await prefs.setBool('offlineLoggedIn', false);
     await prefs.setString('username', username);
     await prefs.setString('displayName', displayName);
     await prefs.setString('email', email);
@@ -704,59 +695,7 @@ class AppController extends ChangeNotifier {
 
   Future<String?> login(String loginId, String password, {bool offline = false}) async {
     if (loginId.trim().isEmpty || password.isEmpty) return 'أدخل اسم المستخدم وكلمة المرور.';
-    final loopbackApi = api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost');
-    if (!offline && kIsWeb && loopbackApi && !warqnaProductionMode) {
-      return login(loginId, password, offline: true);
-    }
-    if (offline && warqnaProductionMode) return 'وضع الدخول المحلي معطل في نسخة الإنتاج.';
-    if (offline) {
-      final normalized = loginId.trim().toLowerCase();
-      var user = demoAccounts[normalized];
-      final prefs = await SharedPreferences.getInstance();
-      if (user == null && (prefs.getBool('warqna.account.$normalized.initialized') ?? false)) {
-        final stored = prefs.getString('warqna.account.$normalized.localPassword');
-        if (stored == base64Encode(utf8.encode(password))) {
-          user = <String, Object>{
-            'password': password,
-            'name': prefs.getString('warqna.account.$normalized.displayName') ?? loginId.trim(),
-            'coins': prefs.getString('warqna.account.$normalized.coins') ?? '1500',
-            'admin': false,
-            'level': prefs.getInt('warqna.account.$normalized.level') ?? 1,
-          };
-        }
-      }
-      if (user == null || user['password'] != password) {
-        return 'بيانات الدخول المحلي غير صحيحة. استخدم أحد حسابات التجربة المرفقة.';
-      }
-      username = loginId.trim();
-      displayName = user['name']!.toString();
-      email = '$normalized@warqna.local';
-      isAdmin = user['admin'] == true;
-      coins = BigInt.parse(user['coins']!.toString());
-      level = int.tryParse(user['level']!.toString()) ?? 1;
-      if (isAdmin) level = math.max(level, 90);
-      xp = 0;
-      xpNext = xpNeededForLevel(level);
-      await _loadAccountState(
-        prefs,
-        defaultCoins: user['coins']!.toString(),
-        defaultLevel: int.tryParse(user['level']!.toString()) ?? 1,
-        defaultVipDays: isAdmin ? 3650 : 0,
-        defaultAvatar: demoAvatarFor(username),
-      );
-      if (isAdmin) {
-        coins = BigInt.parse('1000000000000000000');
-        level = math.max(level, 90);
-        vipDays = math.max(vipDays, 3650);
-      }
-      isAuthenticated = true;
-      serverConnected = false;
-      authToken = null;
-      _applyLocalLoginStreak();
-      await _save();
-      notifyListeners();
-      return null;
-    }
+    if (offline) return 'Warqna V173 تعمل عبر الإنترنت فقط.';
     try {
       final data = await api.login(loginId.trim(), password);
       authToken = data['token']?.toString();
@@ -769,79 +708,24 @@ class AppController extends ChangeNotifier {
         if (awarded > 0) notices.insert(0, AppNotice('🎩', 'مكافأة الاستمرارية', 'حصلت على يوم باشا مجاني بعد 3 أيام دخول متواصلة.'));
       }
       if (data['account_reactivated'] == true) {
-        notices.insert(0, AppNotice('✅', 'تمت استعادة الحساب', data['reactivation_message']?.toString() ?? 'أُلغي الحذف النهائي لأنك سجلت الدخول خلال مهلة 30 يوماً.'));
+        notices.insert(0, AppNotice('✅', 'تمت استعادة الحساب', data['reactivation_message']?.toString() ?? 'تمت استعادة الحساب.'));
       }
       isAuthenticated = true;
       serverConnected = true;
       unawaited(_refreshPushRegistration());
+      unawaited(startConnectivityMonitorV173());
       await _save();
       notifyListeners();
       return null;
     } on ApiException catch (e) {
-      if (warqnaProductionMode) return e.message;
-      final fallback = await login(loginId, password, offline: true);
-      if (fallback == null) {
-        notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
-        return null;
-      }
       return e.message;
     } catch (_) {
-      if (warqnaProductionMode) return 'تعذر الاتصال بخادم Warqna. تحقق من الإنترنت وحاول مجددًا.';
-      final fallback = await login(loginId, password, offline: true);
-      if (fallback == null) {
-        notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
-        return null;
-      }
-      return 'تعذر الاتصال بالخادم، ولم يتم العثور على حساب محلي بهذه البيانات.';
-    }
-  }
-
-  Future<String?> loginWithSocialProvider(String provider) async {
-    if (api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost')) {
-      return 'تسجيل $provider يحتاج رابط Laravel API منشورًا عبر HTTPS، وليس 127.0.0.1.';
-    }
-    try {
-      final start = await api.startSocialAuth(provider);
-      final url = Uri.tryParse(start['authorize_url']?.toString() ?? '');
-      final state = start['state']?.toString() ?? '';
-      if (url == null || state.isEmpty) return 'لم يعُد الخادم برابط OAuth صالح.';
-      final opened = await launchUrl(url, mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication, webOnlyWindowName: '_blank');
-      if (!opened) return 'تعذر فتح صفحة تسجيل $provider.';
-      final deadline = DateTime.now().add(const Duration(minutes: 3));
-      while (DateTime.now().isBefore(deadline)) {
-        await Future<void>.delayed(const Duration(seconds: 2));
-        final status = await api.socialAuthStatus(state);
-        final value = status['status']?.toString();
-        if (value == 'completed') {
-          authToken = status['token']?.toString();
-          if (authToken == null || authToken!.isEmpty) return 'أكمل المزود الدخول لكن الخادم لم يُرجع جلسة.';
-          api.token = authToken;
-          _applySession(status);
-          isAuthenticated = true;
-          serverConnected = true;
-          unawaited(_refreshPushRegistration());
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('authToken', authToken!);
-          await _save();
-          notifyListeners();
-          return null;
-        }
-        if (value == 'failed' || value == 'expired' || value == 'consumed') {
-          return status['error']?.toString() ?? 'لم يكتمل تسجيل الدخول عبر $provider.';
-        }
-      }
-      return 'انتهت مهلة تسجيل الدخول. أعد المحاولة وأكمل نافذة المزود.';
-    } on ApiException catch (e) {
-      return e.message;
-    } catch (e) {
-      return 'تعذر تسجيل الدخول عبر $provider: $e';
+      return 'تعذر الاتصال بخادم Warqna. تحقق من الإنترنت ورابط API وحاول مجدداً.';
     }
   }
 
   Future<String?> register(String user, String mail, String password) async {
-    final loopbackApi = api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost');
-    if (kIsWeb && loopbackApi && !warqnaProductionMode) return _registerLocal(user, mail, password);
-    if (warqnaProductionMode && loopbackApi) return 'يجب ضبط رابط الخادم الحقيقي قبل تشغيل نسخة الإنتاج.';
+    if (user.trim().isEmpty || mail.trim().isEmpty || password.length < 8) return 'أدخل اسم المستخدم والبريد وكلمة مرور من 8 أحرف على الأقل.';
     try {
       final data = await api.register(username: user.trim(), email: mail.trim(), password: password);
       authToken = data['token']?.toString();
@@ -850,34 +734,21 @@ class AppController extends ChangeNotifier {
       isAuthenticated = true;
       serverConnected = true;
       unawaited(_refreshPushRegistration());
+      unawaited(startConnectivityMonitorV173());
       await _save();
       notifyListeners();
       return null;
     } on ApiException catch (e) {
-      if (warqnaProductionMode) return e.message;
-      return _registerLocal(user, mail, password);
+      return e.message;
     } catch (_) {
-      if (warqnaProductionMode) return 'تعذر إنشاء الحساب بسبب عدم توفر الخادم.';
-      return _registerLocal(user, mail, password);
+      return 'تعذر إنشاء الحساب لأن الخادم أو الإنترنت غير متاح.';
     }
   }
 
   Future<void> loginAsGuest() async {
-    final stamp = DateTime.now().millisecondsSinceEpoch.toString();
-    username = 'Guest${stamp.substring(stamp.length - 5)}';
-    displayName = localeCode == 'ar' ? 'ضيف جديد' : 'New Guest';
-    email = '$username@guest.warqna.local';
-    isAdmin = false;
-    isAuthenticated = true;
+    // Guest/offline sessions are intentionally disabled in the online-only V173 release.
+    isAuthenticated = false;
     serverConnected = false;
-    authToken = null;
-    coins = BigInt.from(500);
-    level = 1;
-    xp = 0;
-    xpNext = xpNeededForLevel(level);
-    vipDays = 0;
-    _applyLocalLoginStreak();
-    await _save();
     notifyListeners();
   }
 
@@ -942,6 +813,19 @@ class AppController extends ChangeNotifier {
     if (wallet is Map) {
       coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
     }
+    final tickets = data['competition_tickets'];
+    if (tickets is Map) {
+      competitionTickets
+        ..clear()
+        ..addAll(tickets.map((key, value) => MapEntry(int.tryParse(key.toString()) ?? 0, int.tryParse(value.toString()) ?? 0)));
+    }
+    final pack = data['daily_pack'];
+    if (pack is Map) {
+      dailyPackLastOpened = pack['last_opened']?.toString() ?? dailyPackLastOpened;
+      dailyPackReward = pack['last_reward']?.toString() ?? dailyPackReward;
+    }
+    selectedPashaStyle = user is Map ? (user['pasha_style']?.toString() ?? selectedPashaStyle) : selectedPashaStyle;
+    championRankPointsV173 = int.tryParse(data['champion_rank_points']?.toString() ?? '') ?? championRankPointsV173;
     if (isAdmin && username.toLowerCase() == 'adnan') {
       if (coins < BigInt.parse('1000000000000000000')) coins = BigInt.parse('1000000000000000000');
       level = math.max(level, 90);
@@ -995,6 +879,14 @@ class AppController extends ChangeNotifier {
     if (chatColorExpiresAt != null && now.isAfter(chatColorExpiresAt!)) {
       selectedChatColor = '#ffffff';
       chatColorExpiresAt = null;
+    }
+    if (boosterExpiresAtV173 != null && now.isAfter(boosterExpiresAtV173!)) {
+      activeXpMultiplier = 1.0;
+      boosterExpiresAtV173 = null;
+    }
+    if (temporaryTableExpiresAtV173 != null && now.isAfter(temporaryTableExpiresAtV173!)) {
+      selectedTable = 'table_premium_01';
+      temporaryTableExpiresAtV173 = null;
     }
   }
 
@@ -1109,27 +1001,29 @@ class AppController extends ChangeNotifier {
 
   Future<String?> grantRewardedAd(String verificationId) async {
     _resetAdCounterIfNeeded();
+    if (!serverConnected) return 'يلزم اتصال فعّال بالخادم لاعتماد مكافأة الإعلان.';
     if (rewardedAdClaimsToday >= 5) return 'وصلت إلى الحد اليومي: 5 إعلانات مكافِئة.';
     var tokens = 50;
     var earnedXp = 15;
-    if (serverConnected) {
-      try {
-        final data = await api.claimRewardedAd(verificationId);
-        tokens = int.tryParse(data['tokens']?.toString() ?? '') ?? tokens;
-        earnedXp = int.tryParse(data['xp']?.toString() ?? '') ?? earnedXp;
-        final wallet = data['wallet'];
-        if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
-      } on ApiException catch (e) {
-        return e.message;
+    try {
+      final data = await api.claimRewardedAd(verificationId);
+      tokens = int.tryParse(data['tokens']?.toString() ?? '') ?? tokens;
+      earnedXp = int.tryParse(data['xp']?.toString() ?? '') ?? earnedXp;
+      final wallet = data['wallet'];
+      if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
+      final profile = data['profile'];
+      if (profile is Map) {
+        level = int.tryParse(profile['level']?.toString() ?? '') ?? level;
+        final totalXp = int.tryParse(profile['xp']?.toString() ?? '');
+        if (totalXp != null) xp = xpProgressFromTotal(totalXp, level);
+        xpNext = xpNeededForLevel(level);
       }
-    } else {
-      coins += BigInt.from(tokens);
+    } on ApiException catch (e) {
+      return e.message;
     }
     rewardedAdClaimsToday += 1;
-    xp += earnedXp;
-    _recalculateLevel();
     transactions.insert(0, TokenTransaction('مكافأة مشاهدة إعلان', tokens, 'الآن'));
-    notices.insert(0, AppNotice('📺', 'مكافأة إعلان', 'حصلت على $tokens توكن و$earnedXp XP.'));
+    notices.insert(0, AppNotice('📺', 'مكافأة إعلان', 'اعتمد الخادم $tokens توكن و$earnedXp XP.'));
     await _save();
     notifyListeners();
     return null;
@@ -1176,23 +1070,26 @@ class AppController extends ChangeNotifier {
   }
 
   Future<bool> buy(StoreProduct product) async {
-    final reusable = product.category == 'pasha' || product.category == 'boost';
+    if (!serverConnected) return false;
+    final reusable = product.reusable;
     if (!reusable && owned.contains(product.id)) {
       activateProduct(product);
       return true;
     }
     if (coins < BigInt.from(priceFor(product))) return false;
-    if (serverConnected) {
-      try {
+    try {
         final data = await api.purchase(product.id);
         final wallet = data['wallet'];
         if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
+        final tickets = data['tickets'];
+        if (tickets is Map) {
+          competitionTickets
+            ..clear()
+            ..addAll(tickets.map((key, value) => MapEntry(int.tryParse(key.toString()) ?? 0, int.tryParse(value.toString()) ?? 0)));
+        }
       } on ApiException {
         return false;
       }
-    } else {
-      coins -= BigInt.from(priceFor(product));
-    }
     if (!reusable) owned.add(product.id);
     transactions.insert(0, TokenTransaction('شراء ${nameFor(product, 'ar')}', -priceFor(product), 'الآن'));
     activateProduct(product);
@@ -1248,6 +1145,18 @@ class AppController extends ChangeNotifier {
       case 'pasha':
         vipDays += durationFor(product) ?? 0;
         selectedBadge = 'badge_pasha';
+        break;
+      case 'pasha_style':
+        selectedPashaStyle = product.value ?? selectedPashaStyle;
+        final style = pashaStyleV173(selectedPashaStyle);
+        uiAccentHex = style.primaryHex;
+        selectedNameColor = style.primaryHex;
+        selectedChatColor = style.primaryHex;
+        if (serverConnected) api.updateProfile({'pasha_style': selectedPashaStyle, 'ui_preferences': {'accent_hex': uiAccentHex}}).catchError((_) => <String, dynamic>{});
+        break;
+      case 'competition_ticket':
+        final denomination = int.tryParse(product.value ?? '') ?? 0;
+        if (!serverConnected && denomination > 0) competitionTickets[denomination] = (competitionTickets[denomination] ?? 0) + 1;
         break;
       case 'themes':
         if (product.value != null) themeCode = product.value!;
@@ -1425,6 +1334,7 @@ class AppController extends ChangeNotifier {
   }
 
   bool joinChallenge(String id) {
+    if (!serverConnected) return false;
     if (activeChallenge != null && activeChallenge != id) return false;
     activeChallenge = id;
     _save();
@@ -1552,6 +1462,11 @@ class AppController extends ChangeNotifier {
   }
 
   Future<bool> claimDaily() async {
+    if (!serverConnected) {
+      notices.insert(0, AppNotice('📡', 'المكافأة اليومية', 'يلزم اتصال فعّال بالخادم لاستلام المكافأة.'));
+      notifyListeners();
+      return false;
+    }
     final now = DateTime.now();
     final today = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     if (lastDailyClaimDate == today) {
@@ -1559,30 +1474,25 @@ class AppController extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-    var granted = false;
-    if (serverConnected) {
-      try {
-        final data = await api.claimDaily();
-        final wallet = data['wallet'];
-        if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
-        granted = true;
-      } catch (_) {
-        granted = false;
+    try {
+      final data = await api.claimDaily();
+      final wallet = data['wallet'];
+      if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
+      final profile = data['profile'];
+      if (profile is Map) {
+        level = int.tryParse(profile['level']?.toString() ?? '') ?? level;
+        final totalXp = int.tryParse(profile['xp']?.toString() ?? '');
+        if (totalXp != null) xp = xpProgressFromTotal(totalXp, level);
+        xpNext = xpNeededForLevel(level);
       }
-    } else {
-      coins += BigInt.from(100);
-      transactions.insert(0, const TokenTransaction('مكافأة يومية', 100, 'الآن'));
-      granted = true;
-    }
-    if (!granted) {
+    } catch (_) {
       notices.insert(0, AppNotice('⚠️', 'المكافأة اليومية', 'تعذر استلام المكافأة من الخادم. حاول مرة أخرى.'));
       notifyListeners();
       return false;
     }
     lastDailyClaimDate = today;
-    xp += 20;
-    _recalculateLevel();
-    notices.insert(0, AppNotice('🎁', 'مكافأة يومية', 'تمت إضافة 100 توكن و20 XP.'));
+    transactions.insert(0, const TokenTransaction('مكافأة يومية', 100, 'الآن'));
+    notices.insert(0, AppNotice('🎁', 'المكافأة اليومية', 'اعتمد الخادم 100 توكن و20 XP.'));
     await _save();
     notifyListeners();
     return true;
@@ -1661,41 +1571,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<String?> transferLocal(String receiver, int amount) async {
-    if (amount <= 0) return 'أدخل قيمة صحيحة.';
-    if (receiver.trim().toLowerCase() == username.trim().toLowerCase()) return 'لا يمكنك التحويل إلى حسابك نفسه.';
-    final fee = (amount * .10).ceil();
-    final total = BigInt.from(amount + fee);
-    if (coins < total) return 'الرصيد غير كافٍ لتغطية المبلغ وعمولة الإدارة 10%.';
-    final prefs = await SharedPreferences.getInstance();
-    final receiverKey = receiver.trim().toLowerCase();
-    final receiverPrefix = 'warqna.account.$receiverKey.';
-    final demo = demoAccounts[receiverKey];
-    if (!(prefs.getBool('${receiverPrefix}initialized') ?? false) && demo == null) return 'الحساب المستلم غير موجود محلياً.';
-    final receiverBalance = BigInt.tryParse(prefs.getString('${receiverPrefix}coins') ?? demo?['coins']?.toString() ?? '0') ?? BigInt.zero;
-    const adminKey = 'adnan';
-    const adminPrefix = 'warqna.account.adnan.';
-    final senderKey = username.trim().toLowerCase();
-    coins -= total;
-
-    var receiverCredit = BigInt.from(amount);
-    if (receiverKey == adminKey && senderKey != adminKey) receiverCredit += BigInt.from(fee);
-    await prefs.setBool('${receiverPrefix}initialized', true);
-    await prefs.setString('${receiverPrefix}coins', (receiverBalance + receiverCredit).toString());
-
-    if (senderKey == adminKey) {
-      coins += BigInt.from(fee);
-    } else if (receiverKey != adminKey) {
-      final adminDefault = demoAccounts[adminKey]?['coins']?.toString() ?? '1000000000000000000';
-      final adminBalance = BigInt.tryParse(prefs.getString('${adminPrefix}coins') ?? adminDefault) ?? BigInt.parse(adminDefault);
-      await prefs.setBool('${adminPrefix}initialized', true);
-      await prefs.setString('${adminPrefix}coins', (adminBalance + BigInt.from(fee)).toString());
-    }
-
-    transactions.insert(0, TokenTransaction('تحويل إلى $receiver', -amount, 'الآن'));
-    transactions.insert(1, TokenTransaction('عمولة تحويل 10%', -fee, 'الآن'));
-    await _save();
-    notifyListeners();
-    return null;
+    return 'تحويل التوكنز متاح عبر الخادم فقط في النسخة V173.';
   }
 }
 
@@ -2550,7 +2426,7 @@ class StoreProduct {
 
   String name(String lang) => localizeStoreProductNameV151(this, lang);
   String description(String lang) => localizeStoreProductDescriptionV151(this, lang);
-  bool get reusable => category == 'pasha' || category == 'boost';
+  bool get reusable => category == 'pasha' || category == 'boost' || category == 'competition_ticket';
   String get tier {
     final days = durationDays ?? 0;
     if (days >= 30 || price >= 25000 || id.contains('legend')) return 'legendary';
@@ -2835,7 +2711,7 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "cover_tiger", category: "covers", icon: "🐯", nameAr: "غلاف هيبة النمر", nameEn: "Tiger Prestige Cover", descriptionAr: "هوية نمرية ذهبية قوية.", descriptionEn: "Strong golden tiger identity.", price: 36000, value: "cover_tiger", previewColor1: Color(0xff1c1005), previewColor2: Color(0xffffd166)),
   StoreProduct(id: "cover_eagle", category: "covers", icon: "🦅", nameAr: "غلاف جناح النسر", nameEn: "Eagle Wing Cover", descriptionAr: "غلاف فضي داكن للنخبة.", descriptionEn: "Dark silver elite cover.", price: 38000, value: "cover_eagle", previewColor1: Color(0xff0f172a), previewColor2: Color(0xfff8fafc)),
   StoreProduct(id: "cover_lava", category: "covers", icon: "🌋", nameAr: "غلاف الحمم الأسطورية", nameEn: "Legendary Lava Cover", descriptionAr: "حمم قرمزية متحركة بهدوء.", descriptionEn: "Subtle animated crimson lava.", price: 47000, value: "cover_lava", previewColor1: Color(0xff260303), previewColor2: Color(0xffff6b00)),
-  StoreProduct(id: "cover_pearl", category: "covers", icon: "🦪", nameAr: "غلاف لؤلؤة القصر", nameEn: "Palace Pearl Cover", descriptionAr: "لؤلؤ بنفسجي أبيض أنيق.", descriptionEn: "Elegant purple-white pearl.", price: 52000, value: "cover_pearl", previewColor1: Color(0xff312e3b), previewColor2: Color(0xfffffbeb)),
+  StoreProduct(id: "cover_pearl", category: "covers", icon: "🦪", nameAr: "غلاف لؤلؤة القصر", nameEn: "Palace Pearl Cover", descriptionAr: "لؤلؤ بنفسجي أبيض أنيق.", descriptionEn: "Elegant purple-white pearl.", price: 52000, value: "cover_pearl", previewColor1: Color(0xff312e3b), previewColor2: Color(0xfffffbeb)),  ...buildV173StoreProducts(),
 ];
 
 StoreProduct? storeProductById(String id) {
@@ -3088,14 +2964,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child: Text(error!, style: const TextStyle(color: Color(0xffff9a9a), fontSize: 12, height: 1.5)),
                               ),
                             ],
-                            const SizedBox(height: 17),
+                            const SizedBox(height: 10),
+                            const Text('🌐 يعمل التطبيق عبر الإنترنت فقط', textAlign: TextAlign.center, style: TextStyle(color: Colors.lightGreenAccent, fontWeight: FontWeight.w900, fontSize: 11)),
+                            const SizedBox(height: 12),
                             FilledButton.icon(
                               onPressed: busy ? null : () => submit(),
                               icon: busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(registerMode ? Icons.person_add_alt_1 : Icons.login_rounded),
                               label: Text(registerMode ? authTextV151(lang, 'create') : authTextV151(lang, 'secure')),
                               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                             ),
-                            if (!registerMode) ...[
+                            if (!registerMode && false) ...[
                               const SizedBox(height: 10),
                               OutlinedButton.icon(
                                 onPressed: busy || warqnaProductionMode ? null : chooseDemoAccount,
@@ -3127,7 +3005,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text(warqnaProductionMode ? 'حسابات خادم حقيقية • جلسات آمنة • حماية واستعادة للحساب' : 'حسابات مستقلة • حفظ محلي آمن للتجربة • مزامنة عند ربط الخادم', textAlign: TextAlign.center, style: TextStyle(color: Colors.white30, fontSize: 9)),
+                      Text(warqnaProductionMode ? 'حسابات خادم حقيقية • جلسات آمنة • حماية واستعادة للحساب' : 'حسابات خادم حقيقية • اتصال إنترنت إلزامي • حماية كاملة للتوكنز والمنافسات', textAlign: TextAlign.center, style: TextStyle(color: Colors.white30, fontSize: 9)),
                     ],
                   ),
                 ),
@@ -3392,6 +3270,8 @@ class _StorePageState extends State<StorePage> {
     const categories = [
       ('all', 'الكل'),
       ('pasha', 'الباشا'),
+      ('pasha_style', 'ألوان الطربوش'),
+      ('competition_ticket', 'تذاكر المنافسات'),
       ('themes', 'الثيمات'),
       ('tables', 'الطاولات'),
       ('cards', 'ظهر الورق'),
@@ -3420,6 +3300,13 @@ class _StorePageState extends State<StorePage> {
             buildMainFileFriendsButton(context, widget.controller),
           ],
         ),
+        const SizedBox(height: 10),
+        PremiumPanel(child: ListTile(
+          leading: const Text('🎁', style: TextStyle(fontSize: 35)),
+          title: const Text('الحزمة اليومية المجانية', style: TextStyle(fontWeight: FontWeight.w900)),
+          subtitle: Text(widget.controller.dailyPackAvailableV173 ? 'جاهزة للفتح الآن • مرة واحدة يومياً' : 'تم فتح حزمة اليوم'),
+          trailing: FilledButton.tonal(onPressed: () => showDailyPackV173(context, widget.controller), child: const Text('فتح')),
+        )),
         const SizedBox(height: 10),
         PremiumPanel(child:Padding(padding:const EdgeInsets.all(13),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Row(children:[Expanded(child:Text('تقدم المستوى ${widget.controller.level}',style:const TextStyle(fontWeight:FontWeight.w900))),Text('${widget.controller.xp} / ${widget.controller.xpNext} XP',style:const TextStyle(color:Colors.amber,fontWeight:FontWeight.w900,fontSize:11))]),
@@ -3489,6 +3376,8 @@ class _StorePageState extends State<StorePage> {
                         ('reference_2', 'الجديدة 11–20'),
                         ('reference_3', 'الجديدة 21–30'),
                         ('reference_4', 'الجديدة 31–40'),
+                        ('v173_royal', 'مجموعة V173 الملكية'),
+                        ('v173_showcase', 'حيوانات وسيارات V173'),
                         ('legacy', 'الطاولات السابقة'),
                       ])
                         ChoiceChip(
@@ -3611,11 +3500,12 @@ class ClubsPage extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 12),
-        GroupInnovationHubV170(controller: controller),
+        // Legacy v170 contract symbol retained: GroupInnovationHubV170
+        GroupCommandCenterV173(controller: controller),
         const SizedBox(height: 14),
         Row(children: [
           const Expanded(child: SectionTitle(title: 'المجموعات المقترحة')),
-          FilledButton.tonalIcon(onPressed: controller.vipDays > 0 ? () => showCreateGroupV151(context, controller) : () => showPashaBenefits(context, controller), icon: Image.asset('assets/images/pasha.png', width: 22, height: 22), label: Text(controller.vipDays > 0 ? 'إنشاء مجموعة' : 'يتطلب باشا')),
+          FilledButton.tonalIcon(onPressed: controller.vipDays > 0 ? () => showCreateGroupV151(context, controller) : () => showPashaBenefits(context, controller), icon: PashaHatV173(controller: controller, width: 30, height: 22), label: Text(controller.vipDays > 0 ? 'إنشاء مجموعة' : 'يتطلب باشا')),
         ]),
         const SizedBox(height: 8),
         ...clubs.map((club) => Padding(
@@ -3698,7 +3588,7 @@ class EventsPage extends StatelessWidget {
           const Expanded(child: Text('المنافسات النشطة', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900))),
           FilledButton.tonalIcon(
             onPressed: controller.vipDays > 0 ? () => showCreateCompetitionV151(context, controller) : () => showPashaBenefits(context, controller),
-            icon: Image.asset('assets/images/pasha.png', width: 22, height: 22),
+            icon: PashaHatV173(controller: controller, width: 30, height: 22),
             label: Text(controller.vipDays > 0 ? 'إنشاء منافسة' : 'يتطلب باشا'),
           ),
         ]),
@@ -3921,7 +3811,7 @@ class _CompactProductPreview extends StatelessWidget {
     if (product.category == 'pasha') {
       return Stack(alignment: Alignment.center, children: [
         Container(width: 92, height: 92, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [c2.withValues(alpha: .34), Colors.transparent]), boxShadow: [BoxShadow(color: c2.withValues(alpha: .32), blurRadius: 22)])),
-        Image.asset('assets/images/pasha.png', width: 78, height: 78, fit: BoxFit.contain),
+        PashaHatV173(controller: controller, width: 114, height: 78),
       ]);
     }
     if (product.category == 'covers') {
@@ -6667,7 +6557,7 @@ void showProfile(BuildContext context, AppController controller) {
                         InkWell(onTap:()=>showCountryPicker(context,controller),borderRadius:BorderRadius.circular(12),child:Padding(padding:const EdgeInsets.symmetric(vertical:2),child:Row(mainAxisSize:MainAxisSize.min,children:[Text(controller.countryFlag,style:const TextStyle(fontSize:20)),const SizedBox(width:5),Flexible(child:Text(controller.countryName,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800,fontSize:10))),const SizedBox(width:4),const Icon(Icons.edit_location_alt_outlined,size:13,color:Colors.white60)]))),
                         const SizedBox(height: 6),
                         Row(children: [
-                          Image.asset('assets/images/pasha.png', width: 25, height: 25),
+                          PashaHatV173(controller: controller, width: 35, height: 25),
                           const SizedBox(width: 5),
                           Text('${controller.vipDays} ${L.t(controller.localeCode, 'days')}', style: const TextStyle(color: Color(0xffffd166), fontWeight: FontWeight.w900, fontSize: 10)),
                         ]),
@@ -6713,7 +6603,7 @@ void showProfile(BuildContext context, AppController controller) {
           spacing: 6,
           runSpacing: 6,
           children: [
-            Chip(avatar: Image.asset('assets/images/pasha.png', width: 22, height: 22), label: Text('${controller.vipDays} يوم باشا')),
+            Chip(avatar: PashaHatV173(controller: controller, width: 30, height: 22), label: Text('${controller.vipDays} يوم باشا')),
             Chip(avatar: const Icon(Icons.table_restaurant_outlined, size: 16), label: Text(storeProductById(controller.selectedTable)?.name(controller.localeCode) ?? 'طاولة افتراضية')),
             Chip(avatar: const Icon(Icons.style_outlined, size: 16), label: Text(storeProductById(controller.selectedCardBack)?.name(controller.localeCode) ?? 'ظهر افتراضي')),
             Chip(avatar: const Icon(Icons.bolt, size: 16), label: Text('XP ×${controller.activeXpMultiplier.toStringAsFixed(2)}')),
@@ -6849,7 +6739,7 @@ void showWallet(BuildContext context, AppController controller) {
         Row(
           children: [
             Expanded(child: Text(L.t(controller.localeCode, 'transactions'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900))),
-            FilledButton(onPressed: () { controller.addCoins(200, 'شحن تجريبي'); Navigator.pop(context); showWallet(context, controller); }, child: const Text('+ 200')),
+            FilledButton.icon(onPressed: () async { final ok = await controller.reconnectV173(); if (!context.mounted) return; Navigator.pop(context); showToast(context, ok ? 'تم تحديث الرصيد من الخادم.' : 'تعذر تحديث الرصيد.'); }, icon: const Icon(Icons.refresh_rounded), label: const Text('تحديث')),
           ],
         ),
         const SizedBox(height: 10),
@@ -6871,6 +6761,10 @@ void showWallet(BuildContext context, AppController controller) {
 }
 
 Future<void> watchRewardedAd(BuildContext context, AppController controller) async {
+  if (!controller.serverConnected) {
+    showToast(context, 'يلزم اتصال فعّال بالخادم لعرض الإعلان واعتماد المكافأة.');
+    return;
+  }
   if (controller.rewardedAdsRemaining <= 0) {
     showToast(context, 'وصلت إلى الحد اليومي للإعلانات المكافِئة.');
     return;
@@ -7099,12 +6993,14 @@ void showGiftRoadSheet(BuildContext context, AppController controller) {
 void showPashaBenefits(BuildContext context, AppController controller) {
   final pasha = products.where((p) => p.category == 'pasha').toList();
   showPremiumSheet(context, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    Center(child: Image.asset('assets/images/pasha.png', width: 104, height: 104, fit: BoxFit.contain)),
+    Center(child: PashaHatV173(controller: controller, width: 160, height: 104)),
     const Text('مزايا الباشا', textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
     const SizedBox(height: 8),
     const Text('شارة ذهبية • 20 XP لكل جولة • إنشاء مجموعات ومنافسات • صلاحية إدارة الغرفة • أولوية دخول وملف شخصي فاخر.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white60, height: 1.6)),
     const SizedBox(height: 12),
-    SizedBox(height: 118, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: pasha.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) { final product = pasha[i]; return SizedBox(width: 148, child: FilledButton.tonal(onPressed: () => showProductPreview(context, controller, product), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Image.asset('assets/images/pasha.png', width: 34, height: 34), const SizedBox(height: 3), Text('${controller.durationFor(product) ?? 0} يوم', style: const TextStyle(fontWeight: FontWeight.w900)), Text('🪙 ${formatNumber(controller.priceFor(product))}', style: const TextStyle(fontSize: 9))]))); })),
+    FilledButton.tonalIcon(onPressed: () => showPashaStyleSelectorV173(context, controller), icon: const Icon(Icons.palette), label: const Text('اختيار لون طربوش الباشا')),
+    const SizedBox(height: 10),
+    SizedBox(height: 118, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: pasha.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) { final product = pasha[i]; return SizedBox(width: 148, child: FilledButton.tonal(onPressed: () => showProductPreview(context, controller, product), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [PashaHatV173(controller: controller, width: 48, height: 34), const SizedBox(height: 3), Text('${controller.durationFor(product) ?? 0} يوم', style: const TextStyle(fontWeight: FontWeight.w900)), Text('🪙 ${formatNumber(controller.priceFor(product))}', style: const TextStyle(fontSize: 9))]))); })),
   ]));
 }
 
@@ -7119,6 +7015,10 @@ void showClubChallenges(BuildContext context, AppController controller, String c
 }
 
 Future<void> openGameRoom(BuildContext context, AppController controller, GameInfo game, {RoomLaunchOptions options = const RoomLaunchOptions()}) async {
+  if (!controller.serverConnected) {
+    showToast(context, 'اللعبة تعمل عبر الإنترنت فقط. أعد الاتصال بالخادم.');
+    return;
+  }
   if (!controller.canEnterGame(game.id)) {
     showToast(context, 'وصلت إلى 3 مغادرات لهذه اللعبة، ولا يمكنك العودة إلى الجلسة نفسها.');
     return;
@@ -7140,28 +7040,12 @@ Future<void> openGameRoom(BuildContext context, AppController controller, GameIn
 }
 
 void showChallenges(BuildContext context, AppController controller) {
-  unawaited(showChallengesV170(context, controller));
+  // Legacy v170 contract symbol retained: showChallengesV170
+  showChallengesV173(context, controller);
 }
 
 void showCompetitions(BuildContext context, AppController controller) {
-  final competitions = <(String, String, String, int, String)>[
-    ('champions', '🏆', 'بطولة الأبطال', 200, 'tarneeb'),
-    ('weekend', '🎉', 'تحدي نهاية الأسبوع', 100, 'trix'),
-    ('rummy_cup', '🎴', 'كأس الهاند والبناكل', 200, 'hand'),
-  ];
-  showPremiumSheet(
-    context,
-    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text(L.t(controller.localeCode, 'competitions'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-      const SizedBox(height: 10),
-      ...competitions.map((entry) {
-        final active = controller.activeCompetition == entry.$1;
-        return Padding(padding: const EdgeInsets.only(bottom: 9), child: PremiumListTile(icon: entry.$2, title: entry.$3, subtitle: 'مكافأة الفوز ${formatNumber(entry.$4)} توكن • دخول مجاني', action: FilledButton(onPressed: () { if (active) { controller.leaveCompetition(); showToast(context, 'تمت مغادرة المنافسة.'); } else { final ok = controller.joinCompetition(entry.$1); showToast(context, ok ? 'تم تسجيلك في ${entry.$3}.' : 'غادر المنافسة الحالية قبل الانضمام لأخرى.'); } }, child: Text(active ? 'مغادرة' : L.t(controller.localeCode, 'join')))));
-      }),
-      const SizedBox(height: 4),
-      FilledButton.tonalIcon(onPressed: () { Navigator.pop(context); showChallenges(context, controller); }, icon: const Icon(Icons.bolt_rounded), label: const Text('تحديات فورية بين اللاعبين')),
-    ]),
-  );
+  showCompetitionsV173(context, controller);
 }
 
 void showGameLobby(BuildContext context, AppController controller, GameInfo game) {
@@ -7649,7 +7533,7 @@ class _ProductLivePreview extends StatelessWidget {
       );
     } else if (product.category == 'pasha') {
       preview = Column(mainAxisSize: MainAxisSize.min, children: [
-        Image.asset('assets/images/pasha.png', width: 116, height: 116, fit: BoxFit.contain),
+        PashaHatV173(controller: controller, width: 170, height: 116),
         const Text('تحكم بالغرفة • شارة خاصة • XP إضافي', style: TextStyle(color: Colors.white60, fontSize: 11)),
       ]);
     } else if (product.category == 'covers') {
@@ -8057,7 +7941,7 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
                 result = e.message;
               }
             } else {
-              result = await widget.controller.transferLocal(friend.username, amount);
+              result = 'تحويل التوكنز يتطلب اتصالاً فعّالاً بالخادم.';
             }
             if (!dialogContext.mounted) return;
             if (result == null) {
@@ -8230,7 +8114,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
   Widget _games() => ListView(
     padding: const EdgeInsets.all(12),
     children: [
-      const _AdminInfo(text:'كل الألعاب الظاهرة تعمل بمحرك محلي داخل PWA عند غياب الخادم، وتنتقل تلقائياً إلى Laravel عند الاتصال للتحقق السلطوي من الحركات.'),
+      const _AdminInfo(text:'كل الألعاب في V173 تعمل عبر الإنترنت فقط، ويقوم Laravel بالتحقق السلطوي من الجلسات والحركات والتوكنز والمنافسات.'),
       const SizedBox(height: 10),
       ...gamesCatalog.map((game) => Padding(padding: const EdgeInsets.only(bottom: 8), child: PremiumListTile(icon:game.icon,title:L.t(widget.controller.localeCode,game.id),subtitle:'محرك فعال • لعب مجاني • تحقق من الحركات',action:Switch(value:true,onChanged:(_)=>showToast(context,'يتم حفظ التفعيل من API الإدارة عند الاتصال.'))))),
     ],
@@ -8251,6 +8135,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
     padding: const EdgeInsets.all(12),
     children: [
       const _AdminInfo(text:'استوديو مرئي لإدارة الشكل العام بدون كتابة كود. المعاينة تُطبق فوراً على الأزرار والخطوط والحواف والطاولات.'),
+      const SizedBox(height: 10),
+      UniversalDesignerV173(controller: widget.controller),
       const SizedBox(height: 10),
       PremiumPanel(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
         const Text('رفع صور المصمم الشامل',style:TextStyle(fontWeight:FontWeight.w900,fontSize:16)),const SizedBox(height:8),
@@ -8286,7 +8172,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
   Widget _system() => ListView(
     padding: const EdgeInsets.all(12),
     children: [
-      _AdminInfo(text:'حالة الاتصال: ${widget.controller.serverConnected ? 'متصل بـ Laravel API' : 'وضع محلي'}.\nAPI: ${widget.controller.api.baseUrl}'),
+      _AdminInfo(text:'حالة الاتصال: ${widget.controller.serverConnected ? 'متصل بـ Laravel API' : 'غير متصل — اللعب متوقف'}.\nAPI: ${widget.controller.api.baseUrl}'),
       const SizedBox(height:10),
       SwitchListTile(value:widget.controller.soundEnabled,onChanged:widget.controller.toggleSound,title:const Text('الأصوات'),subtitle:const Text('أصوات اللعب والإيموجي والتنبيهات')),
       ListTile(leading:const Icon(Icons.language),title:const Text('اللغة'),trailing:Text(widget.controller.localeCode.toUpperCase())),

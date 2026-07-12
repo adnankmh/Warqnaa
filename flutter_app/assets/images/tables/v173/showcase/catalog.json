@@ -1,0 +1,202 @@
+[
+  {
+    "key": "table_v173_showcase_01",
+    "ar": "الأسد الملكي",
+    "en": "Royal Lion",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_01.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_01.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 28000
+  },
+  {
+    "key": "table_v173_showcase_02",
+    "ar": "النمر الأبيض",
+    "en": "White Tiger",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_02.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_02.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 29500
+  },
+  {
+    "key": "table_v173_showcase_03",
+    "ar": "الحصان الأسود",
+    "en": "Black Stallion",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_03.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_03.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 31000
+  },
+  {
+    "key": "table_v173_showcase_04",
+    "ar": "العقاب الجبلي",
+    "en": "Mountain Eagle",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_04.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_04.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 32500
+  },
+  {
+    "key": "table_v173_showcase_05",
+    "ar": "النمر الناري",
+    "en": "Fire Tiger",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_05.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_05.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 34000
+  },
+  {
+    "key": "table_v173_showcase_06",
+    "ar": "القرش الأزرق",
+    "en": "Blue Shark",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_06.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_06.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 35500
+  },
+  {
+    "key": "table_v173_showcase_07",
+    "ar": "الحوت العميق",
+    "en": "Deep Whale",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_07.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_07.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 37000
+  },
+  {
+    "key": "table_v173_showcase_08",
+    "ar": "الفهد الأسود",
+    "en": "Black Panther",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_08.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_08.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 38500
+  },
+  {
+    "key": "table_v173_showcase_09",
+    "ar": "السيارة السوداء",
+    "en": "Black Supercar",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_09.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_09.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 40000
+  },
+  {
+    "key": "table_v173_showcase_10",
+    "ar": "السيارة الحمراء",
+    "en": "Red Supercar",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_10.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_10.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 41500
+  },
+  {
+    "key": "table_v173_showcase_11",
+    "ar": "السيارة الكلاسيكية",
+    "en": "Classic Muscle",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_11.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_11.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 43000
+  },
+  {
+    "key": "table_v173_showcase_12",
+    "ar": "السيارة الزرقاء",
+    "en": "Blue Hypercar",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_12.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_12.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 44500
+  },
+  {
+    "key": "table_v173_showcase_13",
+    "ar": "الدراجة الخضراء",
+    "en": "Green Superbike",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_13.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_13.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 46000
+  },
+  {
+    "key": "table_v173_showcase_14",
+    "ar": "الدراجة الحمراء",
+    "en": "Red Superbike",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_14.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_14.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 47500
+  },
+  {
+    "key": "table_v173_showcase_15",
+    "ar": "البومة القمرية",
+    "en": "Moon Owl",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_15.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_15.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 49000
+  },
+  {
+    "key": "table_v173_showcase_16",
+    "ar": "الذئب الأبيض",
+    "en": "White Wolf",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_16.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_16.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 50500
+  },
+  {
+    "key": "table_v173_showcase_17",
+    "ar": "التنين الناري",
+    "en": "Fire Dragon",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_17.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_17.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 52000
+  },
+  {
+    "key": "table_v173_showcase_18",
+    "ar": "التنين الذهبي",
+    "en": "Golden Dragon",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_18.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_18.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 53500
+  },
+  {
+    "key": "table_v173_showcase_19",
+    "ar": "الذئب الأزرق",
+    "en": "Blue Wolf",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_19.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_19.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 55000
+  },
+  {
+    "key": "table_v173_showcase_20",
+    "ar": "العنقاء النارية",
+    "en": "Fire Phoenix",
+    "asset": "assets/images/tables/v173/showcase/table_v173_showcase_20.jpg",
+    "backend": "/assets/store/tables/v173/showcase/table_v173_showcase_20.jpg",
+    "collection": "v173_showcase",
+    "tier": "legendary",
+    "price": 56500
+  }
+]

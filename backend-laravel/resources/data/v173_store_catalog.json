@@ -1,0 +1,1314 @@
+[
+  {
+    "key": "pasha_style_yellow_v173",
+    "ar": "طربوش باشا أصفر",
+    "en": "Yellow Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "yellow",
+      "color1": "#f6c915",
+      "color2": "#9b6d00",
+      "image": "/assets/store/pasha/v173/pasha_yellow.png",
+      "asset": "assets/images/pasha/v173/pasha_yellow.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_red_v173",
+    "ar": "طربوش باشا أحمر",
+    "en": "Red Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "red",
+      "color1": "#b70822",
+      "color2": "#6f0012",
+      "image": "/assets/store/pasha/v173/pasha_red.png",
+      "asset": "assets/images/pasha/v173/pasha_red.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_blue_v173",
+    "ar": "طربوش باشا أزرق",
+    "en": "Blue Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "blue",
+      "color1": "#1e55b5",
+      "color2": "#0b2a70",
+      "image": "/assets/store/pasha/v173/pasha_blue.png",
+      "asset": "assets/images/pasha/v173/pasha_blue.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_green_v173",
+    "ar": "طربوش باشا أخضر",
+    "en": "Green Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "green",
+      "color1": "#006b58",
+      "color2": "#00382f",
+      "image": "/assets/store/pasha/v173/pasha_green.png",
+      "asset": "assets/images/pasha/v173/pasha_green.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_purple_v173",
+    "ar": "طربوش باشا بنفسجي",
+    "en": "Purple Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "purple",
+      "color1": "#7b318b",
+      "color2": "#45164e",
+      "image": "/assets/store/pasha/v173/pasha_purple.png",
+      "asset": "assets/images/pasha/v173/pasha_purple.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_bronze_v173",
+    "ar": "طربوش باشا برونزي",
+    "en": "Bronze Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "bronze",
+      "color1": "#b57b38",
+      "color2": "#68401d",
+      "image": "/assets/store/pasha/v173/pasha_bronze.png",
+      "asset": "assets/images/pasha/v173/pasha_bronze.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_gold_v173",
+    "ar": "طربوش باشا ذهبي",
+    "en": "Gold Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "gold",
+      "color1": "#d79d31",
+      "color2": "#7b4e0c",
+      "image": "/assets/store/pasha/v173/pasha_gold.png",
+      "asset": "assets/images/pasha/v173/pasha_gold.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_orange_v173",
+    "ar": "طربوش باشا برتقالي",
+    "en": "Orange Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "orange",
+      "color1": "#ff6515",
+      "color2": "#a32d00",
+      "image": "/assets/store/pasha/v173/pasha_orange.png",
+      "asset": "assets/images/pasha/v173/pasha_orange.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_pink_v173",
+    "ar": "طربوش باشا وردي",
+    "en": "Pink Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "pink",
+      "color1": "#e42f8a",
+      "color2": "#8a104a",
+      "image": "/assets/store/pasha/v173/pasha_pink.png",
+      "asset": "assets/images/pasha/v173/pasha_pink.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_silver_v173",
+    "ar": "طربوش باشا فضي",
+    "en": "Silver Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "silver",
+      "color1": "#c9ccd2",
+      "color2": "#737883",
+      "image": "/assets/store/pasha/v173/pasha_silver.png",
+      "asset": "assets/images/pasha/v173/pasha_silver.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_platinum_v173",
+    "ar": "طربوش باشا بلاتيني",
+    "en": "Platinum Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "platinum",
+      "color1": "#e0e4e9",
+      "color2": "#8d96a3",
+      "image": "/assets/store/pasha/v173/pasha_platinum.png",
+      "asset": "assets/images/pasha/v173/pasha_platinum.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_navy_v173",
+    "ar": "طربوش باشا كحلي",
+    "en": "Navy Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "navy",
+      "color1": "#16265e",
+      "color2": "#091333",
+      "image": "/assets/store/pasha/v173/pasha_navy.png",
+      "asset": "assets/images/pasha/v173/pasha_navy.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_black_v173",
+    "ar": "طربوش باشا أسود",
+    "en": "Black Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "black",
+      "color1": "#15151c",
+      "color2": "#000000",
+      "image": "/assets/store/pasha/v173/pasha_black.png",
+      "asset": "assets/images/pasha/v173/pasha_black.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "pasha_style_white_v173",
+    "ar": "طربوش باشا أبيض",
+    "en": "White Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "white",
+      "color1": "#f2f3f5",
+      "color2": "#aeb4bd",
+      "image": "/assets/store/pasha/v173/pasha_white.png",
+      "asset": "assets/images/pasha/v173/pasha_white.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "table_v173_royal_01",
+    "ar": "طاولة الزمرد الملكي",
+    "en": "Royal Collection 01 Table",
+    "category": "table",
+    "price": 12000,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_01",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_01.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_01.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_02",
+    "ar": "طاولة المخمل القرمزي",
+    "en": "Royal Collection 02 Table",
+    "category": "table",
+    "price": 12850,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_02",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_02.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_02.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_03",
+    "ar": "طاولة المحيط الأزرق",
+    "en": "Royal Collection 03 Table",
+    "category": "table",
+    "price": 13700,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_03",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_03.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_03.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_04",
+    "ar": "طاولة الليل الذهبي",
+    "en": "Royal Collection 04 Table",
+    "category": "table",
+    "price": 14550,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_04",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_04.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_04.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_05",
+    "ar": "طاولة البنفسج الإمبراطوري",
+    "en": "Royal Collection 05 Table",
+    "category": "table",
+    "price": 15400,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_05",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_05.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_05.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_06",
+    "ar": "طاولة الغابة العميقة",
+    "en": "Royal Collection 06 Table",
+    "category": "table",
+    "price": 16250,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_06",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_06.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_06.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_07",
+    "ar": "طاولة البرونز العتيق",
+    "en": "Royal Collection 07 Table",
+    "category": "table",
+    "price": 17100,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_07",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_07.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_07.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_08",
+    "ar": "طاولة الياقوت الأحمر",
+    "en": "Royal Collection 08 Table",
+    "category": "table",
+    "price": 17950,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_08",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_08.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_08.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_09",
+    "ar": "طاولة الفيروز الفاخر",
+    "en": "Royal Collection 09 Table",
+    "category": "table",
+    "price": 18800,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_09",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_09.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_09.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_10",
+    "ar": "طاولة الفضة الملكية",
+    "en": "Royal Collection 10 Table",
+    "category": "table",
+    "price": 19650,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_10",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_10.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_10.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_11",
+    "ar": "طاولة الأسد الذهبي",
+    "en": "Royal Collection 11 Table",
+    "category": "table",
+    "price": 20500,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_11",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_11.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_11.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_12",
+    "ar": "طاولة النمر الملكي",
+    "en": "Royal Collection 12 Table",
+    "category": "table",
+    "price": 21350,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_12",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_12.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_12.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_13",
+    "ar": "طاولة الحصان الأسود",
+    "en": "Royal Collection 13 Table",
+    "category": "table",
+    "price": 22200,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_13",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_13.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_13.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_14",
+    "ar": "طاولة الصقر الجبلي",
+    "en": "Royal Collection 14 Table",
+    "category": "table",
+    "price": 23050,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_14",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_14.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_14.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_15",
+    "ar": "طاولة الذئب الأزرق",
+    "en": "Royal Collection 15 Table",
+    "category": "table",
+    "price": 23900,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_15",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_15.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_15.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_16",
+    "ar": "طاولة التنين الناري",
+    "en": "Royal Collection 16 Table",
+    "category": "table",
+    "price": 24750,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_16",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_16.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_16.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_17",
+    "ar": "طاولة العقاب الفضي",
+    "en": "Royal Collection 17 Table",
+    "category": "table",
+    "price": 25600,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_17",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_17.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_17.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_18",
+    "ar": "طاولة الفهد الليلي",
+    "en": "Royal Collection 18 Table",
+    "category": "table",
+    "price": 26450,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_18",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_18.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_18.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_19",
+    "ar": "طاولة القرش الأزرق",
+    "en": "Royal Collection 19 Table",
+    "category": "table",
+    "price": 27300,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_19",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_19.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_19.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_20",
+    "ar": "طاولة الحوت العميق",
+    "en": "Royal Collection 20 Table",
+    "category": "table",
+    "price": 28150,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_20",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_20.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_20.jpg",
+      "collection": "v173_royal",
+      "tier": "pro",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_21",
+    "ar": "طاولة السباق الأسود",
+    "en": "Royal Collection 21 Table",
+    "category": "table",
+    "price": 29000,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_21",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_21.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_21.jpg",
+      "collection": "v173_royal",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_22",
+    "ar": "طاولة السيارة الحمراء",
+    "en": "Royal Collection 22 Table",
+    "category": "table",
+    "price": 29850,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_22",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_22.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_22.jpg",
+      "collection": "v173_royal",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_23",
+    "ar": "طاولة العضلات الكلاسيكية",
+    "en": "Royal Collection 23 Table",
+    "category": "table",
+    "price": 30700,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_23",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_23.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_23.jpg",
+      "collection": "v173_royal",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_24",
+    "ar": "طاولة السرعة الزرقاء",
+    "en": "Royal Collection 24 Table",
+    "category": "table",
+    "price": 31550,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_24",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_24.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_24.jpg",
+      "collection": "v173_royal",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_25",
+    "ar": "طاولة الدراجة الخضراء",
+    "en": "Royal Collection 25 Table",
+    "category": "table",
+    "price": 32400,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_25",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_25.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_25.jpg",
+      "collection": "v173_royal",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_26",
+    "ar": "طاولة الدراجة النارية",
+    "en": "Royal Collection 26 Table",
+    "category": "table",
+    "price": 33250,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_26",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_26.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_26.jpg",
+      "collection": "v173_royal",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_27",
+    "ar": "طاولة البومة القمرية",
+    "en": "Royal Collection 27 Table",
+    "category": "table",
+    "price": 34100,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_27",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_27.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_27.jpg",
+      "collection": "v173_royal",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_28",
+    "ar": "طاولة الذئب الثلجي",
+    "en": "Royal Collection 28 Table",
+    "category": "table",
+    "price": 34950,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_28",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_28.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_28.jpg",
+      "collection": "v173_royal",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_29",
+    "ar": "طاولة التنين الذهبي",
+    "en": "Royal Collection 29 Table",
+    "category": "table",
+    "price": 35800,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_29",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_29.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_29.jpg",
+      "collection": "v173_royal",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_royal_30",
+    "ar": "طاولة العنقاء النارية",
+    "en": "Royal Collection 30 Table",
+    "category": "table",
+    "price": 36650,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_royal_30",
+      "image": "/assets/store/tables/v173/royal/table_v173_royal_30.jpg",
+      "asset": "assets/images/tables/v173/royal/table_v173_royal_30.jpg",
+      "collection": "v173_royal",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_01",
+    "ar": "طاولة الأسد الملكي",
+    "en": "Royal Lion Table",
+    "category": "table",
+    "price": 28000,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_01",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_01.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_01.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_02",
+    "ar": "طاولة النمر الأبيض",
+    "en": "White Tiger Table",
+    "category": "table",
+    "price": 29500,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_02",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_02.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_02.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_03",
+    "ar": "طاولة الحصان الأسود",
+    "en": "Black Stallion Table",
+    "category": "table",
+    "price": 31000,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_03",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_03.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_03.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_04",
+    "ar": "طاولة العقاب الجبلي",
+    "en": "Mountain Eagle Table",
+    "category": "table",
+    "price": 32500,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_04",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_04.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_04.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_05",
+    "ar": "طاولة النمر الناري",
+    "en": "Fire Tiger Table",
+    "category": "table",
+    "price": 34000,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_05",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_05.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_05.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_06",
+    "ar": "طاولة القرش الأزرق",
+    "en": "Blue Shark Table",
+    "category": "table",
+    "price": 35500,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_06",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_06.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_06.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_07",
+    "ar": "طاولة الحوت العميق",
+    "en": "Deep Whale Table",
+    "category": "table",
+    "price": 37000,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_07",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_07.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_07.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_08",
+    "ar": "طاولة الفهد الأسود",
+    "en": "Black Panther Table",
+    "category": "table",
+    "price": 38500,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_08",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_08.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_08.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_09",
+    "ar": "طاولة السيارة السوداء",
+    "en": "Black Supercar Table",
+    "category": "table",
+    "price": 40000,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_09",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_09.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_09.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_10",
+    "ar": "طاولة السيارة الحمراء",
+    "en": "Red Supercar Table",
+    "category": "table",
+    "price": 41500,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_10",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_10.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_10.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_11",
+    "ar": "طاولة السيارة الكلاسيكية",
+    "en": "Classic Muscle Table",
+    "category": "table",
+    "price": 43000,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_11",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_11.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_11.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_12",
+    "ar": "طاولة السيارة الزرقاء",
+    "en": "Blue Hypercar Table",
+    "category": "table",
+    "price": 44500,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_12",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_12.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_12.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_13",
+    "ar": "طاولة الدراجة الخضراء",
+    "en": "Green Superbike Table",
+    "category": "table",
+    "price": 46000,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_13",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_13.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_13.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_14",
+    "ar": "طاولة الدراجة الحمراء",
+    "en": "Red Superbike Table",
+    "category": "table",
+    "price": 47500,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_14",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_14.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_14.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_15",
+    "ar": "طاولة البومة القمرية",
+    "en": "Moon Owl Table",
+    "category": "table",
+    "price": 49000,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_15",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_15.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_15.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_16",
+    "ar": "طاولة الذئب الأبيض",
+    "en": "White Wolf Table",
+    "category": "table",
+    "price": 50500,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_16",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_16.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_16.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_17",
+    "ar": "طاولة التنين الناري",
+    "en": "Fire Dragon Table",
+    "category": "table",
+    "price": 52000,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_17",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_17.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_17.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_18",
+    "ar": "طاولة التنين الذهبي",
+    "en": "Golden Dragon Table",
+    "category": "table",
+    "price": 53500,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_18",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_18.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_18.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_19",
+    "ar": "طاولة الذئب الأزرق",
+    "en": "Blue Wolf Table",
+    "category": "table",
+    "price": 55000,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_19",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_19.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_19.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "table_v173_showcase_20",
+    "ar": "طاولة العنقاء النارية",
+    "en": "Fire Phoenix Table",
+    "category": "table",
+    "price": 56500,
+    "duration_days": null,
+    "payload": {
+      "table": "table_v173_showcase_20",
+      "image": "/assets/store/tables/v173/showcase/table_v173_showcase_20.jpg",
+      "asset": "assets/images/tables/v173/showcase/table_v173_showcase_20.jpg",
+      "collection": "v173_showcase",
+      "tier": "legendary",
+      "preview_icon": "🃏",
+      "preview_size": "large"
+    }
+  },
+  {
+    "key": "competition_ticket_50_v173",
+    "ar": "تذكرة منافسة 50 توكن",
+    "en": "50 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 45,
+    "duration_days": null,
+    "payload": {
+      "denomination": 50,
+      "face_value": 50,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "beginner"
+    }
+  },
+  {
+    "key": "competition_ticket_100_v173",
+    "ar": "تذكرة منافسة 100 توكن",
+    "en": "100 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 90,
+    "duration_days": null,
+    "payload": {
+      "denomination": 100,
+      "face_value": 100,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "beginner"
+    }
+  },
+  {
+    "key": "competition_ticket_200_v173",
+    "ar": "تذكرة منافسة 200 توكن",
+    "en": "200 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 180,
+    "duration_days": null,
+    "payload": {
+      "denomination": 200,
+      "face_value": 200,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "beginner"
+    }
+  },
+  {
+    "key": "competition_ticket_500_v173",
+    "ar": "تذكرة منافسة 500 توكن",
+    "en": "500 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 450,
+    "duration_days": null,
+    "payload": {
+      "denomination": 500,
+      "face_value": 500,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "beginner"
+    }
+  },
+  {
+    "key": "competition_ticket_1000_v173",
+    "ar": "تذكرة منافسة 1,000 توكن",
+    "en": "1,000 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 900,
+    "duration_days": null,
+    "payload": {
+      "denomination": 1000,
+      "face_value": 1000,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "beginner"
+    }
+  },
+  {
+    "key": "competition_ticket_2000_v173",
+    "ar": "تذكرة منافسة 2,000 توكن",
+    "en": "2,000 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 1800,
+    "duration_days": null,
+    "payload": {
+      "denomination": 2000,
+      "face_value": 2000,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "competition_ticket_4000_v173",
+    "ar": "تذكرة منافسة 4,000 توكن",
+    "en": "4,000 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 3600,
+    "duration_days": null,
+    "payload": {
+      "denomination": 4000,
+      "face_value": 4000,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "competition_ticket_5000_v173",
+    "ar": "تذكرة منافسة 5,000 توكن",
+    "en": "5,000 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 4500,
+    "duration_days": null,
+    "payload": {
+      "denomination": 5000,
+      "face_value": 5000,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "competition_ticket_8000_v173",
+    "ar": "تذكرة منافسة 8,000 توكن",
+    "en": "8,000 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 7200,
+    "duration_days": null,
+    "payload": {
+      "denomination": 8000,
+      "face_value": 8000,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "competition_ticket_10000_v173",
+    "ar": "تذكرة منافسة 10,000 توكن",
+    "en": "10,000 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 9000,
+    "duration_days": null,
+    "payload": {
+      "denomination": 10000,
+      "face_value": 10000,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "featured"
+    }
+  },
+  {
+    "key": "competition_ticket_20000_v173",
+    "ar": "تذكرة منافسة 20,000 توكن",
+    "en": "20,000 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 18000,
+    "duration_days": null,
+    "payload": {
+      "denomination": 20000,
+      "face_value": 20000,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "legendary"
+    }
+  },
+  {
+    "key": "competition_ticket_30000_v173",
+    "ar": "تذكرة منافسة 30,000 توكن",
+    "en": "30,000 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 27000,
+    "duration_days": null,
+    "payload": {
+      "denomination": 30000,
+      "face_value": 30000,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "legendary"
+    }
+  },
+  {
+    "key": "competition_ticket_50000_v173",
+    "ar": "تذكرة منافسة 50,000 توكن",
+    "en": "50,000 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 45000,
+    "duration_days": null,
+    "payload": {
+      "denomination": 50000,
+      "face_value": 50000,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "legendary"
+    }
+  },
+  {
+    "key": "competition_ticket_100000_v173",
+    "ar": "تذكرة منافسة 100,000 توكن",
+    "en": "100,000 Token Competition Ticket",
+    "category": "competition_ticket",
+    "price": 90000,
+    "duration_days": null,
+    "payload": {
+      "denomination": 100000,
+      "face_value": 100000,
+      "discount_percent": 10,
+      "reusable": true,
+      "preview_icon": "🎟️",
+      "tier": "legendary"
+    }
+  }
+]

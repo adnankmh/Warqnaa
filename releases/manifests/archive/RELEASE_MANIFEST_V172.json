@@ -1,0 +1,24 @@
+{
+  "release": "Warqna v172",
+  "version": "1.72.0",
+  "build": 172,
+  "base_release": "v171",
+  "codename": "brand-and-40-table-collection",
+  "focus": [
+    "adopt the new Warqna brand across app and distribution assets",
+    "preserve 50 legacy tables and append 40 HD reference tables",
+    "add grouped table-store tabs with preview, purchase and activation",
+    "support both legacy literal and semantic controller-reference CI checks"
+  ],
+  "counts": {
+    "legacy_tables": 50,
+    "new_tables": 40,
+    "total_tables": 90
+  },
+  "guides": {
+    "start": "docs/ar/releases/current/START_HERE_V172_AR.md",
+    "github": "docs/ar/deployment/GITHUB_UPLOAD_V172_AR.md",
+    "quality": "docs/ar/reports/current/QUALITY_REPORT_V172_AR.md",
+    "structure": "docs/ar/STRUCTURE_GUIDE_AR.md"
+  }
+}

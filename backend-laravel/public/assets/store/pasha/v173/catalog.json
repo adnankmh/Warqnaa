@@ -1,0 +1,128 @@
+[
+  {
+    "key": "yellow",
+    "ar": "أصفر",
+    "en": "Yellow",
+    "color1": "#f6c915",
+    "color2": "#9b6d00",
+    "asset": "assets/images/pasha/v173/pasha_yellow.png",
+    "backend": "/assets/store/pasha/v173/pasha_yellow.png"
+  },
+  {
+    "key": "red",
+    "ar": "أحمر",
+    "en": "Red",
+    "color1": "#b70822",
+    "color2": "#6f0012",
+    "asset": "assets/images/pasha/v173/pasha_red.png",
+    "backend": "/assets/store/pasha/v173/pasha_red.png"
+  },
+  {
+    "key": "blue",
+    "ar": "أزرق",
+    "en": "Blue",
+    "color1": "#1e55b5",
+    "color2": "#0b2a70",
+    "asset": "assets/images/pasha/v173/pasha_blue.png",
+    "backend": "/assets/store/pasha/v173/pasha_blue.png"
+  },
+  {
+    "key": "green",
+    "ar": "أخضر",
+    "en": "Green",
+    "color1": "#006b58",
+    "color2": "#00382f",
+    "asset": "assets/images/pasha/v173/pasha_green.png",
+    "backend": "/assets/store/pasha/v173/pasha_green.png"
+  },
+  {
+    "key": "purple",
+    "ar": "بنفسجي",
+    "en": "Purple",
+    "color1": "#7b318b",
+    "color2": "#45164e",
+    "asset": "assets/images/pasha/v173/pasha_purple.png",
+    "backend": "/assets/store/pasha/v173/pasha_purple.png"
+  },
+  {
+    "key": "bronze",
+    "ar": "برونزي",
+    "en": "Bronze",
+    "color1": "#b57b38",
+    "color2": "#68401d",
+    "asset": "assets/images/pasha/v173/pasha_bronze.png",
+    "backend": "/assets/store/pasha/v173/pasha_bronze.png"
+  },
+  {
+    "key": "gold",
+    "ar": "ذهبي",
+    "en": "Gold",
+    "color1": "#d79d31",
+    "color2": "#7b4e0c",
+    "asset": "assets/images/pasha/v173/pasha_gold.png",
+    "backend": "/assets/store/pasha/v173/pasha_gold.png"
+  },
+  {
+    "key": "orange",
+    "ar": "برتقالي",
+    "en": "Orange",
+    "color1": "#ff6515",
+    "color2": "#a32d00",
+    "asset": "assets/images/pasha/v173/pasha_orange.png",
+    "backend": "/assets/store/pasha/v173/pasha_orange.png"
+  },
+  {
+    "key": "pink",
+    "ar": "وردي",
+    "en": "Pink",
+    "color1": "#e42f8a",
+    "color2": "#8a104a",
+    "asset": "assets/images/pasha/v173/pasha_pink.png",
+    "backend": "/assets/store/pasha/v173/pasha_pink.png"
+  },
+  {
+    "key": "silver",
+    "ar": "فضي",
+    "en": "Silver",
+    "color1": "#c9ccd2",
+    "color2": "#737883",
+    "asset": "assets/images/pasha/v173/pasha_silver.png",
+    "backend": "/assets/store/pasha/v173/pasha_silver.png"
+  },
+  {
+    "key": "platinum",
+    "ar": "بلاتيني",
+    "en": "Platinum",
+    "color1": "#e0e4e9",
+    "color2": "#8d96a3",
+    "asset": "assets/images/pasha/v173/pasha_platinum.png",
+    "backend": "/assets/store/pasha/v173/pasha_platinum.png"
+  },
+  {
+    "key": "navy",
+    "ar": "كحلي",
+    "en": "Navy",
+    "color1": "#16265e",
+    "color2": "#091333",
+    "asset": "assets/images/pasha/v173/pasha_navy.png",
+    "backend": "/assets/store/pasha/v173/pasha_navy.png"
+  },
+  {
+    "key": "black",
+    "ar": "أسود",
+    "en": "Black",
+    "color1": "#15151c",
+    "color2": "#000000",
+    "asset": "assets/images/pasha/v173/pasha_black.png",
+    "backend": "/assets/store/pasha/v173/pasha_black.png"
+  },
+  {
+    "key": "white",
+    "ar": "أبيض",
+    "en": "White",
+    "color1": "#f2f3f5",
+    "color2": "#aeb4bd",
+    "asset": "assets/images/pasha/v173/pasha_white.png",
+    "backend": "/assets/store/pasha/v173/pasha_white.png"
+  }
+]

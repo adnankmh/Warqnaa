@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{AdminAuditLog,AppRelease,FeatureFlag,Game,Room,StoreItem,User,UserReport};
+use App\Models\{AdminAuditLog,AdminDesignerEntity,AppRelease,FeatureFlag,Game,Room,StoreItem,User,UserReport};
 use App\Services\GameEngine\EngineRegistry;
 use App\Services\Platform\{AdminAuditService,ProductionConfigService};
 use Illuminate\Http\Request;
@@ -44,6 +44,7 @@ class MobileAdminController extends Controller
             'app_releases' => AppRelease::latest('build_number')->limit(30)->get(),
             'moderation_reports' => UserReport::with(['reporter.profile','reportedUser.profile'])->latest()->limit(30)->get(),
             'audit_logs' => AdminAuditLog::with('admin.profile')->latest()->limit(50)->get(),
+            'designer_entities' => AdminDesignerEntity::orderBy('entity_type')->orderBy('sort_order')->orderBy('key')->get(),
         ]);
     }
 
@@ -112,6 +113,53 @@ class MobileAdminController extends Controller
         $config->forget();
         $audit->record($request, 'admin.feature_flag.update', $flag, $before, $flag->fresh()->toArray());
         return response()->json(['ok'=>true,'message'=>'تم تحديث ميزة المنصة','flag'=>$flag->fresh()]);
+    }
+
+
+    public function designerIndex(Request $request)
+    {
+        $this->guard($request);
+        return response()->json([
+            'ok' => true,
+            'entities' => AdminDesignerEntity::orderBy('entity_type')->orderBy('sort_order')->orderBy('key')->get(),
+        ]);
+    }
+
+    public function upsertDesigner(Request $request, string $entityType, string $key, AdminAuditService $audit)
+    {
+        $this->guard($request);
+        abort_unless((bool) preg_match('/^[a-z0-9_-]{2,80}$/i', $entityType), 422, 'نوع العنصر غير صحيح.');
+        abort_unless((bool) preg_match('/^[a-z0-9_.:-]{2,150}$/i', $key), 422, 'مفتاح العنصر غير صحيح.');
+        $data = $request->validate([
+            'locale' => 'nullable|string|max:10',
+            'payload' => 'required|array',
+            'sort_order' => 'nullable|integer|min:0|max:1000000',
+            'active' => 'nullable|boolean',
+        ]);
+        $locale = (string) ($data['locale'] ?? 'all');
+        $entity = AdminDesignerEntity::firstOrNew([
+            'entity_type' => strtolower($entityType),
+            'key' => $key,
+            'locale' => $locale,
+        ]);
+        $before = $entity->exists ? $entity->toArray() : null;
+        $entity->payload = $data['payload'];
+        $entity->sort_order = (int) ($data['sort_order'] ?? $entity->sort_order ?? 0);
+        $entity->active = array_key_exists('active', $data) ? (bool) $data['active'] : true;
+        $entity->revision = max(1, (int) ($entity->revision ?? 0) + 1);
+        $entity->updated_by = $request->user()->id;
+        $entity->save();
+        $audit->record($request, 'admin.designer.upsert', $entity, $before, $entity->fresh()->toArray());
+        return response()->json(['ok'=>true,'message'=>'تم حفظ العنصر ونشره','entity'=>$entity->fresh()]);
+    }
+
+    public function deleteDesigner(Request $request, AdminDesignerEntity $entity, AdminAuditService $audit)
+    {
+        $this->guard($request);
+        $before = $entity->toArray();
+        $audit->record($request, 'admin.designer.delete', $entity, $before, null);
+        $entity->delete();
+        return response()->json(['ok'=>true,'message'=>'تم حذف العنصر من المصمم الشامل']);
     }
 
     public function createRelease(Request $request, AdminAuditService $audit)

@@ -47,10 +47,12 @@ jobs:
         working-directory: flutter_app
         run: flutter pub get
 
-      - name: Verify controller references semantically
+      - name: Verify additive release contracts
         working-directory: flutter_app
-        run: python3 ../tools/test_v171_controller_references.py
+        run: |
+          python3 ../tools/test_v171_controller_references.py
           python3 ../tools/test_v172_brand_table_contract.py
+          python3 ../tools/test_v173_online_engagement_contract.py
 
       - name: Verify Flutter API compatibility contract
         working-directory: flutter_app

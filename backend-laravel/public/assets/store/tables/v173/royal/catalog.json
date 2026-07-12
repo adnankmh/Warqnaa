@@ -1,0 +1,302 @@
+[
+  {
+    "key": "table_v173_royal_01",
+    "ar": "الزمرد الملكي",
+    "en": "Royal Collection 01",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_01.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_01.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 12000
+  },
+  {
+    "key": "table_v173_royal_02",
+    "ar": "المخمل القرمزي",
+    "en": "Royal Collection 02",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_02.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_02.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 12850
+  },
+  {
+    "key": "table_v173_royal_03",
+    "ar": "المحيط الأزرق",
+    "en": "Royal Collection 03",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_03.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_03.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 13700
+  },
+  {
+    "key": "table_v173_royal_04",
+    "ar": "الليل الذهبي",
+    "en": "Royal Collection 04",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_04.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_04.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 14550
+  },
+  {
+    "key": "table_v173_royal_05",
+    "ar": "البنفسج الإمبراطوري",
+    "en": "Royal Collection 05",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_05.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_05.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 15400
+  },
+  {
+    "key": "table_v173_royal_06",
+    "ar": "الغابة العميقة",
+    "en": "Royal Collection 06",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_06.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_06.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 16250
+  },
+  {
+    "key": "table_v173_royal_07",
+    "ar": "البرونز العتيق",
+    "en": "Royal Collection 07",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_07.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_07.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 17100
+  },
+  {
+    "key": "table_v173_royal_08",
+    "ar": "الياقوت الأحمر",
+    "en": "Royal Collection 08",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_08.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_08.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 17950
+  },
+  {
+    "key": "table_v173_royal_09",
+    "ar": "الفيروز الفاخر",
+    "en": "Royal Collection 09",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_09.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_09.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 18800
+  },
+  {
+    "key": "table_v173_royal_10",
+    "ar": "الفضة الملكية",
+    "en": "Royal Collection 10",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_10.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_10.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 19650
+  },
+  {
+    "key": "table_v173_royal_11",
+    "ar": "الأسد الذهبي",
+    "en": "Royal Collection 11",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_11.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_11.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 20500
+  },
+  {
+    "key": "table_v173_royal_12",
+    "ar": "النمر الملكي",
+    "en": "Royal Collection 12",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_12.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_12.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 21350
+  },
+  {
+    "key": "table_v173_royal_13",
+    "ar": "الحصان الأسود",
+    "en": "Royal Collection 13",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_13.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_13.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 22200
+  },
+  {
+    "key": "table_v173_royal_14",
+    "ar": "الصقر الجبلي",
+    "en": "Royal Collection 14",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_14.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_14.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 23050
+  },
+  {
+    "key": "table_v173_royal_15",
+    "ar": "الذئب الأزرق",
+    "en": "Royal Collection 15",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_15.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_15.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 23900
+  },
+  {
+    "key": "table_v173_royal_16",
+    "ar": "التنين الناري",
+    "en": "Royal Collection 16",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_16.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_16.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 24750
+  },
+  {
+    "key": "table_v173_royal_17",
+    "ar": "العقاب الفضي",
+    "en": "Royal Collection 17",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_17.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_17.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 25600
+  },
+  {
+    "key": "table_v173_royal_18",
+    "ar": "الفهد الليلي",
+    "en": "Royal Collection 18",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_18.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_18.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 26450
+  },
+  {
+    "key": "table_v173_royal_19",
+    "ar": "القرش الأزرق",
+    "en": "Royal Collection 19",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_19.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_19.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 27300
+  },
+  {
+    "key": "table_v173_royal_20",
+    "ar": "الحوت العميق",
+    "en": "Royal Collection 20",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_20.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_20.jpg",
+    "collection": "v173_royal",
+    "tier": "pro",
+    "price": 28150
+  },
+  {
+    "key": "table_v173_royal_21",
+    "ar": "السباق الأسود",
+    "en": "Royal Collection 21",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_21.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_21.jpg",
+    "collection": "v173_royal",
+    "tier": "legendary",
+    "price": 29000
+  },
+  {
+    "key": "table_v173_royal_22",
+    "ar": "السيارة الحمراء",
+    "en": "Royal Collection 22",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_22.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_22.jpg",
+    "collection": "v173_royal",
+    "tier": "legendary",
+    "price": 29850
+  },
+  {
+    "key": "table_v173_royal_23",
+    "ar": "العضلات الكلاسيكية",
+    "en": "Royal Collection 23",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_23.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_23.jpg",
+    "collection": "v173_royal",
+    "tier": "legendary",
+    "price": 30700
+  },
+  {
+    "key": "table_v173_royal_24",
+    "ar": "السرعة الزرقاء",
+    "en": "Royal Collection 24",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_24.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_24.jpg",
+    "collection": "v173_royal",
+    "tier": "legendary",
+    "price": 31550
+  },
+  {
+    "key": "table_v173_royal_25",
+    "ar": "الدراجة الخضراء",
+    "en": "Royal Collection 25",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_25.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_25.jpg",
+    "collection": "v173_royal",
+    "tier": "legendary",
+    "price": 32400
+  },
+  {
+    "key": "table_v173_royal_26",
+    "ar": "الدراجة النارية",
+    "en": "Royal Collection 26",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_26.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_26.jpg",
+    "collection": "v173_royal",
+    "tier": "legendary",
+    "price": 33250
+  },
+  {
+    "key": "table_v173_royal_27",
+    "ar": "البومة القمرية",
+    "en": "Royal Collection 27",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_27.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_27.jpg",
+    "collection": "v173_royal",
+    "tier": "legendary",
+    "price": 34100
+  },
+  {
+    "key": "table_v173_royal_28",
+    "ar": "الذئب الثلجي",
+    "en": "Royal Collection 28",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_28.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_28.jpg",
+    "collection": "v173_royal",
+    "tier": "legendary",
+    "price": 34950
+  },
+  {
+    "key": "table_v173_royal_29",
+    "ar": "التنين الذهبي",
+    "en": "Royal Collection 29",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_29.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_29.jpg",
+    "collection": "v173_royal",
+    "tier": "legendary",
+    "price": 35800
+  },
+  {
+    "key": "table_v173_royal_30",
+    "ar": "العنقاء النارية",
+    "en": "Royal Collection 30",
+    "asset": "assets/images/tables/v173/royal/table_v173_royal_30.jpg",
+    "backend": "/assets/store/tables/v173/royal/table_v173_royal_30.jpg",
+    "collection": "v173_royal",
+    "tier": "legendary",
+    "price": 36650
+  }
+]

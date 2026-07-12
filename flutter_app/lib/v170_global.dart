@@ -434,7 +434,7 @@ class _PashaColorAvatarV170 extends StatelessWidget {
               right: -5,
               child: ColorFiltered(
                 colorFilter: ColorFilter.mode(color, BlendMode.modulate),
-                child: Image.asset('assets/images/pasha.png', width: size * .55, height: size * .55, fit: BoxFit.contain),
+                child: Image.asset('assets/images/pasha/v173/pasha_red.png', width: size * .75, height: size * .55, fit: BoxFit.contain),
               ),
             ),
         ]),
