@@ -1,0 +1,38 @@
+Warqna v170 validation report
+Release: 1.70.0+170
+Codename: responsive-gameplay-security
+
+LOCAL SOURCE-PACKAGE VALIDATION
+- Release version contract: PASS
+- Clean project-root policy: PASS
+- Flutter v169 CI/API regression contract: PASS
+- Warqna v170 responsive/gameplay/voice/social/economy/security contract: PASS
+- Full tools/validate_release.py preflight: PASS
+- Python syntax: PASS
+- Shell syntax: PASS
+- PHP syntax: PASS (241 files)
+- JSON syntax: PASS (26 files)
+- YAML parsing: PASS (15 files)
+- Git conflict-marker scan: PASS
+- Runtime-secret/signing-file scan: PASS
+- Dart delimiter/source-structure scan: PASS
+- Android WorkManager startup guard: PASS
+- Android release obfuscation/symbol-upload contract: PASS
+- Mobile voice HTTPS/loopback/TURN diagnostics contract: PASS
+- Public profile privacy contract (no wallet/tokens): PASS
+- Progressive XP curve parity contract (Flutter/Laravel): PASS
+- Room minimum-level/owner-kick/rejoin-block contract: PASS
+- Offline/all-friends invitation contract: PASS
+- Daily reward once-per-day contract: PASS
+- Token transfer 10% administration fee and ledger contract: PASS
+- Action idempotency/revision/anti-replay contract: PASS
+
+NOT EXECUTED LOCALLY
+- flutter analyze
+- flutter test
+- Flutter Web/APK/AAB build
+- Full php artisan test suite
+
+Reason: this packaging environment does not include the Flutter SDK or the Composer vendor directory. GitHub Actions remains the execution gate for those commands.
+
+Real cross-network voice additionally requires a publicly reachable HTTPS Laravel API and a valid TURN service. The source package contains diagnostics that reject mobile loopback URLs and explain missing server/TURN configuration instead of simulating a successful connection.

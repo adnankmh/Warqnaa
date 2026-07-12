@@ -88,6 +88,11 @@ class VoiceRoomService extends ChangeNotifier {
       if (kIsWeb && Uri.base.scheme != 'https' && Uri.base.host != 'localhost' && Uri.base.host != '127.0.0.1') {
         throw StateError('الغرف الصوتية على الويب تحتاج HTTPS حتى يسمح المتصفح بالميكروفون.');
       }
+      final apiUri = Uri.tryParse(api.baseUrl);
+      final mobileLoopback = !kIsWeb && const {'localhost', '127.0.0.1', '10.0.2.2'}.contains(apiUri?.host);
+      if (mobileLoopback && !code.startsWith('LOCAL')) {
+        throw StateError('الصوت الحقيقي على الهاتف يحتاج رابط Laravel API منشوراً عبر HTTPS. افتح فحص الاتصال وأدخل رابط الخادم؛ عنوان localhost يشير إلى الهاتف نفسه.');
+      }
       if (!kIsWeb) {
         final permission = await Permission.microphone.request();
         permissionGranted = permission.isGranted;
@@ -108,9 +113,14 @@ class VoiceRoomService extends ChangeNotifier {
           'echoCancellation': true,
           'noiseSuppression': true,
           'autoGainControl': true,
+          'channelCount': 1,
+          'sampleRate': 48000,
         },
         'video': false,
       });
+      final localAudioTracks = _localStream?.getAudioTracks() ?? const <MediaStreamTrack>[];
+      if (localAudioTracks.isEmpty) throw StateError('لم يعثر الهاتف على مسار ميكروفون صالح.');
+      for (final track in localAudioTracks) { track.enabled = true; }
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         try {
           await Helper.setSpeakerphoneOn(true);
@@ -118,7 +128,7 @@ class VoiceRoomService extends ChangeNotifier {
         } catch (_) {}
       }
 
-      if (!serverConnected || api.token == null || api.token!.isEmpty || code.isEmpty || code.startsWith('LOCAL')) {
+      if (code.startsWith('LOCAL')) {
         localPreview = true;
         joined = true;
         joining = false;
@@ -128,6 +138,9 @@ class VoiceRoomService extends ChangeNotifier {
         _notify();
         return;
       }
+      if (code.isEmpty) throw StateError('رمز الغرفة الصوتية غير موجود.');
+      if (!serverConnected) throw StateError('الخادم غير متصل. افتح فحص الاتصال واضبط رابط Laravel HTTPS قبل تشغيل الصوت.');
+      if (api.token == null || api.token!.isEmpty) throw StateError('سجّل الدخول إلى حسابك أولاً حتى يعمل الصوت بين اللاعبين.');
 
       final data = await api.voiceJoin(code);
       selfId = int.tryParse(data['self_id']?.toString() ?? '');
@@ -150,11 +163,14 @@ class VoiceRoomService extends ChangeNotifier {
   }
 
   Future<void> _fallbackToLocal(String message) async {
-    localPreview = true;
-    joined = _localStream != null;
+    final intentionallyLocal = roomCode?.startsWith('LOCAL') ?? false;
+    localPreview = intentionallyLocal;
+    joined = intentionallyLocal && _localStream != null;
     joining = false;
     error = message;
-    status = joined ? 'الميكروفون جاهز محليًا — الخادم الصوتي غير متصل' : 'تعذر تشغيل الميكروفون';
+    status = intentionallyLocal
+        ? (joined ? 'الميكروفون جاهز — وضع محلي' : 'تعذر تشغيل الميكروفون')
+        : 'فشل الاتصال الصوتي بالخادم — اضغط إعادة المحاولة';
     _notify();
   }
 

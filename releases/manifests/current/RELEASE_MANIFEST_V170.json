@@ -1,0 +1,23 @@
+{
+  "release": "Warqna v170",
+  "version": "1.70.0",
+  "build": 170,
+  "base_release": "v169",
+  "codename": "responsive-gameplay-security",
+  "focus": [
+    "responsive mobile layout and store overflow protection",
+    "public player profiles without private wallet data",
+    "progressive XP curve shared by Flutter and Laravel",
+    "Android voice diagnostics and real-server enforcement",
+    "owner kick, minimum level, offline invites and open-room previews",
+    "automatic next rounds and direct card gestures",
+    "token transfer ledger and ten-percent administration fee",
+    "authoritative action idempotency, revision checks and Android obfuscation"
+  ],
+  "guides": {
+    "start": "docs/ar/releases/current/START_HERE_V170_AR.md",
+    "github": "docs/ar/deployment/GITHUB_UPLOAD_V170_AR.md",
+    "quality": "docs/ar/reports/current/QUALITY_REPORT_V170_AR.md",
+    "structure": "docs/ar/STRUCTURE_GUIDE_AR.md"
+  }
+}

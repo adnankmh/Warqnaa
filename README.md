@@ -1,9 +1,10 @@
-# Warqna v169
+# Warqna v170
 
-نسخة إنتاجية منظمة مع إصلاح عقود Flutter Analyzer وواجهة الإشعارات المحلية v22.
+منصة ألعاب ورق اجتماعية مبنية بـFlutter وLaravel.
 
-- البداية: `START_HERE_AR.md`
-- فهرس الوثائق: `docs/README_AR.md`
+- الإصدار: `1.70.0+170`
+- البدء: `START_HERE_AR.md`
+- دليل الإصدار: `docs/ar/releases/current/START_HERE_V170_AR.md`
 - فحص Windows: `CHECK_WARQNA_WINDOWS.bat`
-- تشغيل Windows: `START_WARQNA_WINDOWS.bat`
-- بيانات الإصدار: `RELEASE_VERSION.json`
+- دليل رفع GitHub: `docs/ar/deployment/GITHUB_UPLOAD_V170_AR.md`
+- بنية المشروع: `docs/ar/STRUCTURE_GUIDE_AR.md`

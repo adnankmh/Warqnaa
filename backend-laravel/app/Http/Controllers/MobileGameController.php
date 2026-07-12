@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Game,Message,Room,RoomPlayer};
+use App\Models\{Friendship,Game,Message,Room,RoomPlayer,User};
 use App\Services\GameEngine\{EngineRegistry,GameFactory,GameRuleContract};
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\{DB,Hash,Schema};
+use Illuminate\Support\Facades\{Cache,DB,Hash,Schema};
 use Illuminate\Support\Str;
 use App\Services\Platform\ProductionConfigService;
 use App\Services\Progression\ProgressionService;
@@ -78,7 +78,16 @@ class MobileGameController extends Controller
                     'players' => $realPlayers,
                     'max_players' => $room->max_players,
                     'turn_seconds' => (int) ($state['turn_seconds'] ?? 10),
+                    'min_level' => (int) ($room->min_level ?? 1),
+                    'game' => $room->game?->key,
                     'owner' => $room->owner?->username,
+                    'avatars' => $room->players->where('is_bot', false)->take(4)->map(fn ($player) => [
+                        'id' => $player->user_id,
+                        'name' => $player->user?->profile?->display_name ?: $player->user?->username,
+                        'avatar' => $player->user?->profile?->avatar,
+                        'name_color' => $player->user?->profile?->name_color ?: '#facc15',
+                        'country_code' => $player->user?->profile?->country_code ?: 'PS',
+                    ])->values()->all(),
                 ];
             })->values();
 
@@ -96,6 +105,16 @@ class MobileGameController extends Controller
         }
 
         $user = $request->user();
+        abort_if((int)($user->profile?->level ?? 1) < (int)($room->min_level ?? 1), 403, 'مستواك أقل من الحد المطلوب لدخول هذه الغرفة.');
+        $state = $room->state ?: [];
+        $kicked = array_map('intval', (array)($state['kicked_user_ids'] ?? []));
+        abort_if(in_array((int)$user->id, $kicked, true), 403, 'تم إخراجك من هذه المباراة ولا يمكنك العودة إليها.');
+        $participantIds = $room->players->where('is_bot', false)->pluck('user_id')->filter()->map(fn($id)=>(int)$id)->values()->all();
+        $blockedWithParticipant = Friendship::where('status','blocked')->where(function($q) use($user,$participantIds){
+            $q->where(fn($q)=>$q->where('requester_id',$user->id)->whereIn('addressee_id',$participantIds))
+              ->orWhere(fn($q)=>$q->whereIn('requester_id',$participantIds)->where('addressee_id',$user->id));
+        })->exists();
+        abort_if($blockedWithParticipant, 403, 'لا يمكن دخول غرفة تضم لاعباً موجوداً في قائمة الحظر.');
         $otherRoom = RoomPlayer::query()
             ->where('user_id', $user->id)
             ->where('connected', true)
@@ -146,6 +165,9 @@ class MobileGameController extends Controller
             'bots' => 'nullable|integer|min:0|max:7',
             'voice_enabled' => 'nullable|boolean',
             'room_name' => 'nullable|string|max:60',
+            'min_level' => 'nullable|integer|min:1|max:200',
+            'allow_owner_kick' => 'nullable|boolean',
+            'player_count' => 'nullable|integer|min:2|max:6',
         ]);
         if (!empty($data['voice_enabled']) && !$productionConfig->enabled('voice_rooms', true)) {
             return response()->json(['ok'=>false,'message'=>'الغرف الصوتية متوقفة مؤقتًا.'], 503);
@@ -175,7 +197,15 @@ class MobileGameController extends Controller
             ]
         );
 
-        $maxPlayers = (int) $game->max_players;
+        $allowedCounts = match ($data['game']) {
+            'pinochle', 'banakil' => [2,4],
+            'hand', 'saudi_hand' => [2,3,4],
+            'hand_partner' => [4],
+            default => [(int)$game->max_players],
+        };
+        $maxPlayers = (int) ($data['player_count'] ?? $allowedCounts[0]);
+        abort_unless(in_array($maxPlayers, $allowedCounts, true), 422, 'عدد اللاعبين غير مدعوم لهذه اللعبة.');
+        abort_if((int)($data['min_level'] ?? 1) > (int)($user->profile?->level ?? 1), 422, 'الحد الأدنى لا يمكن أن يتجاوز مستوى منشئ الغرفة.');
         $botCount = min($maxPlayers - 1, max((int) ($data['bots'] ?? ($maxPlayers - 1)), 0));
         $playerKeys = ['user:' . $user->id];
         for ($i = 1; $i <= $botCount; $i++) {
@@ -201,6 +231,10 @@ class MobileGameController extends Controller
         $state['voice_room'] = $state['voice_enabled'];
         $state['voice_fee'] = 0;
         $state['turn_seconds'] = (int) ($data['turn_seconds'] ?? 10);
+        $state['allow_owner_kick'] = (bool) ($data['allow_owner_kick'] ?? true);
+        $state['kicked_user_ids'] = [];
+        $state['min_level'] = (int) ($data['min_level'] ?? 1);
+        $state['_revision'] = 1;
         $state['messages'] = array_values(array_merge($state['messages'] ?? [], [
             '🎮 تم إنشاء غرفة مجانية. لا يتم خصم أي توكنز أثناء اللعب.',
             '🛡️ جميع الحركات تُراجع من المحرك على الخادم قبل اعتمادها.',
@@ -217,7 +251,7 @@ class MobileGameController extends Controller
                 'visibility' => $visibility,
                 'password' => $visibility === 'private' && !empty($data['password']) ? Hash::make($data['password']) : null,
                 'entry_fee' => 0,
-                'min_level' => 1,
+                'min_level' => (int) ($data['min_level'] ?? 1),
                 'status' => $this->roomStatus((string) ($state['phase'] ?? 'playing')),
                 'max_players' => $maxPlayers,
                 'target_score' => (string) $target,
@@ -246,6 +280,20 @@ class MobileGameController extends Controller
         ], 201);
     }
 
+    public function kick(Request $request, Room $room, User $user)
+    {
+        abort_unless((int)$room->owner_id === (int)$request->user()->id, 403, 'فقط منشئ الغرفة يستطيع إخراج لاعب.');
+        $state = $room->state ?: [];
+        abort_unless((bool)($state['allow_owner_kick'] ?? false), 403, 'خيار إخراج اللاعبين غير مفعل لهذه الغرفة.');
+        abort_if((int)$user->id === (int)$request->user()->id, 422, 'لا يمكنك إخراج نفسك.');
+        $player = $room->players()->where('user_id',$user->id)->where('is_bot',false)->firstOrFail();
+        $kicked = array_values(array_unique(array_merge((array)($state['kicked_user_ids'] ?? []), [(int)$user->id])));
+        $state['kicked_user_ids'] = $kicked;
+        $state['messages'][] = '🚫 تم إخراج '.$user->username.' من الغرفة بواسطة منشئها.';
+        DB::transaction(function() use($room,$player,$state){ $player->update(['connected'=>false]); $room->update(['state'=>$state]); });
+        return response()->json(['ok'=>true,'message'=>'تم إخراج اللاعب ومنعه من العودة إلى نفس المباراة.']);
+    }
+
     public function show(Request $request, Room $room)
     {
         $this->authorizeRoom($request, $room);
@@ -258,9 +306,32 @@ class MobileGameController extends Controller
         $data = $request->validate([
             'action' => 'required|string|max:80',
             'payload' => 'nullable|array',
+            'client_action_id' => 'nullable|string|min:8|max:120',
+            'state_revision' => 'nullable|integer|min:0',
         ]);
         $user = $request->user();
         $state = $room->state ?: [];
+        $currentRevision = (int)($state['_revision'] ?? 0);
+        if (array_key_exists('state_revision', $data) && (int)$data['state_revision'] !== $currentRevision) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'تم تحديث حالة اللعبة على الخادم. أعد المحاولة بالحالة الأحدث.',
+                'code' => 'stale_game_state',
+                'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $user->id),
+            ], 409);
+        }
+        $clientActionId = trim((string)($data['client_action_id'] ?? ''));
+        if ($clientActionId !== '') {
+            $cacheKey = 'warqna:game-action:'.$room->id.':'.$user->id.':'.hash('sha256', $clientActionId);
+            if (!Cache::add($cacheKey, true, now()->addMinutes(15))) {
+                return response()->json([
+                    'ok' => true,
+                    'duplicate' => true,
+                    'message' => 'تم استلام الحركة مسبقاً ولم تُحتسب مرتين.',
+                    'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $user->id),
+                ]);
+            }
+        }
         $playerKey = 'user:' . $user->id;
         $engine = GameFactory::make($room->game->key);
         $payload = $data['payload'] ?? [];
@@ -287,6 +358,7 @@ class MobileGameController extends Controller
 
         $next = $engine->apply($state, $playerKey, $data['action'], $payload);
         $next = $this->advanceAutomatedTurns($engine, $next, (string) $room->game->key);
+        $next['_revision'] = $currentRevision + 1;
         $progressionPopup = $this->awardProgressionTransition($progression, $room, $state, $next);
         if ($progressionPopup !== []) $next['progression_popup'] = $progressionPopup;
         $room->update([
@@ -314,6 +386,7 @@ class MobileGameController extends Controller
         }
         $before = $room->state ?: [];
         $state = $this->advanceAutomatedTurns($engine, $state, (string) $room->game->key);
+        $state['_revision'] = (int)($before['_revision'] ?? 0) + 1;
         $progressionPopup = $this->awardProgressionTransition($progression, $room, $before, $state);
         if ($progressionPopup !== []) $state['progression_popup'] = $progressionPopup;
         $room->update(['state' => $state, 'status' => $this->roomStatus((string) ($state['phase'] ?? 'playing'))]);
@@ -412,13 +485,20 @@ class MobileGameController extends Controller
             'game' => $room->game?->key,
             'status' => $room->status,
             'visibility' => $room->visibility,
+            'owner_id' => (int)$room->owner_id,
+            'is_owner' => (int)$room->owner_id === $userId,
+            'allow_owner_kick' => (bool)($state['allow_owner_kick'] ?? false),
+            'min_level' => (int)($room->min_level ?? $state['min_level'] ?? 1),
+            'max_players' => (int)$room->max_players,
             'entry_fee' => 0,
             'room_name' => $state['room_name'] ?? ($room->game?->name ?? 'غرفة ورقنا'),
             'voice_enabled' => (bool) ($state['voice_enabled'] ?? $state['voice_room'] ?? false),
             'turn_seconds' => (int) ($state['turn_seconds'] ?? 10),
-            'players' => $room->players->map(function (RoomPlayer $player) {
+            'players' => $room->players->map(function (RoomPlayer $player) use ($room) {
                 return [
                     'key' => $player->is_bot ? 'bot:' . ($player->bot_key ?: $player->id) : 'user:' . $player->user_id,
+                    'user_id' => $player->is_bot ? null : (int)$player->user_id,
+                    'is_owner' => !$player->is_bot && (int)$player->user_id === (int)$room->owner_id,
                     'name' => $player->is_bot ? ($player->bot_key ?: 'بوت') : ($player->user?->profile?->display_name ?: $player->user?->username),
                     'seat' => (int) $player->seat,
                     'bot' => (bool) $player->is_bot,
@@ -427,6 +507,10 @@ class MobileGameController extends Controller
                     'voice_deafened' => (bool) ($player->voice_deafened ?? false),
                     'avatar' => $player->user?->profile?->avatar,
                     'badge' => $player->user?->profile?->badge,
+                    'name_color' => $player->user?->profile?->name_color ?: '#facc15',
+                    'pasha_days' => (int)($player->user?->profile?->pasha_days ?? 0),
+                    'games_played' => (int)($player->user?->profile?->games_played ?? 0),
+                    'wins' => (int)($player->user?->profile?->wins ?? 0),
                     'country_code' => safe_country_code($player->user?->profile?->country_code ?? 'PS'),
                     'country_name' => country_name($player->user?->profile?->country_code ?? 'PS'),
                     'flag' => (string)(config('countries.'.safe_country_code($player->user?->profile?->country_code ?? 'PS').'.flag') ?? '🇵🇸'),
@@ -482,7 +566,7 @@ class MobileGameController extends Controller
         foreach ($hands as $key => $cards) {
             $copy['hand_counts'][$key] = is_array($cards) ? count($cards) : 0;
         }
-        unset($copy['hands'], $copy['_tarneeb_v2'], $copy['_global_engine']);
+        unset($copy['hands'], $copy['_tarneeb_v2'], $copy['_global_engine'], $copy['kicked_user_ids']);
         if (isset($copy['deck']) && is_array($copy['deck'])) {
             $copy['deck_count'] = count($copy['deck']);
             unset($copy['deck']);

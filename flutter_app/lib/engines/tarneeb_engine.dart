@@ -156,7 +156,7 @@ class TarneebLocalEngine {
 
     if (highestBid == null && passedSeats.length == 4) {
       messages.add('مرّر الجميع؛ أعيد توزيع الورق دون نقاط.');
-      dealerSeat = (dealerSeat + 3) % 4;
+      dealerSeat = (dealerSeat + 1) % 4;
       startNextRound();
       return;
     }

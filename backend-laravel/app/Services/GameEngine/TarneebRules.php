@@ -47,8 +47,9 @@ class TarneebRules implements GameRuleContract
         try{
             $s=$this->toStandalone($state);
             if(!$s) return false;
-            if(($state['turn'] ?? null)!==$playerId) return false;
             $action=$this->normalizeAction($action);
+            if($action==='next_round') { $this->engine->nextRound($s); return true; }
+            if(($state['turn'] ?? null)!==$playerId) return false;
             if($action==='pass') { $this->engine->bid($s,$playerId,null); return true; }
             if($action==='bid') { $this->engine->bid($s,$playerId,(int)($payload['value'] ?? 0)); return true; }
             if($action==='choose_trump') { $this->engine->chooseTrump($s,$playerId,$this->toShortSuit((string)($payload['suit'] ?? ''))); return true; }
@@ -70,7 +71,8 @@ class TarneebRules implements GameRuleContract
             $s=$this->toStandalone($state);
             if(!$s){ $state['last_error_message']='تعذر قراءة حالة الطرنيب.'; return $state; }
             $action=$this->normalizeAction($action);
-            if($action==='pass') $s=$this->engine->bid($s,$playerId,null);
+            if($action==='next_round') $s=$this->engine->nextRound($s);
+            elseif($action==='pass') $s=$this->engine->bid($s,$playerId,null);
             elseif($action==='bid') $s=$this->engine->bid($s,$playerId,(int)($payload['value'] ?? 0));
             elseif($action==='choose_trump') $s=$this->engine->chooseTrump($s,$playerId,$this->toShortSuit((string)($payload['suit'] ?? '')));
             elseif($action==='play_card'){
@@ -188,6 +190,7 @@ class TarneebRules implements GameRuleContract
         if($phase==='finished'){
             $out['winner_team']=((int)($s['winnerTeam'] ?? 0)===0?'teamA':'teamB');
             $out['winner']=$out['winner_team'];
+            $out['next_round_available']=(string)($s['phase'] ?? '')==='round_end';
         }
         return $out;
     }

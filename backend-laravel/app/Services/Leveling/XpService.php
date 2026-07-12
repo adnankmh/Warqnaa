@@ -8,7 +8,9 @@ class XpService
     public function levelForXp(int $xp): int
     {
         $level = 1;
-        while ($level < 100 && $xp >= $this->requiredXp($level)) {
+        $remaining = max(0, $xp);
+        while ($level < 200 && $remaining >= $this->requiredXp($level)) {
+            $remaining -= $this->requiredXp($level);
             $level++;
         }
         return $level;
@@ -16,9 +18,11 @@ class XpService
 
     public function requiredXp(int $level): int
     {
-        if ($level <= 10) return [1=>58,2=>87,3=>127,4=>173,5=>230,6=>299,7=>374,8=>460,9=>564,10=>690][$level] ?? 690;
-        if ($level <= 50) return (int) round(690 * pow(1.16, $level - 10) + ($level * 120));
-        return (int) round(90275 * pow(1.085, $level - 50) + ($level * 500));
+        $safe = max(1, min(200, $level));
+        $early = [1=>100,2=>220,3=>360,4=>500,5=>650,6=>800,7=>1000];
+        if (isset($early[$safe])) return $early[$safe];
+        $high = $safe - 7;
+        return 1000 + ($high * 220) + ($high * $high * 35);
     }
 
     public function rewardForLevel(int $level): int

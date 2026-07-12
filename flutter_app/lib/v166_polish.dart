@@ -121,15 +121,110 @@ Future<void> showConnectionDiagnosticsDialog(BuildContext context, AppController
   await showDialog<void>(context:context,builder:(dialogContext)=>_DiagnosticsDialog(controller:controller));
 }
 
-class _DiagnosticsDialog extends StatefulWidget { final AppController controller; const _DiagnosticsDialog({required this.controller}); @override State<_DiagnosticsDialog> createState()=>_DiagnosticsDialogState(); }
+class _DiagnosticsDialog extends StatefulWidget {
+  final AppController controller;
+  const _DiagnosticsDialog({required this.controller});
+  @override
+  State<_DiagnosticsDialog> createState() => _DiagnosticsDialogState();
+}
+
 class _DiagnosticsDialogState extends State<_DiagnosticsDialog> {
   Future<List<DiagnosticItem>>? future;
-  @override void initState(){super.initState();future=ConnectionDiagnostics.run(widget.controller.api, lang: widget.controller.localeCode);}
-  @override Widget build(BuildContext context)=>AlertDialog(
-    title:Text(L.t(widget.controller.localeCode,'connectionCheck')),
-    content:SizedBox(width:520,child:FutureBuilder<List<DiagnosticItem>>(future:future,builder:(context,snapshot){if(!snapshot.hasData)return const Padding(padding:EdgeInsets.all(28),child:Center(child:CircularProgressIndicator()));return Column(mainAxisSize:MainAxisSize.min,children:snapshot.data!.map((item)=>ListTile(contentPadding:EdgeInsets.zero,leading:Icon(item.ok?Icons.check_circle:Icons.error_outline,color:item.ok?Colors.greenAccent:Colors.orangeAccent),title:Text(item.label,style:const TextStyle(fontWeight:FontWeight.w900)),subtitle:Text(item.details,style:const TextStyle(fontSize:11)))).toList());})),
-    actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(L.t(widget.controller.localeCode,'close'))),FilledButton.icon(onPressed:()=>setState(()=>future=ConnectionDiagnostics.run(widget.controller.api, lang: widget.controller.localeCode)),icon:const Icon(Icons.refresh),label:Text(L.t(widget.controller.localeCode,'retry')))],
-  );
+  late final TextEditingController serverController;
+  bool saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    serverController = TextEditingController(text: widget.controller.api.baseUrl);
+    future = ConnectionDiagnostics.run(widget.controller.api, lang: widget.controller.localeCode);
+  }
+
+  @override
+  void dispose() {
+    serverController.dispose();
+    super.dispose();
+  }
+
+  Future<void> saveServer() async {
+    setState(() => saving = true);
+    final error = await widget.controller.updateServerUrl(serverController.text);
+    if (!mounted) return;
+    setState(() {
+      saving = false;
+      future = ConnectionDiagnostics.run(widget.controller.api, lang: widget.controller.localeCode);
+    });
+    showToast(context, error ?? 'تم ربط التطبيق بالخادم بنجاح.');
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: Text(L.t(widget.controller.localeCode, 'connectionCheck')),
+        content: SizedBox(
+          width: 560,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: serverController,
+                  keyboardType: TextInputType.url,
+                  textDirection: TextDirection.ltr,
+                  autocorrect: false,
+                  decoration: const InputDecoration(
+                    labelText: 'Laravel API URL',
+                    hintText: 'https://example.com/api/mobile/v1',
+                    prefixIcon: Icon(Icons.dns_rounded),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: saving ? null : saveServer,
+                    icon: saving
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.link_rounded),
+                    label: const Text('حفظ الرابط واختبار الخادم'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                FutureBuilder<List<DiagnosticItem>>(
+                  future: future,
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Padding(padding: EdgeInsets.all(28), child: Center(child: CircularProgressIndicator()));
+                    }
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: snapshot.data!
+                          .map((item) => ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                leading: Icon(item.ok ? Icons.check_circle : Icons.error_outline, color: item.ok ? Colors.greenAccent : Colors.orangeAccent),
+                                title: Text(item.label, style: const TextStyle(fontWeight: FontWeight.w900)),
+                                subtitle: Text(item.details, style: const TextStyle(fontSize: 11)),
+                              ))
+                          .toList(),
+                    );
+                  },
+                ),
+                const Text(
+                  'مهم للهاتف: لا تستخدم 127.0.0.1 أو localhost إلا عند تشغيل الخادم على الهاتف نفسه. استخدم رابط HTTPS عام حتى تعمل الغرف الصوتية والإشعارات خارج التطبيق.',
+                  style: TextStyle(fontSize: 10, color: Colors.white60, height: 1.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(L.t(widget.controller.localeCode, 'close'))),
+          FilledButton.icon(
+            onPressed: () => setState(() => future = ConnectionDiagnostics.run(widget.controller.api, lang: widget.controller.localeCode)),
+            icon: const Icon(Icons.refresh),
+            label: Text(L.t(widget.controller.localeCode, 'retry')),
+          ),
+        ],
+      );
 }
 
 Future<void> showVoiceDiagnosticsDialog(BuildContext context, AppController controller, VoiceRoomService? service) async {

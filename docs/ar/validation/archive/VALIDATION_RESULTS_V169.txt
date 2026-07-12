@@ -1,0 +1,28 @@
+Warqna v169 — Validation Results
+================================
+Release: 1.69.0+169
+Focus: Flutter analyzer, localization, ChangeNotifier and flutter_local_notifications v22 API hotfix
+
+PASS — release version contract is consistent across Flutter, Laravel, environment examples and release manifest.
+PASS — required v169 release collateral exists.
+PASS — clean-root policy accepts normal GitHub Actions `.git` metadata and rejects actual root clutter.
+PASS — undefined `v166Text` calls were replaced by the central `L.t` localization helper.
+PASS — flutter_local_notifications 22 initialize/show calls use the required named arguments.
+PASS — Widgets no longer call the protected `notifyListeners()` member directly.
+PASS — a public AppController notice mutation method now owns notification-list updates.
+PASS — the exact analyzer lints reported for unnecessary import, control-flow braces, const declarations, unrelated map-key type and unnecessary interpolation were cleaned.
+PASS — `tools/test_flutter_ci_contract.py` runs before Flutter Analyzer in Web, Android and iOS workflows.
+PASS — source preflight succeeds with and without simulated `.git` checkout metadata.
+PASS — JSON syntax: 25 files.
+PASS — YAML parsing: 15 files.
+PASS — PHP syntax: 240 files.
+PASS — Dart syntax parse: 17 files.
+PASS — Python syntax and Shell syntax.
+PASS — Android WorkManager startup guard from v165 remains enabled.
+PASS — voice, gameplay, social, accessibility, store, push and Play Store contracts from v166 remain enabled.
+PASS — no Git conflict markers, corrupt control characters, runtime secrets or signing files.
+
+Not executed locally:
+- Full `php artisan test` was not run because Composer vendor dependencies are not present in this source package environment.
+- `flutter analyze`, `flutter test`, APK/AAB and Flutter Web builds were not run because Flutter SDK is not installed in this packaging environment.
+These remain authoritative GitHub Actions steps after upload.

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Friendship,Message,Notification,User};
+use App\Models\{Friendship,Message,Notification,Room,User};
 use App\Services\Wallet\WalletService;
 use App\Services\Platform\ProductionConfigService;
 use App\Services\Notifications\FirebasePushService;
@@ -42,10 +42,44 @@ class MobileSocialController extends Controller
         return response()->json(['ok' => true, 'users' => $users->map(fn ($u) => $this->userPayload($u))]);
     }
 
+    public function profile(Request $request, User $user)
+    {
+        $this->assertNotBlocked($request->user()->id, $user->id);
+        return response()->json(['ok' => true, 'user' => $this->userPayload($user->load('profile'))]);
+    }
+
+    public function inviteToRoom(Request $request, User $user, FirebasePushService $push)
+    {
+        $this->assertFriends($request->user()->id, $user->id);
+        $data = $request->validate(['room_code' => 'required|string|max:20']);
+        $room = Room::where('code', strtoupper($data['room_code']))->whereIn('status', ['waiting','bidding','playing'])->firstOrFail();
+        abort_unless((int)$room->owner_id === (int)$request->user()->id || $room->players()->where('user_id', $request->user()->id)->exists(), 403, 'يجب أن تكون داخل الغرفة لإرسال الدعوة.');
+        Notification::create(['user_id'=>$user->id,'type'=>'room_invite','title'=>['ar'=>'دعوة لعبة','en'=>'Game invitation'],'body'=>['ar'=>$request->user()->username.' دعاك إلى غرفة '.$room->code,'en'=>$request->user()->username.' invited you to room '.$room->code],'meta'=>['room_code'=>$room->code,'from'=>$request->user()->id]]);
+        $push->sendToUser($user, 'دعوة لعبة', $request->user()->username.' دعاك إلى غرفة '.$room->code, ['route'=>'room:'.$room->code,'type'=>'room_invite','room_code'=>$room->code,'sender_id'=>$request->user()->id]);
+        return response()->json(['ok'=>true,'message'=>'تم إرسال الدعوة حتى لو كان اللاعب خارج التطبيق.']);
+    }
+
+    public function inviteAllToRoom(Request $request, FirebasePushService $push)
+    {
+        $data = $request->validate(['room_code' => 'required|string|max:20']);
+        $room = Room::where('code', strtoupper($data['room_code']))->whereIn('status', ['waiting','bidding','playing'])->firstOrFail();
+        abort_unless((int)$room->owner_id === (int)$request->user()->id || $room->players()->where('user_id', $request->user()->id)->exists(), 403);
+        $relations = Friendship::where('status','accepted')->where(fn($q)=>$q->where('requester_id',$request->user()->id)->orWhere('addressee_id',$request->user()->id))->get();
+        $sent=0;
+        foreach($relations as $relation){
+            $id=(int)$relation->requester_id===(int)$request->user()->id ? (int)$relation->addressee_id : (int)$relation->requester_id;
+            $friend=User::find($id); if(!$friend) continue;
+            $push->sendToUser($friend, 'دعوة جماعية للعبة', $request->user()->username.' دعاك إلى غرفة '.$room->code, ['route'=>'room:'.$room->code,'type'=>'room_invite','room_code'=>$room->code,'sender_id'=>$request->user()->id]);
+            Notification::create(['user_id'=>$friend->id,'type'=>'room_invite','title'=>['ar'=>'دعوة لعبة','en'=>'Game invitation'],'body'=>['ar'=>$request->user()->username.' دعاك إلى غرفة '.$room->code],'meta'=>['room_code'=>$room->code,'from'=>$request->user()->id]]); $sent++;
+        }
+        return response()->json(['ok'=>true,'message'=>'تم إرسال الدعوة إلى '.$sent.' صديق.','sent'=>$sent]);
+    }
+
     public function request(Request $request, User $user, FirebasePushService $push)
     {
         $me = $request->user();
         abort_if($me->id === $user->id, 422, 'لا يمكنك إرسال طلب لنفسك');
+        $this->assertNotBlocked($me->id, $user->id);
         $existing = $this->relation($me->id, $user->id);
         if ($existing) {
             return response()->json(['ok' => false, 'message' => 'توجد علاقة أو دعوة سابقة مع هذا اللاعب', 'status' => $existing->status], 409);
@@ -240,10 +274,27 @@ class MobileSocialController extends Controller
             'avatar' => $profile?->avatar,
             'level' => (int) ($profile?->level ?? 1),
             'country_code' => $profile?->country_code ?: 'PS',
+            'country_name' => $profile?->country_name ?: country_name($profile?->country_code ?: 'PS'),
+            'flag' => (string)(config('countries.'.safe_country_code($profile?->country_code ?: 'PS').'.flag') ?? '🇵🇸'),
             'name_color' => $profile?->name_color ?: '#facc15',
             'badge' => $profile?->badge,
+            'pasha_days' => (int) ($profile?->pasha_days ?? 0),
+            'games_played' => (int) ($profile?->games_played ?? 0),
+            'wins' => (int) ($profile?->wins ?? 0),
+            'round_points' => (int) ($profile?->round_points ?? 0),
+            'tournament_points' => (int) ($profile?->tournament_points ?? 0),
+            'club_points' => (int) ($profile?->club_points ?? 0),
             'online' => $user->last_seen_at?->gt(now()->subMinutes(3)) ?? false,
         ];
+    }
+
+    private function assertNotBlocked(int $a, int $b): void
+    {
+        $blocked = Friendship::where('status','blocked')->where(function ($q) use ($a,$b) {
+            $q->where(fn($q)=>$q->where('requester_id',$a)->where('addressee_id',$b))
+              ->orWhere(fn($q)=>$q->where('requester_id',$b)->where('addressee_id',$a));
+        })->exists();
+        abort_if($blocked, 403, 'لا يمكن التواصل أو اللعب مع لاعب موجود في قائمة الحظر.');
     }
 
     private function cleanChat(string $body): string

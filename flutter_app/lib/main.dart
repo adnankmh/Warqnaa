@@ -26,6 +26,7 @@ import 'premium_v149.dart';
 part 'premium_v151.dart';
 part 'production_v153.dart';
 part 'v166_polish.dart';
+part 'v170_global.dart';
 
 void main() {
   // The Flutter binding and runApp must be created in the same zone. Keeping
@@ -108,10 +109,12 @@ class _WarqnaAppState extends State<WarqnaApp> {
             GlobalCupertinoLocalizations.delegate,
           ],
           builder: (context, child) {
+            final media = MediaQuery.of(context);
             final current = MediaQuery.textScalerOf(context).scale(1.0);
-            final safeScale = (current * controller.uiFontScale).clamp(.85, 1.28).toDouble();
+            final widthCap = media.size.width < 370 ? 1.08 : media.size.width < 430 ? 1.16 : 1.28;
+            final safeScale = (current * controller.uiFontScale).clamp(.85, widthCap).toDouble();
             return MediaQuery(
-              data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(safeScale)),
+              data: media.copyWith(textScaler: TextScaler.linear(safeScale)),
               child: ClipRect(child: child ?? const SizedBox.shrink()),
             );
           },
@@ -222,6 +225,7 @@ class AppController extends ChangeNotifier {
   final Set<String> rewardedMatches = <String>{};
   String localeCode = 'ar';
   String themeCode = 'dark';
+  String customApiUrl = '';
   String username = 'Adnan';
   String displayName = 'Adnan';
   String email = 'adnan@warqna.local';
@@ -291,7 +295,7 @@ class AppController extends ChangeNotifier {
     if (!initialized) {
       coins = BigInt.tryParse(defaultCoins ?? '') ?? BigInt.from(1500);
       level = defaultLevel ?? 1;
-      xp = level <= 1 ? 0 : level * 620;
+      xp = 0;
       xpNext = xpNeededForLevel(level);
       vipDays = defaultVipDays ?? 0;
       avatarEmoji = defaultAvatar ?? demoAvatarFor(username);
@@ -331,7 +335,7 @@ class AppController extends ChangeNotifier {
     clubPoints = prefs.getInt(_accountKey('clubPoints')) ?? 0;
     coins = BigInt.tryParse(prefs.getString(_accountKey('coins')) ?? '') ?? BigInt.from(1500);
     level = prefs.getInt(_accountKey('level')) ?? defaultLevel ?? 1;
-    xp = prefs.getInt(_accountKey('xp')) ?? (level <= 1 ? 0 : level * 620);
+    xp = prefs.getInt(_accountKey('xp')) ?? 0;
     xpNext = prefs.getInt(_accountKey('xpNext')) ?? xpNeededForLevel(level);
     vipDays = prefs.getInt(_accountKey('vipDays')) ?? defaultVipDays ?? 0;
     avatarEmoji = prefs.getString(_accountKey('avatarEmoji')) ?? defaultAvatar ?? demoAvatarFor(username);
@@ -497,6 +501,8 @@ class AppController extends ChangeNotifier {
 
   Future<void> _loadUnsafe() async {
     final prefs = await SharedPreferences.getInstance();
+    customApiUrl = prefs.getString('customApiUrl') ?? '';
+    if (customApiUrl.trim().isNotEmpty) api.updateBaseUrl(customApiUrl);
     localeCode = prefs.getString('locale') ?? localeCode;
     themeCode = prefs.getString('theme') ?? themeCode;
     final storedCoins = prefs.getString('coins');
@@ -621,6 +627,11 @@ class AppController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('locale', localeCode);
     await prefs.setString('theme', themeCode);
+    if (customApiUrl.trim().isEmpty) {
+      await prefs.remove('customApiUrl');
+    } else {
+      await prefs.setString('customApiUrl', customApiUrl.trim());
+    }
     await prefs.setString('coins', coins.toString());
     await prefs.setInt('vipDays', vipDays);
     await prefs.setBool('soundEnabled', soundEnabled);
@@ -724,7 +735,7 @@ class AppController extends ChangeNotifier {
       coins = BigInt.parse(user['coins']!.toString());
       level = int.tryParse(user['level']!.toString()) ?? 1;
       if (isAdmin) level = math.max(level, 90);
-      xp = isAdmin ? 0 : level * 620;
+      xp = 0;
       xpNext = xpNeededForLevel(level);
       await _loadAccountState(
         prefs,
@@ -912,7 +923,8 @@ class AppController extends ChangeNotifier {
       consecutiveLoginDays = int.tryParse(user['login_streak']?.toString() ?? '') ?? consecutiveLoginDays;
       isAdmin = user['is_admin'] == true || user['is_admin'] == 1;
       level = int.tryParse(user['level']?.toString() ?? '') ?? level;
-      xp = int.tryParse(user['xp']?.toString() ?? '') ?? xp;
+      final serverTotalXp = int.tryParse(user['xp']?.toString() ?? '');
+      if (serverTotalXp != null) xp = xpProgressFromTotal(serverTotalXp, level);
       vipDays = int.tryParse(user['pasha_days']?.toString() ?? '') ?? vipDays;
       selectedCover = user['active_cover']?.toString() ?? selectedCover;
       botDifficultyCode = user['bot_difficulty']?.toString() ?? botDifficultyCode;
@@ -938,9 +950,25 @@ class AppController extends ChangeNotifier {
     _normalizeTimedCosmetics();
   }
 
+  int cumulativeXpBeforeLevel(int targetLevel) {
+    var total = 0;
+    for (var current = 1; current < targetLevel.clamp(1, 200); current++) {
+      total += xpNeededForLevel(current);
+    }
+    return total;
+  }
+
+  int xpProgressFromTotal(int totalXp, int currentLevel) {
+    return math.max(0, totalXp - cumulativeXpBeforeLevel(currentLevel));
+  }
+
   int xpNeededForLevel(int currentLevel) {
     final safe = currentLevel.clamp(1, 200).toInt();
-    return 900 + (safe * 260) + (safe * safe * 18);
+    const early = <int, int>{1: 100, 2: 220, 3: 360, 4: 500, 5: 650, 6: 800, 7: 1000};
+    final fixed = early[safe];
+    if (fixed != null) return fixed;
+    final high = safe - 7;
+    return 1000 + (high * 220) + (high * high * 35);
   }
 
   void _recalculateLevel() {
@@ -1303,6 +1331,29 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<String?> updateServerUrl(String value) async {
+    var normalized = value.trim().replaceAll(RegExp(r'/+$'), '');
+    if (normalized.isEmpty) return 'أدخل رابط خادم Laravel كاملاً.';
+    if (!normalized.endsWith('/api/mobile/v1')) normalized = '$normalized/api/mobile/v1';
+    final uri = Uri.tryParse(normalized);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) return 'رابط الخادم غير صحيح.';
+    final local = const {'localhost', '127.0.0.1', '10.0.2.2'}.contains(uri.host);
+    if (!local && uri.scheme != 'https') return 'الخادم البعيد يجب أن يستخدم HTTPS حتى يعمل الصوت والإشعارات بأمان.';
+    customApiUrl = normalized;
+    api.updateBaseUrl(normalized);
+    await _save();
+    try {
+      await api.health().timeout(const Duration(seconds: 10));
+      serverConnected = true;
+      notifyListeners();
+      return null;
+    } catch (error) {
+      serverConnected = false;
+      notifyListeners();
+      return 'تم حفظ الرابط، لكن تعذر الاتصال الآن: ${friendlyErrorMessage(error, localeCode)}';
+    }
+  }
+
   void changeBotDifficulty(String value) {
     if (!const {'easy', 'normal', 'pro', 'master'}.contains(value)) return;
     botDifficultyCode = value;
@@ -1500,13 +1551,13 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> claimDaily() async {
+  Future<bool> claimDaily() async {
     final now = DateTime.now();
     final today = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     if (lastDailyClaimDate == today) {
       notices.insert(0, AppNotice('⏳', 'المكافأة اليومية', 'استلمت مكافأة اليوم بالفعل. عد غداً.'));
       notifyListeners();
-      return;
+      return false;
     }
     var granted = false;
     if (serverConnected) {
@@ -1523,13 +1574,18 @@ class AppController extends ChangeNotifier {
       transactions.insert(0, const TokenTransaction('مكافأة يومية', 100, 'الآن'));
       granted = true;
     }
-    if (!granted) return;
+    if (!granted) {
+      notices.insert(0, AppNotice('⚠️', 'المكافأة اليومية', 'تعذر استلام المكافأة من الخادم. حاول مرة أخرى.'));
+      notifyListeners();
+      return false;
+    }
     lastDailyClaimDate = today;
     xp += 20;
     _recalculateLevel();
     notices.insert(0, AppNotice('🎁', 'مكافأة يومية', 'تمت إضافة 100 توكن و20 XP.'));
     await _save();
     notifyListeners();
+    return true;
   }
 
   void markAllRead() {
@@ -1667,8 +1723,40 @@ class LocalFriend {
   final String username;
   final bool online;
   final String activity;
+  final int level;
+  final String countryCode;
+  final String? avatar;
+  final int pashaDays;
+  final int gamesPlayed;
+  final int wins;
+  final int xp;
+  final int xpNext;
+  final int roundPoints;
+  final int tournamentPoints;
+  final int clubPoints;
+  final String nameColor;
+  final String? badge;
 
-  const LocalFriend(this.id, this.name, this.username, {required this.online, required this.activity});
+  const LocalFriend(
+    this.id,
+    this.name,
+    this.username, {
+    required this.online,
+    required this.activity,
+    this.level = 1,
+    this.countryCode = 'PS',
+    this.avatar,
+    this.pashaDays = 0,
+    this.gamesPlayed = 0,
+    this.wins = 0,
+    this.xp = 0,
+    this.xpNext = 100,
+    this.roundPoints = 0,
+    this.tournamentPoints = 0,
+    this.clubPoints = 0,
+    this.nameColor = '#facc15',
+    this.badge,
+  });
 }
 
 class ChatMessage {
@@ -3076,110 +3164,9 @@ class _HomeShellState extends State<HomeShell> {
 
 class PremiumTopBar extends StatelessWidget {
   final AppController controller;
-
   const PremiumTopBar({super.key, required this.controller});
-
   @override
-  Widget build(BuildContext context) {
-    final lang = controller.localeCode;
-    final unread = controller.notices.where((e) => !e.read).length;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(13, 8, 8, 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: .95),
-        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: .07))),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(30),
-              onTap: () => showProfile(context, controller),
-              child: Row(
-                children: [
-                  AccountAvatar(controller: controller, size: 41),
-                  const SizedBox(width: 7),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(controller.displayName, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w900, color: colorFromHex(controller.selectedNameColor))),
-                      Row(children: [
-                        Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: controller.serverConnected ? Colors.greenAccent : Colors.amber)),
-                        const SizedBox(width: 4),
-                        Flexible(child: Text(controller.serverConnected ? 'متصل' : 'محلي', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 8, color: Colors.white60))),
-                      ]),
-                    ],
-                  )),
-                ],
-              ),
-            ),
-          ),
-          IconButton(
-            tooltip: controller.landscapeMode ? 'العودة للوضع الطولي' : 'تفعيل العرض الأفقي',
-            onPressed: controller.toggleOrientationMode,
-            icon: Icon(controller.landscapeMode ? Icons.stay_current_portrait : Icons.stay_current_landscape),
-          ),
-          IconButton(
-            tooltip: L.t(lang, 'friends'),
-            onPressed: () => showFriends(context, controller),
-            icon: Badge(
-              isLabelVisible: controller.incomingRequests.isNotEmpty,
-              label: Text('${controller.incomingRequests.length}'),
-              child: const Icon(Icons.people_alt_outlined),
-            ),
-          ),
-          if (controller.isAdmin)
-            IconButton(
-              tooltip: 'لوحة الإدارة',
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AdminDashboardPage(controller: controller))),
-              icon: const Icon(Icons.admin_panel_settings_outlined),
-            ),
-          IconButton(
-            onPressed: () => showNotifications(context, controller),
-            icon: Badge(
-              isLabelVisible: unread > 0,
-              label: Text('$unread'),
-              child: const Icon(Icons.notifications_none_rounded),
-            ),
-          ),
-          PopupMenuButton<String>(
-            tooltip: L.t(lang, 'font'),
-            icon: const Icon(Icons.font_download_outlined),
-            onSelected: controller.changeFontFamily,
-            itemBuilder: (_) => const [
-              PopupMenuItem(value:'Roboto',child:Text('Roboto')), PopupMenuItem(value:'Arial',child:Text('Arial')),
-              PopupMenuItem(value:'serif',child:Text('Serif')), PopupMenuItem(value:'monospace',child:Text('Monospace')),
-            ],
-          ),
-          IconButton(tooltip:'A−',visualDensity:VisualDensity.compact,onPressed:()=>controller.adjustFontScale(-.08),icon:const Text('A−',style:TextStyle(fontWeight:FontWeight.w900))),
-          IconButton(tooltip:'A+',visualDensity:VisualDensity.compact,onPressed:()=>controller.adjustFontScale(.08),icon:const Text('A+',style:TextStyle(fontWeight:FontWeight.w900))),
-          PopupMenuButton<String>(
-            tooltip: L.t(lang, 'language'),
-            icon: Text(lang.toUpperCase(), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900)),
-            onSelected: controller.changeLocale,
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'ar', child: Text('العربية 🇸🇦')),
-              PopupMenuItem(value: 'en', child: Text('English 🇬🇧')),
-              PopupMenuItem(value: 'de', child: Text('Deutsch 🇩🇪')),
-              PopupMenuItem(value: 'tr', child: Text('Türkçe 🇹🇷')),
-              PopupMenuItem(value: 'fr', child: Text('Français 🇫🇷')),
-              PopupMenuItem(value: 'es', child: Text('Español 🇪🇸')),
-            ],
-          ),
-          PopupMenuButton<String>(
-            tooltip: L.t(lang, 'theme'),
-            icon: const Icon(Icons.palette_outlined),
-            initialValue: controller.themeCode,
-            onSelected: controller.changeTheme,
-            itemBuilder: (_) => v151ThemeOptions
-                .map((theme) => PopupMenuItem<String>(value: theme.$1, child: Row(children: [CircleAvatar(radius: 7, backgroundColor: theme.$3), const SizedBox(width: 8), Text(theme.$2)])))
-                .toList(),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => buildV170TopBar(context, controller);
 }
 
 class HomePage extends StatelessWidget {
@@ -3194,15 +3181,7 @@ class HomePage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(13),
       children: [
-        Row(
-          children: [
-            Expanded(child: LevelCard(controller: controller)),
-            const SizedBox(width: 8),
-            Expanded(child: StatCard(icon: '🪙', label: L.t(lang, 'coins'), value: formatNumber(controller.coins), onTap: () => showWallet(context, controller))),
-            const SizedBox(width: 8),
-            Expanded(child: PashaStatCardV151(controller: controller, onTap: () => showPashaBenefits(context, controller))),
-          ],
-        ),
+        ResponsiveAccountStatsV170(controller: controller),
         const SizedBox(height: 13),
         HeroBanner(
           lang: lang,
@@ -3213,22 +3192,25 @@ class HomePage extends StatelessWidget {
         const SizedBox(height: 16),
         SectionTitle(title: L.t(lang, 'featured'), action: 'عرض الكل', onTap: () => onTab(1)),
         const SizedBox(height: 9),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: .86,
-          ),
-          itemCount: 3,
-          itemBuilder: (_, i) => GameCard(
-            game: gamesCatalog[i],
-            lang: lang,
-            onTap: () => showGameLobby(context, controller, gamesCatalog[i]),
-          ),
-        ),
+        LayoutBuilder(builder: (context, constraints) {
+          final columns = constraints.maxWidth < 430 ? 2 : 3;
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: columns == 2 ? .92 : .86,
+            ),
+            itemCount: 3,
+            itemBuilder: (_, i) => GameCard(
+              game: gamesCatalog[i],
+              lang: lang,
+              onTap: () => showGameLobby(context, controller, gamesCatalog[i]),
+            ),
+          );
+        }),
         const SizedBox(height: 13),
         Row(
           children: [
@@ -3252,20 +3234,7 @@ class HomePage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 13),
-        PremiumPanel(
-          child: Wrap(
-            alignment: WrapAlignment.spaceAround,
-            runAlignment: WrapAlignment.center,
-            children: [
-              QuickButton(icon: '🎯', label: L.t(lang, 'challenges'), onTap: () => showChallenges(context, controller)),
-              QuickButton(icon: '🏆', label: L.t(lang, 'competitions'), onTap: () => showCompetitions(context, controller)),
-              QuickButton(icon: '🛡️', label: L.t(lang, 'clubs'), onTap: () => onTab(3)),
-              QuickButton(icon: '🎁', label: L.t(lang, 'rewards'), onTap: () => showRewards(context, controller)),
-              QuickButton(icon: '👥', label: L.t(lang, 'friends'), onTap: () => showFriends(context, controller)),
-              QuickButton(icon: '⚙️', label: L.t(lang, 'settings'), onTap: () => showSettings(context, controller)),
-            ],
-          ),
-        ),
+        HomeQuickActionsV170(controller: controller, onTab: onTab),
       ],
     );
   }
@@ -3307,22 +3276,25 @@ class _GamesPageState extends State<GamesPage> {
           ),
         ),
         const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: .82,
-          ),
-          itemCount: visible.length,
-          itemBuilder: (_, i) => GameCard(
-            game: visible[i],
-            lang: lang,
-            onTap: () => showGameLobby(context, widget.controller, visible[i]),
-          ),
-        ),
+        LayoutBuilder(builder: (context, constraints) {
+          final columns = constraints.maxWidth < 430 ? 2 : constraints.maxWidth < 850 ? 3 : 4;
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: columns == 2 ? .92 : .82,
+            ),
+            itemCount: visible.length,
+            itemBuilder: (_, i) => GameCard(
+              game: visible[i],
+              lang: lang,
+              onTap: () => showGameLobby(context, widget.controller, visible[i]),
+            ),
+          );
+        }),
         const SizedBox(height: 13),
         PremiumPanel(
           child: Row(
@@ -3436,25 +3408,27 @@ class _StorePageState extends State<StorePage> {
           ),
         ),
         const SizedBox(height: 8),
-        Row(
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            const Text('التصنيف', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white60)),
-            const SizedBox(width: 8),
+            const Padding(
+              padding: EdgeInsetsDirectional.only(end: 2),
+              child: Text('التصنيف', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white60)),
+            ),
             for (final entry in const [('all', 'الكل'), ('beginner', 'مبتدئ'), ('pro', 'محترف'), ('legendary', 'أسطوري')])
-              Padding(
-                padding: const EdgeInsetsDirectional.only(end: 5),
-                child: FilterChip(
-                  label: Text(entry.$2, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900)),
-                  selected: tier == entry.$1,
-                  onSelected: (_) => setState(() => tier = entry.$1),
-                ),
+              FilterChip(
+                label: Text(entry.$2, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900)),
+                selected: tier == entry.$1,
+                onSelected: (_) => setState(() => tier = entry.$1),
               ),
           ],
         ),
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 1050 ? 4 : constraints.maxWidth >= 720 ? 3 : 2;
+            final columns = constraints.maxWidth >= 1200 ? 4 : constraints.maxWidth >= 900 ? 3 : constraints.maxWidth >= 680 ? 2 : 1;
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -3462,7 +3436,7 @@ class _StorePageState extends State<StorePage> {
                 crossAxisCount: columns,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: columns == 2 ? .68 : .76,
+                mainAxisExtent: columns == 1 ? 430 : 445,
               ),
               itemCount: visible.length,
               itemBuilder: (_, i) => ProductCard(
@@ -3541,6 +3515,8 @@ class ClubsPage extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 12),
+        GroupInnovationHubV170(controller: controller),
+        const SizedBox(height: 14),
         Row(children: [
           const Expanded(child: SectionTitle(title: 'المجموعات المقترحة')),
           FilledButton.tonalIcon(onPressed: controller.vipDays > 0 ? () => showCreateGroupV151(context, controller) : () => showPashaBenefits(context, controller), icon: Image.asset('assets/images/pasha.png', width: 22, height: 22), label: Text(controller.vipDays > 0 ? 'إنشاء مجموعة' : 'يتطلب باشا')),
@@ -3654,7 +3630,7 @@ class EventsPage extends StatelessWidget {
         const SizedBox(height: 4),
         FilledButton.icon(onPressed: () => showChallenges(context, controller), icon: const Icon(Icons.sports_esports_rounded), label: const Text('تحديات مباشرة بين اللاعبين')),
         const SizedBox(height: 9),
-        PremiumListTile(icon: '🎁', title: 'المكافأة اليومية', subtitle: '100 توكن + 20 XP', action: FilledButton(onPressed: () async { await controller.claimDaily(); if (context.mounted) showToast(context, 'تمت إضافة المكافأة إلى رصيدك'); }, child: Text(L.t(lang, 'claim')))),
+        PremiumListTile(icon: '🎁', title: 'المكافأة اليومية', subtitle: '100 توكن + 20 XP • مرة واحدة يومياً', action: FilledButton(onPressed: () async { final claimed = await controller.claimDaily(); if (context.mounted) showToast(context, claimed ? 'تمت إضافة المكافأة إلى رصيدك' : 'استلمت مكافأة اليوم مسبقاً أو تعذر الاتصال'); }, child: Text(L.t(lang, 'claim')))),
       ],
     );
   }
@@ -3847,9 +3823,9 @@ class _CompactProductPreview extends StatelessWidget {
     final c1 = controller.color1For(product);
     final c2 = controller.color2For(product);
     if (product.category == 'pasha') {
-      return Column(mainAxisSize: MainAxisSize.min, children: [
-        Image.asset('assets/images/pasha.png', width: 72, height: 72, fit: BoxFit.contain),
-        Text('${controller.durationFor(product) ?? 0} يوم', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: c2)),
+      return Stack(alignment: Alignment.center, children: [
+        Container(width: 92, height: 92, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [c2.withValues(alpha: .34), Colors.transparent]), boxShadow: [BoxShadow(color: c2.withValues(alpha: .32), blurRadius: 22)])),
+        Image.asset('assets/images/pasha.png', width: 78, height: 78, fit: BoxFit.contain),
       ]);
     }
     if (product.category == 'covers') {
@@ -3898,73 +3874,9 @@ class _CompactProductPreview extends StatelessWidget {
 class ProductCard extends StatelessWidget {
   final AppController controller;
   final StoreProduct product;
-
   const ProductCard({super.key, required this.controller, required this.product});
-
   @override
-  Widget build(BuildContext context) {
-    final owned = controller.owned.contains(product.id);
-    return PremiumPanel(
-      child: Padding(
-        padding: const EdgeInsets.all(11),
-        child: Column(
-          children: [
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: product.tier == 'legendary' ? Colors.amber.withValues(alpha: .16) : product.tier == 'pro' ? Colors.blueAccent.withValues(alpha: .13) : Colors.white.withValues(alpha: .06),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: product.previewColor1?.withValues(alpha: .45) ?? Colors.white12),
-                ),
-                child: Text(product.tierLabel(controller.localeCode), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900)),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Expanded(
-              child: InkWell(
-                onTap: () => showProductPreview(context, controller, product),
-                borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble()),
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: .14),
-                    borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble()),
-                  ),
-                  child: Center(child: _CompactProductPreview(controller: controller, product: product)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(controller.nameFor(product), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5)),
-            const SizedBox(height: 5),
-            Text(controller.descriptionFor(product), maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, fontSize: 12.0, height: 1.42)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(child: Text('🪙 ${formatNumber(controller.priceFor(product))}', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 11.5))),
-                OutlinedButton.icon(onPressed:()=>showProductPreview(context,controller,product),icon:const Icon(Icons.visibility_outlined,size:16),label:Text(L.t(controller.localeCode,'preview'),style:const TextStyle(fontSize:10)),style:OutlinedButton.styleFrom(minimumSize:const Size(70,44),padding:const EdgeInsets.symmetric(horizontal:8))),
-                const SizedBox(width:5),
-                FilledButton(
-                  onPressed: () async {
-                    if (owned && !product.reusable) {
-                      controller.activateProduct(product);
-                      showToast(context, 'تم تفعيل ${controller.nameFor(product)}.');
-                      return;
-                    }
-                    await showProductPreview(context, controller, product);
-                  },
-                  style: FilledButton.styleFrom(minimumSize: const Size(74, 44), padding: const EdgeInsets.symmetric(horizontal: 9)),
-                  child: Text(owned && !product.reusable ? 'تفعيل' : L.t(controller.localeCode, 'buy'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => ProductCardV170(controller: controller, product: product);
 }
 
 class GameRoomPage extends StatelessWidget {
@@ -4027,6 +3939,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
   bool chatOpen = true;
   bool botsActing = false;
   bool rewardGranted = false;
+  bool autoNextRoundScheduled = false;
   final Set<int> awardedProgressRounds = <int>{};
   bool awayMode = false;
   int autoPlayedTurns = 0;
@@ -4051,6 +3964,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
     );
     selectedCode = null;
     rewardGranted = false;
+    autoNextRoundScheduled = false;
     awardedProgressRounds.clear();
     seconds = 10;
     WidgetsBinding.instance.addPostFrameCallback((_) => _runBots());
@@ -4135,6 +4049,15 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
         if (mounted && floatingReaction?.id == 'victory_$completedRound') setState(() => floatingReaction = null);
       });
     }
+    if (engine.phase == TarneebPhase.roundEnd && !autoNextRoundScheduled) {
+      autoNextRoundScheduled = true;
+      AppSounds.fire('round_end');
+      Future<void>.delayed(const Duration(milliseconds: 1600), () {
+        if (!mounted || engine.phase != TarneebPhase.roundEnd) return;
+        AppSounds.fire('next_round');
+        _nextRound();
+      });
+    }
   }
 
   void _maybeRewardWin() {
@@ -4175,6 +4098,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
   Future<void> _humanBid(int? value) async {
     try {
       engine.bid(0, value);
+      AppSounds.fire('bid');
       autoPlayedTurns = 0;
       seconds = 10;
       setState(() {});
@@ -4231,6 +4155,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
 
   void _nextRound() {
     engine.startNextRound();
+    autoNextRoundScheduled = false;
     selectedCode = null;
     seconds = 10;
     setState(() {});
@@ -4435,42 +4360,38 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
   Widget _handWidget(BuildContext context, {required double maxWidth, required bool compact}) {
     final hand = engine.humanHand;
     if (hand.isEmpty) return const SizedBox(height: 8);
-    final perRow = maxWidth >= 760 ? hand.length : 7;
-    final rows = (hand.length / perRow).ceil();
-    const spacing = 3.0;
-    final available = maxWidth - 16 - ((perRow - 1) * spacing);
-    final cardWidth = math.min(compact ? 43.0 : 52.0, math.max(34.0, available / perRow)).toDouble();
+    final cardWidth = compact ? 48.0 : 56.0;
     final cardHeight = cardWidth * 1.52;
     final legal = engine.phase == TarneebPhase.playing && engine.currentSeat == 0
-        ? engine.legalCards(0).map((e) => e.code).toSet()
-        : hand.map((e) => e.code).toSet();
+        ? engine.legalCards(0).map((card) => card.code).toSet()
+        : hand.map((card) => card.code).toSet();
     return SizedBox(
-      height: (rows * (cardHeight + 4)) + 12,
-      child: Center(
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          spacing: spacing,
-          runSpacing: 4,
-          children: hand.map((card) {
-            final selected = selectedCode == card.code;
-            return Transform.translate(
-              offset: Offset(0, selected ? -7 : 0),
-              child: GestureDetector(
-                onTap: legal.contains(card.code) && engine.phase == TarneebPhase.playing && engine.currentSeat == 0
-                    ? () => setState(() => selectedCode = selected ? null : card.code)
-                    : null,
-                onDoubleTap: legal.contains(card.code) ? () => _playLocalCard(card.code) : null,
-                onVerticalDragEnd: legal.contains(card.code)
-                    ? (details) { if ((details.primaryVelocity ?? 0) < -180) _playLocalCard(card.code); }
-                    : null,
-                child: Opacity(
-                  opacity: engine.phase == TarneebPhase.playing && engine.currentSeat == 0 && !legal.contains(card.code) ? .42 : 1,
-                  child: PlayingCard(label: card.label, width: cardWidth, height: cardHeight, selected: selected),
-                ),
+      height: cardHeight + 22,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+        itemCount: hand.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 3),
+        itemBuilder: (context, index) {
+          final card = hand[index];
+          final selected = selectedCode == card.code;
+          return Transform.translate(
+            offset: Offset(0, selected ? -7 : 0),
+            child: GestureDetector(
+              onTap: legal.contains(card.code) && engine.phase == TarneebPhase.playing && engine.currentSeat == 0
+                  ? () => setState(() => selectedCode = selected ? null : card.code)
+                  : null,
+              onDoubleTap: legal.contains(card.code) ? () => _playLocalCard(card.code) : null,
+              onVerticalDragEnd: legal.contains(card.code)
+                  ? (details) { if ((details.primaryVelocity ?? 0) < -180) _playLocalCard(card.code); }
+                  : null,
+              child: Opacity(
+                opacity: engine.phase == TarneebPhase.playing && engine.currentSeat == 0 && !legal.contains(card.code) ? .42 : 1,
+                child: PlayingCard(label: card.label, width: cardWidth, height: cardHeight, selected: selected),
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -4481,7 +4402,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
     if (engine.phase == TarneebPhase.roundEnd) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(10, 3, 10, 5),
-        child: FilledButton.icon(onPressed: _nextRound, icon: const Icon(Icons.refresh_rounded), label: const Text('بدء الجولة التالية'), style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44))),
+        child: FilledButton.icon(onPressed: null, icon: const Icon(Icons.autorenew_rounded), label: const Text('الجولة التالية تبدأ تلقائياً خلال لحظات…'), style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44))),
       );
     }
     if (engine.phase == TarneebPhase.gameOver) {
@@ -4504,17 +4425,17 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
     if (engine.phase == TarneebPhase.bidding) {
       final minBid = (engine.highestBid ?? 6) + 1;
       return SizedBox(
-        height: compact ? 47 : 53,
+        height: compact ? 63 : 70,
         child: ListView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           children: [
             for (var value = 7; value <= 13; value++)
               Padding(
-                padding: const EdgeInsetsDirectional.only(end: 6),
-                child: FilledButton.tonal(onPressed: value >= minBid ? () => _humanBid(value) : null, child: Text('$value')),
+                padding: const EdgeInsetsDirectional.only(end: 7),
+                child: TarneebBidButtonV170(label: '$value', subtitle: value >= minBid ? 'طلب قانوني' : 'غير متاح', onPressed: value >= minBid ? () => _humanBid(value) : null),
               ),
-            OutlinedButton(onPressed: () => _humanBid(null), child: const Text('سكون')),
+            TarneebBidButtonV170(label: 'سكون', subtitle: 'تمرير الدور', onPressed: () => _humanBid(null)),
           ],
         ),
       );
@@ -4791,7 +4712,7 @@ class ServerEngineRoomPage extends StatefulWidget {
   State<ServerEngineRoomPage> createState() => _ServerEngineRoomPageState();
 }
 
-class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
+class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with WidgetsBindingObserver {
   LocalGameSession? localSession;
   Map<String, dynamic>? room;
   String? error;
@@ -4815,17 +4736,33 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
   String? _lastRoomChatFingerprint;
   VoiceRoomService? voiceRoom;
   bool voicePanelExpanded = true;
+  Timer? serverAutoNextRoundTimer;
+  bool serverAutoNextRoundScheduled = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _create();
     timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState appState) {
+    if (appState == AppLifecycleState.resumed && isVoiceRoom && roomCode.isNotEmpty) {
+      final service = voiceRoom;
+      if (service == null || !service.joined || service.error != null) {
+        unawaited(_startVoiceIfNeeded());
+      }
+      unawaited(_refreshServerRoom());
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     timer?.cancel();
+    serverAutoNextRoundTimer?.cancel();
     voiceRoom?.removeListener(_onVoiceChanged);
     voiceRoom?.dispose();
     serverChatController.dispose();
@@ -4848,7 +4785,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
   }
 
   Future<void> _openLocalRoom([String? reason]) async {
-    localSession = LocalGameSession(gameId: widget.game.id, humanName: widget.controller.displayName, difficulty: widget.controller.botDifficultyCode);
+    localSession = LocalGameSession(gameId: widget.game.id, humanName: widget.controller.displayName, difficulty: widget.controller.botDifficultyCode, playerCount: widget.options.playerCount);
     if (!mounted) return;
     setState(() {
       room = localSession!.room();
@@ -4884,6 +4821,9 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
               voiceEnabled: widget.options.voiceEnabled,
               roomName: widget.options.roomName,
               password: widget.options.password,
+              minLevel: widget.options.minLevel,
+              allowOwnerKick: widget.options.allowOwnerKick,
+              playerCount: widget.options.playerCount,
             );
       if (!mounted) return;
       setState(() {
@@ -4896,6 +4836,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
       AppSounds.fire(widget.options.joiningExisting ? 'room_join' : 'room_create');
       await _loadRoomChat();
       await _startVoiceIfNeeded();
+      _scheduleServerAutoNextRound();
     } on ApiException catch (e) {
       if (widget.options.joiningExisting) {
         if (!mounted) return;
@@ -4919,7 +4860,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
     }
   }
 
-  int _playersFor(String game) => game == 'basra' ? 2 : 4;
+  int _playersFor(String game) => widget.options.playerCount.clamp(2, 6).toInt();
 
   Map<String, dynamic> get state {
     final value = room?['state'];
@@ -4936,6 +4877,31 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
   String get roomCode => room?['code']?.toString() ?? '';
   bool get isVoiceRoom => widget.options.voiceEnabled || room?['voice_enabled'] == true || state['voice_enabled'] == true || state['voice_room'] == true;
   int get turnDuration => int.tryParse(room?['turn_seconds']?.toString() ?? '') ?? widget.options.turnSeconds;
+
+  void _scheduleServerAutoNextRound() {
+    if (!mounted || localSession != null || sending || roomCode.isEmpty) return;
+    final nextAvailable = state['next_round_available'] == true;
+    if (!nextAvailable) {
+      serverAutoNextRoundScheduled = false;
+      serverAutoNextRoundTimer?.cancel();
+      serverAutoNextRoundTimer = null;
+      return;
+    }
+    if (serverAutoNextRoundScheduled) return;
+    final actionTypes = availableActions.map((item) => (item['type'] ?? item['action'] ?? '').toString()).toSet();
+    final action = actionTypes.contains('next_round') || widget.game.id.contains('tarneeb') ? 'next_round' : 'new_round';
+    serverAutoNextRoundScheduled = true;
+    AppSounds.fire('round_end');
+    serverAutoNextRoundTimer = Timer(const Duration(milliseconds: 1700), () async {
+      if (!mounted) return;
+      try {
+        AppSounds.fire('next_round');
+        await _action(action);
+      } finally {
+        serverAutoNextRoundScheduled = false;
+      }
+    });
+  }
 
   void _tick() {
     if (!mounted || loading || room == null || sending) return;
@@ -4976,6 +4942,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
       if (mounted) setState(() => seconds = turnDuration);
     }
     sending = false;
+    _scheduleServerAutoNextRound();
   }
 
   void _awardLocalProgressionTransition(Map<String, dynamic> before, Map<String, dynamic> after) {
@@ -5017,7 +4984,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
       if (localSession != null) {
         updated = localSession!.action(action, payload);
       } else {
-        final data = await widget.controller.api.gameAction(roomCode, action, payload);
+        final data = await widget.controller.api.gameAction(roomCode, action, payload, int.tryParse(state['_revision']?.toString() ?? ''));
         updated = Map<String, dynamic>.from(data['room'] as Map);
       }
       if (!mounted) return;
@@ -5030,6 +4997,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
         sending = false;
         autoPlayedTurns = 0;
       });
+      _scheduleServerAutoNextRound();
       final currentState = state;
       if (currentState['game_over'] == true && currentState['winner']?.toString() == 'user:0' && !awayMode) {
         widget.controller.rewardGameWin(widget.game.id);
@@ -5344,6 +5312,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
               RoomTool(icon: chatOpen ? Icons.chat_bubble : Icons.chat_bubble_outline, onTap: () => setState(() => chatOpen = !chatOpen)),
               RoomTool(icon: Icons.emoji_emotions_outlined, onTap: () => setState(() => reactionsOpen = !reactionsOpen)),
               RoomTool(icon: Icons.menu_book_outlined, onTap: () => showRules(context, widget.controller.localeCode, widget.game.id)),
+              if (room?['is_owner'] == true) RoomTool(icon: Icons.manage_accounts_rounded, onTap: _showRoomMembersManager),
               RoomTool(icon: Icons.refresh, onTap: _timeout),
               RoomTool(icon: Icons.exit_to_app, onTap: () => confirmLeaveGameV151(context, widget.controller, widget.game.id)),
             ],
@@ -5368,6 +5337,95 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
     );
   }
 
+  LocalFriend _roomPlayerAsFriend(Map<String, dynamic> player) => LocalFriend(
+        int.tryParse(player['user_id']?.toString() ?? '') ?? 0,
+        player['name']?.toString() ?? 'لاعب',
+        player['username']?.toString() ?? 'player',
+        online: player['connected'] == true,
+        activity: player['connected'] == true ? 'داخل الغرفة الآن' : 'غير متصل',
+        level: int.tryParse(player['level']?.toString() ?? '') ?? 1,
+        countryCode: player['country_code']?.toString() ?? 'PS',
+        avatar: player['avatar']?.toString(),
+        pashaDays: int.tryParse(player['pasha_days']?.toString() ?? '') ?? 0,
+        gamesPlayed: int.tryParse(player['games_played']?.toString() ?? '') ?? 0,
+        wins: int.tryParse(player['wins']?.toString() ?? '') ?? 0,
+        xp: int.tryParse(player['xp']?.toString() ?? '') ?? 0,
+        xpNext: int.tryParse(player['xp_next']?.toString() ?? '') ?? 100,
+        roundPoints: int.tryParse(player['round_points']?.toString() ?? '') ?? 0,
+        tournamentPoints: int.tryParse(player['tournament_points']?.toString() ?? '') ?? 0,
+        clubPoints: int.tryParse(player['club_points']?.toString() ?? '') ?? 0,
+        nameColor: player['name_color']?.toString() ?? '#facc15',
+        badge: player['badge']?.toString(),
+      );
+
+  Future<void> _refreshServerRoom() async {
+    if (localSession != null || roomCode.isEmpty) return;
+    try {
+      final data = await widget.controller.api.gameSession(roomCode);
+      if (mounted && data['room'] is Map) {
+        setState(() => room = Map<String, dynamic>.from(data['room'] as Map));
+        _scheduleServerAutoNextRound();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _kickRoomPlayer(Map<String, dynamic> player) async {
+    final userId = int.tryParse(player['user_id']?.toString() ?? '');
+    if (userId == null || userId <= 0 || roomCode.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('إخراج اللاعب من الغرفة'),
+            content: Text('هل تريد إخراج ${player['name'] ?? 'هذا اللاعب'} ومنعه من العودة إلى هذه المباراة؟'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
+              FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('إخراج')),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) return;
+    try {
+      final result = await widget.controller.api.kickRoomPlayer(roomCode, userId);
+      AppSounds.fire('kick');
+      if (mounted) showToast(context, result['message']?.toString() ?? 'تم إخراج اللاعب.');
+      await _refreshServerRoom();
+    } catch (error) {
+      if (mounted) showToast(context, friendlyErrorMessage(error, widget.controller.localeCode));
+    }
+  }
+
+  Future<void> _showRoomMembersManager() async {
+    final rawPlayers = room?['players'] is List ? room!['players'] as List : const [];
+    await showPremiumSheet(
+      context,
+      child: Column(
+        children: [
+          const Text('إدارة لاعبي الغرفة', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+          const SizedBox(height: 8),
+          const Text('اضغط على اللاعب لعرض بروفايله، أو استخدم زر الإخراج إذا كنت منشئ الغرفة.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white60)),
+          const SizedBox(height: 12),
+          for (final raw in rawPlayers)
+            if (raw is Map)
+              Builder(builder: (context) {
+                final player = Map<String, dynamic>.from(raw);
+                final bot = player['bot'] == true;
+                final mine = player['key']?.toString() == state['you']?.toString();
+                return PremiumListTile(
+                  icon: bot ? '🤖' : (player['flag']?.toString() ?? '👤'),
+                  title: player['name']?.toString() ?? 'لاعب',
+                  subtitle: bot ? 'لاعب آلي احترافي' : 'LV.${player['level'] ?? 1} • ${player['connected'] == true ? 'متصل' : 'غير متصل'}',
+                  onTap: bot ? null : () => showPublicPlayerProfileV170(context, widget.controller, _roomPlayerAsFriend(player)),
+                  action: (!bot && !mine && room?['is_owner'] == true && room?['allow_owner_kick'] == true)
+                      ? IconButton(onPressed: () => _kickRoomPlayer(player), icon: const Icon(Icons.person_remove_alt_1_rounded, color: Colors.redAccent))
+                      : const SizedBox.shrink(),
+                );
+              }),
+        ],
+      ),
+    );
+  }
+
   Widget _serverPlayer(Map<String, dynamic> player, int index, int count) {
     final name = player['name']?.toString() ?? 'لاعب ${index + 1}';
     final profile = index == 0 ? null : botProfiles[(index - 1) % botProfiles.length];
@@ -5380,10 +5438,19 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
       nameColor: index == 0 ? colorFromHex(widget.controller.selectedNameColor) : profile?.secondary ?? const Color(0xffe5e7eb),
       badge: index == 0 ? storeProductById(widget.controller.selectedBadge)?.icon : '🤖',
     );
-    if (index == 0) return Positioned(bottom: 72, left: 0, right: 0, child: seat);
-    if (index == 1) return Positioned(left: 0, top: 180, child: seat);
-    if (index == 2) return Positioned(top: 0, left: 0, right: 0, child: seat);
-    return Positioned(right: 0, top: 180, child: seat);
+    final bot = player['bot'] == true;
+    final mine = player['key']?.toString() == state['you']?.toString();
+    final canKick = !bot && !mine && room?['is_owner'] == true && room?['allow_owner_kick'] == true;
+    final interactiveSeat = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: bot ? null : () => showPublicPlayerProfileV170(context, widget.controller, _roomPlayerAsFriend(player)),
+      onLongPress: canKick ? () => _kickRoomPlayer(player) : null,
+      child: seat,
+    );
+    if (index == 0) return Positioned(bottom: 72, left: 0, right: 0, child: interactiveSeat);
+    if (index == 1) return Positioned(left: 0, top: 180, child: interactiveSeat);
+    if (index == 2) return Positioned(top: 0, left: 0, right: 0, child: interactiveSeat);
+    return Positioned(right: 0, top: 180, child: interactiveSeat);
   }
 
   List<Widget> _trickSeatWidgets() {
@@ -5633,39 +5700,33 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
 
   Widget _serverHand() {
     if (hand.isEmpty) return const SizedBox(height: 55, child: Center(child: Text('لا توجد أوراق ظاهرة في هذه المرحلة', style: TextStyle(color: Colors.white38, fontSize: 10))));
-    return LayoutBuilder(builder: (context, constraints) {
-      final perRow = constraints.maxWidth >= 760 ? hand.length : 7;
-      final rows = (hand.length / perRow).ceil();
-      const spacing = 3.0;
-      final available = constraints.maxWidth - 12 - ((perRow - 1) * spacing);
-      final cardWidth = math.min(52.0, math.max(34.0, available / perRow)).toDouble();
-      final cardHeight = cardWidth * 1.5;
-      return SizedBox(
-        height: rows * (cardHeight + 4) + 12,
-        child: Center(
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            spacing: spacing,
-            runSpacing: 4,
-            children: hand.map((card) {
-              final selected = selectedCard == card;
-              return Transform.translate(
-                offset: Offset(0, selected ? -7 : 0),
-                child: GestureDetector(
-                  onTap: () => setState(() => selectedCard = selected ? null : card),
-                  onDoubleTap: () => _quickPlayCard(card),
-                  onVerticalDragEnd: (details) { if ((details.primaryVelocity ?? 0) < -180) _quickPlayCard(card); },
-                  child: Opacity(
-                    opacity: legal.isNotEmpty && !legal.contains(card) ? .42 : 1,
-                    child: PlayingCard(label: _cardLabel(card), width: cardWidth, height: cardHeight, selected: selected),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      );
-    });
+    const cardWidth = 54.0;
+    const cardHeight = 81.0;
+    return SizedBox(
+      height: 104,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        itemCount: hand.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 3),
+        itemBuilder: (context, index) {
+          final card = hand[index];
+          final selected = selectedCard == card;
+          return Transform.translate(
+            offset: Offset(0, selected ? -7 : 0),
+            child: GestureDetector(
+              onTap: () => setState(() => selectedCard = selected ? null : card),
+              onDoubleTap: () => _quickPlayCard(card),
+              onVerticalDragEnd: (details) { if ((details.primaryVelocity ?? 0) < -180) _quickPlayCard(card); },
+              child: Opacity(
+                opacity: legal.isNotEmpty && !legal.contains(card) ? .42 : 1,
+                child: PlayingCard(label: _cardLabel(card), width: cardWidth, height: cardHeight, selected: selected),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   String _cardLabel(String raw) {
@@ -5782,7 +5843,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> {
     final options = values.isEmpty ? [for (var i = 7; i <= 13; i++) i] : values;
     final value = await showDialog<int>(context: context, builder: (dialogContext) => AlertDialog(
       title: const Text('اختر الطلب القانوني'),
-      content: Wrap(spacing: 6, runSpacing: 6, children: options.map((amount) => FilledButton.tonal(onPressed: () => Navigator.pop(dialogContext, amount), child: Text('$amount'))).toList()),
+      content: Wrap(spacing: 8, runSpacing: 8, children: options.map((amount) => TarneebBidButtonV170(label: '$amount', subtitle: 'طلب', onPressed: () => Navigator.pop(dialogContext, amount))).toList()),
     ));
     if (value != null) _action('bid', {'amount': value});
   }
@@ -6238,11 +6299,13 @@ class AccountAvatar extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => GlowAvatar(
-        text: controller.avatarEmoji.isNotEmpty ? controller.avatarEmoji : (controller.displayName.isEmpty ? '?' : controller.displayName.substring(0, 1)),
+  Widget build(BuildContext context) => _PashaColorAvatarV170(
+        name: controller.displayName,
+        emoji: controller.avatarEmoji.isNotEmpty ? controller.avatarEmoji : (controller.displayName.isEmpty ? '?' : controller.displayName.substring(0, 1)),
         bytes: _decode(),
-        size: size,
         color: colorFromHex(controller.selectedNameColor),
+        pasha: controller.vipDays > 0,
+        size: size,
       );
 }
 
@@ -6316,13 +6379,17 @@ class PremiumListTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final Widget action;
+  final VoidCallback? onTap;
 
-  const PremiumListTile({super.key, required this.icon, required this.title, required this.subtitle, required this.action});
+  const PremiumListTile({super.key, required this.icon, required this.title, required this.subtitle, required this.action, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return PremiumPanel(
-      child: Padding(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
@@ -6333,6 +6400,7 @@ class PremiumListTile extends StatelessWidget {
             action,
           ],
         ),
+      ),
       ),
     );
   }
@@ -6740,7 +6808,7 @@ void showRewards(BuildContext context, AppController controller) {
       children: [
         Text(L.t(controller.localeCode, 'rewards'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
         const SizedBox(height: 10),
-        PremiumListTile(icon: '🎁', title: 'المكافأة اليومية', subtitle: '100 توكن + 20 XP', action: FilledButton(onPressed: () async { await controller.claimDaily(); if (context.mounted) { Navigator.pop(context); showToast(context, 'تم استلام المكافأة'); } }, child: Text(L.t(controller.localeCode, 'claim')))),
+        PremiumListTile(icon: '🎁', title: 'المكافأة اليومية', subtitle: '100 توكن + 20 XP • مرة واحدة يومياً', action: FilledButton(onPressed: () async { final claimed = await controller.claimDaily(); if (context.mounted) { Navigator.pop(context); showToast(context, claimed ? 'تم استلام المكافأة' : 'استلمت مكافأة اليوم مسبقاً أو تعذر الاتصال'); } }, child: Text(L.t(controller.localeCode, 'claim')))),
         const SizedBox(height: 8),
         PremiumListTile(icon: '📺', title: 'شاهد إعلاناً واحصل على مكافأة', subtitle: '50 توكن + 15 XP • المتبقي اليوم ${controller.rewardedAdsRemaining}/5', action: FilledButton(onPressed: controller.rewardedAdsRemaining > 0 ? () async { await watchRewardedAd(context, controller); if (context.mounted) Navigator.pop(context); } : null, child: const Text('مشاهدة'))),
         const SizedBox(height: 8),
@@ -6953,19 +7021,7 @@ Future<void> openGameRoom(BuildContext context, AppController controller, GameIn
 }
 
 void showChallenges(BuildContext context, AppController controller) {
-  final challenges = <(String, String, String, String, int)>[
-    ('duel_tarneeb', '⚔️', 'تحدي طرنيب مباشر', 'tarneeb', 200),
-    ('duel_trix', '👑', 'تحدي تركس ملكي', 'trix', 200),
-    ('duel_hand', '🎴', 'تحدي هاند سريع', 'hand', 100),
-    ('duel_basra', '♦️', 'تحدي باصرة', 'basra', 50),
-  ];
-  showPremiumSheet(context, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    const Text('تحديات اللاعبين', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-    const SizedBox(height: 4),
-    const Text('اختر تحدياً. الفوز يمنحك توكنز وXP ويرفع طريق الهدايا، بدون رسوم دخول.', style: TextStyle(color: Colors.white60, height: 1.5)),
-    const SizedBox(height: 10),
-    ...challenges.map((entry) => Padding(padding: const EdgeInsets.only(bottom: 9), child: PremiumListTile(icon: entry.$2, title: entry.$3, subtitle: '${L.t(controller.localeCode, entry.$4)} • مكافأة ${formatNumber(entry.$5)}', action: FilledButton(onPressed: () async { if (!controller.joinChallenge(entry.$1)) { showToast(context, 'غادر التحدي الحالي أولاً.'); return; } final game = gamesCatalog.firstWhere((g) => g.id == entry.$4); Navigator.pop(context); showCreateRoom(context, controller, game); controller.leaveChallenge(); }, child: const Text('تحدَّ الآن'))))),
-  ]));
+  unawaited(showChallengesV170(context, controller));
 }
 
 void showCompetitions(BuildContext context, AppController controller) {
@@ -6995,7 +7051,7 @@ void showGameLobby(BuildContext context, AppController controller, GameInfo game
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Center(child: Text(game.icon, style: const TextStyle(fontSize: 75))),
+        Center(child: ClipRRect(borderRadius: BorderRadius.circular(24), child: Image.asset(gameArtAsset(game.id), width: 180, height: 118, fit: BoxFit.cover))),
         const SizedBox(height: 5),
         Center(child: Text(L.t(controller.localeCode, game.id), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900))),
         Center(child: Text('${formatNumber(game.players)} لاعب متصل', style: const TextStyle(color: Colors.white60))),
@@ -7056,17 +7112,14 @@ Future<void> showAvailableRooms(BuildContext context, AppController controller, 
               final code = room['code']?.toString() ?? '';
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: PremiumListTile(
-                  icon: voice ? '🎙️' : '🃏',
-                  title: room['name']?.toString() ?? code,
-                  subtitle: '${voice ? L.t(controller.localeCode, 'voiceGame') : L.t(controller.localeCode, 'normalGame')} • ${room['players'] ?? 1}/${room['max_players'] ?? 4} • ${room['turn_seconds'] ?? 10}s • $code',
-                  action: FilledButton(
-                    onPressed: code.isEmpty ? null : () async {
-                      Navigator.pop(context);
-                      await openGameRoom(context, controller, game, options: RoomLaunchOptions(roomCode: code, voiceEnabled: voice));
-                    },
-                    child: Text(L.t(controller.localeCode, 'join')),
-                  ),
+                child: OpenRoomCardV170(
+                  controller: controller,
+                  game: game,
+                  room: room,
+                  onJoin: code.isEmpty ? null : () async {
+                    Navigator.pop(context);
+                    await openGameRoom(context, controller, game, options: RoomLaunchOptions(roomCode: code, voiceEnabled: voice));
+                  },
                 ),
               );
             }),
@@ -7201,6 +7254,9 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
   var visibility = 'public';
   var voiceEnabled = initialVoice;
   var turnSeconds = 10;
+  var minLevel = 1;
+  var allowOwnerKick = true;
+  var playerCount = v170AllowedPlayerCounts(game.id).first;
   showPremiumSheet(
     context,
     child: StatefulBuilder(
@@ -7256,6 +7312,29 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
             ],
             onChanged: (value) => setLocalState(() => turnSeconds = value ?? 10),
           ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<int>(
+            initialValue: playerCount,
+            decoration: const InputDecoration(labelText: 'عدد اللاعبين', prefixIcon: Icon(Icons.groups_rounded)),
+            items: v170AllowedPlayerCounts(game.id).map((count) => DropdownMenuItem(value: count, child: Text('$count لاعبين'))).toList(),
+            onChanged: (value) => setLocalState(() => playerCount = value ?? playerCount),
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<int>(
+            initialValue: minLevel,
+            decoration: const InputDecoration(labelText: 'الحد الأدنى لمستوى الدخول', prefixIcon: Icon(Icons.military_tech_rounded)),
+            items: v170MinLevelOptions(controller.level)
+                .map((value) => DropdownMenuItem(value: value, child: Text('المستوى $value فما فوق')))
+                .toList(),
+            onChanged: (value) => setLocalState(() => minLevel = value ?? 1),
+          ),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            value: allowOwnerKick,
+            onChanged: (value) => setLocalState(() => allowOwnerKick = value),
+            title: const Text('السماح لمنشئ الغرفة بإخراج لاعب'),
+            subtitle: const Text('اللاعب المُخرج لا يستطيع العودة إلى نفس المباراة.'),
+          ),
           const SizedBox(height: 14),
           FilledButton.icon(
             onPressed: () async {
@@ -7273,6 +7352,9 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
                 visibility: visibility,
                 password: visibility == 'private' ? passwordController.text.trim() : null,
                 turnSeconds: turnSeconds,
+                minLevel: minLevel,
+                allowOwnerKick: allowOwnerKick,
+                playerCount: playerCount,
               );
               Navigator.pop(context);
               await openGameRoom(context, controller, game, options: options);
@@ -7430,7 +7512,6 @@ class _ProductLivePreview extends StatelessWidget {
     } else if (product.category == 'pasha') {
       preview = Column(mainAxisSize: MainAxisSize.min, children: [
         Image.asset('assets/images/pasha.png', width: 116, height: 116, fit: BoxFit.contain),
-        Text('${controller.durationFor(product) ?? 0} يوم', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 22, fontWeight: FontWeight.w900)),
         const Text('تحكم بالغرفة • شارة خاصة • XP إضافي', style: TextStyle(color: Colors.white60, fontSize: 11)),
       ]);
     } else if (product.category == 'covers') {
@@ -7607,6 +7688,19 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
             map['username']?.toString() ?? '',
             online: map['online'] == true,
             activity: map['online'] == true ? 'متصل الآن' : 'غير متصل',
+            level: int.tryParse(map['level']?.toString() ?? '') ?? 1,
+            countryCode: (map['country_code']?.toString() ?? 'PS').toUpperCase(),
+            avatar: map['avatar']?.toString(),
+            pashaDays: int.tryParse(map['pasha_days']?.toString() ?? '') ?? 0,
+            gamesPlayed: int.tryParse(map['games_played']?.toString() ?? '') ?? 0,
+            wins: int.tryParse(map['wins']?.toString() ?? '') ?? 0,
+            xp: int.tryParse(map['xp']?.toString() ?? '') ?? 0,
+            xpNext: int.tryParse(map['xp_next']?.toString() ?? '') ?? 100,
+            roundPoints: int.tryParse(map['round_points']?.toString() ?? '') ?? 0,
+            tournamentPoints: int.tryParse(map['tournament_points']?.toString() ?? '') ?? 0,
+            clubPoints: int.tryParse(map['club_points']?.toString() ?? '') ?? 0,
+            nameColor: map['name_color']?.toString() ?? '#facc15',
+            badge: map['badge']?.toString(),
           );
         }).where((e) => e.id > 0).toList();
       } catch (e) {
@@ -7667,10 +7761,18 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
           ),
         ),
         const SizedBox(height: 10),
+        if (widget.controller.friends.isNotEmpty)
+          FilledButton.tonalIcon(
+            onPressed: () => inviteAllFriendsV170(context, widget.controller),
+            icon: const Icon(Icons.group_add_rounded),
+            label: const Text('دعوة كل الأصدقاء إلى الغرفة الحالية'),
+          ),
+        if (widget.controller.friends.isNotEmpty) const SizedBox(height: 10),
         if (widget.controller.friends.isEmpty) const _EmptyState(icon: Icons.people_outline, title: 'لا يوجد أصدقاء بعد'),
         ...widget.controller.friends.map((friend) => Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: PremiumListTile(
+            onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend),
             icon: friend.name.substring(0, 1),
             title: '${friend.name}  ${friend.online ? '●' : '○'}',
             subtitle: '@${friend.username} • ${friend.activity}',
@@ -7679,7 +7781,7 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
               PopupMenuButton<String>(
                 onSelected: (value) async {
                   if (value == 'transfer') _showTransfer(friend);
-                  if (value == 'invite') showToast(context, 'تم إرسال دعوة لعبة إلى ${friend.name}.');
+                  if (value == 'invite') await inviteFriendV170(context, widget.controller, friend);
                   if (value == 'block') {
                     if (widget.controller.serverConnected) {
                       try { await widget.controller.api.blockUser(friend.id); } catch (_) {}
@@ -7711,6 +7813,7 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
         ...widget.controller.incomingRequests.map((friend) => Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: PremiumListTile(
+            onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend),
             icon: friend.name.substring(0, 1),
             title: friend.name,
             subtitle: '@${friend.username} • ${friend.activity}',
@@ -7746,6 +7849,7 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
         ...searchResults.map((friend) => Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: PremiumListTile(
+            onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend),
             icon: friend.name.substring(0, 1),
             title: friend.name,
             subtitle: '@${friend.username} • ${friend.activity}',

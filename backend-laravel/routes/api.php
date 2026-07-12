@@ -69,6 +69,7 @@ Route::prefix('mobile/v1')->group(function () {
         Route::post('/games/session/{room:code}/action', [MobileGameController::class, 'action']);
         Route::post('/games/session/{room:code}/timeout', [MobileGameController::class, 'timeout']);
         Route::post('/games/session/{room:code}/leave', [MobileGameController::class, 'leave']);
+        Route::post('/games/session/{room:code}/kick/{user}', [MobileGameController::class, 'kick'])->middleware('throttle:warqna-sensitive');
         Route::get('/games/session/{room:code}/chat', [MobileGameController::class, 'chat']);
         Route::post('/games/session/{room:code}/chat', [MobileGameController::class, 'sendChat']);
 
@@ -80,6 +81,9 @@ Route::prefix('mobile/v1')->group(function () {
 
         Route::get('/social', [MobileSocialController::class, 'index']);
         Route::get('/social/search', [MobileSocialController::class, 'search']);
+        Route::get('/social/users/{user}/profile', [MobileSocialController::class, 'profile']);
+        Route::post('/social/users/{user}/room-invite', [MobileSocialController::class, 'inviteToRoom']);
+        Route::post('/social/room-invite-all', [MobileSocialController::class, 'inviteAllToRoom'])->middleware('throttle:warqna-sensitive');
         Route::post('/social/friends/{user}/request', [MobileSocialController::class, 'request']);
         Route::post('/social/friendships/{friendship}/respond', [MobileSocialController::class, 'respond']);
         Route::delete('/social/friendships/{friendship}', [MobileSocialController::class, 'cancel']);

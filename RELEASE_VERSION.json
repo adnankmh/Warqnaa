@@ -1,8 +1,8 @@
 {
-  "version": "1.69.0",
-  "build": 169,
-  "full": "1.69.0+169",
-  "release": "v169",
+  "version": "1.70.0",
+  "build": 170,
+  "full": "1.70.0+170",
+  "release": "v170",
   "channel": "production",
-  "codename": "flutter-ci-api-contract-hotfix"
+  "codename": "responsive-gameplay-security"
 }

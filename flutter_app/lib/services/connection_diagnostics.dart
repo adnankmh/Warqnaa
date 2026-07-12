@@ -29,6 +29,20 @@ class ConnectionDiagnostics {
       results.add(DiagnosticItem(_text(lang, 'الخادم', 'Server'), false, _text(lang, 'تعذر الوصول إلى ${api.baseUrl}: $error', 'Could not reach ${api.baseUrl}: $error')));
     }
 
+    final apiUri = Uri.tryParse(api.baseUrl);
+    final loopbackApi = const {'localhost', '127.0.0.1', '10.0.2.2'}.contains(apiUri?.host);
+    if (!kIsWeb) {
+      results.add(DiagnosticItem(
+        _text(lang, 'رابط خادم الهاتف', 'Mobile server URL'),
+        !loopbackApi && apiUri?.scheme == 'https',
+        loopbackApi
+            ? _text(lang, 'العنوان ${api.baseUrl} محلي للهاتف ولن يشغّل الصوت بين اللاعبين. أدخل رابط HTTPS حقيقياً.', '${api.baseUrl} is loopback on the phone and cannot carry player-to-player voice. Configure a real HTTPS URL.')
+            : apiUri?.scheme == 'https'
+                ? _text(lang, 'رابط HTTPS صالح للصوت والإشعارات.', 'HTTPS URL is suitable for voice and push.')
+                : _text(lang, 'استخدم HTTPS للخادم البعيد.', 'Use HTTPS for the remote server.'),
+      ));
+    }
+
     if (kIsWeb) {
       final secure = Uri.base.scheme == 'https' || Uri.base.host == 'localhost' || Uri.base.host == '127.0.0.1';
       results.add(DiagnosticItem(_text(lang, 'أمان المتصفح', 'Browser security'), secure, secure ? _text(lang, 'HTTPS متاح للميكروفون.', 'HTTPS is available for microphone access.') : _text(lang, 'الصوت يحتاج HTTPS.', 'Voice requires HTTPS.')));

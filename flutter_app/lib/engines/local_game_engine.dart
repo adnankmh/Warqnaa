@@ -6,14 +6,16 @@ import 'dart:math';
 /// keeps every curated card game playable when the app is hosted on GitHub
 /// Pages or opened without a backend connection.
 class LocalGameSession {
-  LocalGameSession({required this.gameId, required this.humanName, this.difficulty = 'pro', int? seed})
-      : _random = Random(seed) {
+  LocalGameSession({required this.gameId, required this.humanName, this.difficulty = 'pro', int playerCount = 4, int? seed})
+      : requestedPlayerCount = playerCount,
+        _random = Random(seed) {
     _setup();
   }
 
   final String gameId;
   final String humanName;
   final String difficulty;
+  final int requestedPlayerCount;
   final Random _random;
 
   bool get _easyAi => difficulty == 'easy';
@@ -37,7 +39,7 @@ class LocalGameSession {
   ];
   static const _balootRanks = <String>['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
   static const _suits = <String>['C', 'D', 'S', 'H'];
-  static const _botNames = <String>['سامر', 'ليلى', 'جميل'];
+  static const _botNames = <String>['سامر', 'ليلى', 'جميل', 'نور', 'رامي'];
 
   final List<List<String>> _hands = <List<String>>[];
   final List<String> _deck = <String>[];
@@ -85,7 +87,12 @@ class LocalGameSession {
 
   bool get _isBaloot => gameId == 'baloot';
 
-  int get playerCount => _isBasra ? 2 : 4;
+  int get playerCount {
+    if (_isBasra) return 2;
+    if (_isHandPartner) return 4;
+    if (_isRummy) return requestedPlayerCount.clamp(2, 4).toInt();
+    return 4;
+  }
 
   void _setup() {
     _hands.clear();
@@ -148,6 +155,7 @@ class LocalGameSession {
         _hands[seat].add(_deck.removeLast());
       }
     }
+    _balancePremiumHands();
     for (final hand in _hands) {
       _sortHand(hand);
     }
@@ -170,13 +178,37 @@ class LocalGameSession {
     }
   }
 
+  void _balancePremiumHands() {
+    bool high(String card) {
+      final rank = _cardRank(card);
+      return rank == 'A' || rank == 'K' || rank == 'Q';
+    }
+    int highCount(List<String> hand) => hand.where(high).length;
+    for (var receiver = 0; receiver < _hands.length; receiver++) {
+      var guard = 0;
+      while (highCount(_hands[receiver]) < 2 && guard++ < 12) {
+        int? donor;
+        for (var index = 0; index < _hands.length; index++) {
+          if (index != receiver && highCount(_hands[index]) > 3) { donor = index; break; }
+        }
+        if (donor == null) break;
+        final donorHighIndex = _hands[donor].indexWhere(high);
+        final receiverLowIndex = _hands[receiver].indexWhere((card) => !high(card));
+        if (donorHighIndex < 0 || receiverLowIndex < 0) break;
+        final temp = _hands[receiver][receiverLowIndex];
+        _hands[receiver][receiverLowIndex] = _hands[donor][donorHighIndex];
+        _hands[donor][donorHighIndex] = temp;
+      }
+    }
+  }
+
   void _setupRummy() {
     _deck.addAll(_makeDeck(copies: 2, jokers: true));
-    for (var seat = 0; seat < 4; seat++) {
+    for (var seat = 0; seat < playerCount; seat++) {
       _hands.add(<String>[]);
     }
     for (var card = 0; card < 14; card++) {
-      for (var seat = 0; seat < 4; seat++) {
+      for (var seat = 0; seat < playerCount; seat++) {
         _hands[seat].add(_deck.removeLast());
       }
     }
@@ -223,7 +255,7 @@ class LocalGameSession {
           'name': name,
           'bot': index != 0,
           'bot_level': index == 0 ? null : difficulty,
-          'avatar': index == 0 ? '🦁' : const <String>['🦅','🌙','🦁'][index - 1],
+          'avatar': index == 0 ? '🦁' : const <String>['🤖','🦅','🌙','🦁','🐉'][(index - 1) % 5],
           'seat': index,
           'score': _scores[index] ?? 0,
         };
@@ -675,10 +707,7 @@ class LocalGameSession {
   }
 
   int _nextTrickSeat(int seat) {
-    if (_isSyrianTarneeb) {
-      return (seat + 3) % 4;
-    }
-    return (seat + 1) % 4;
+    return (seat + 1) % playerCount;
   }
 
   void _scoreTrixTrick(int winner) {
@@ -843,7 +872,7 @@ class LocalGameSession {
       _finishRummy(seat);
       return;
     }
-    currentSeat = (seat + 1) % 4;
+    currentSeat = (seat + 1) % playerCount;
     phase = 'draw';
     enginePhase = 'draw';
   }
@@ -853,7 +882,7 @@ class LocalGameSession {
     phase = 'finished';
     enginePhase = 'finished';
     winnerKey = winner == 0 ? 'user:0' : 'bot:$winner';
-    for (var seat = 0; seat < 4; seat++) {
+    for (var seat = 0; seat < playerCount; seat++) {
       _scores[seat] = -_hands[seat].fold<int>(0, (sum, card) => sum + _cardPoints(card));
     }
     _scores[winner] = _scores.values.map((e) => e.abs()).fold<int>(0, (a, b) => a + b);

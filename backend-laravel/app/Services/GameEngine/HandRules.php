@@ -12,6 +12,7 @@ class HandRules extends AbstractCardRules
     }
     public function validate(array $state,string $playerId,string $action,array $payload): bool
     {
+        if($action==='new_round') return ($state['phase']??null)==='finished' && !empty($state['next_round_available']);
         if(($state['turn']??null)!==$playerId) return false;
         if(in_array($action,['draw_deck','draw_discard'],true)) return empty($state['drew_this_turn'][$playerId]);
         if($action==='meld') return count($payload['cards']??[])>=3 && count($payload['cards']??[])<=13 && $this->hasCards($state['hands'][$playerId]??[],$payload['cards']) && $this->isValidMeld($payload['cards']);
@@ -22,6 +23,7 @@ class HandRules extends AbstractCardRules
     public function apply(array $state,string $playerId,string $action,array $payload): array
     {
         if(!$this->validate($state,$playerId,$action,$payload)){ $state['last_error']='invalid_action'; $state['last_error_message']='الحركة غير مقبولة الآن: اسحب أولًا، ثم نزّل مجموعة/سلسلة صحيحة 3 أوراق أو أكثر، ثم ارمِ ورقة.'; return $state; }
+        if($action==='new_round') return $this->initialState($state['players'] ?? [], ['previous_scores'=>$state['scores'] ?? [], 'round'=>(int)($state['round'] ?? 1)+1, 'target'=>$state['target'] ?? 5]);
         if($action==='draw_deck'){ if(!empty($state['deck'])) $state['hands'][$playerId][]=array_shift($state['deck']); $state['hands'][$playerId]=$this->sortHand($state['hands'][$playerId]); $state['drew_this_turn'][$playerId]=true; $state['messages'][]=$this->labelPlayer($playerId).' سحب من الدك.'; }
         if($action==='draw_discard'){ if(!empty($state['discard'])) $state['hands'][$playerId][]=array_pop($state['discard']); $state['hands'][$playerId]=$this->sortHand($state['hands'][$playerId]); $state['drew_this_turn'][$playerId]=true; $state['messages'][]=$this->labelPlayer($playerId).' سحب من الرمي.'; }
         if($action==='meld'){

@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\{Tournament,TournamentEntry,Game,Room,RoomPlayer};
+use App\Models\{Friendship,Tournament,TournamentEntry,Game,Room,RoomPlayer};
 use App\Services\Wallet\WalletService;
 use Illuminate\Http\Request; use RuntimeException;
 use Illuminate\Support\Facades\{DB,Schema};
@@ -46,6 +46,17 @@ class TournamentController
         $activeTournament = TournamentEntry::where('user_id',auth()->id())->whereHas('tournament', fn($q)=>$q->whereIn('status',['open','running']))->where('tournament_id','!=',$tournament->id)->first();
         abort_if($activeTournament,403,'أنت مشترك في مسابقة أخرى بالفعل. اخرج أو انتظر انتهاء المسابقة الحالية قبل الاشتراك في مسابقة جديدة.');
         abort_if($tournament->entries()->where('user_id',auth()->id())->exists(),409,'أنت مسجل بالفعل');
+        $blockedWithCreator = Friendship::where('status','blocked')->where(function($query) use($tournament){
+            $query->where(fn($q)=>$q->where('requester_id',auth()->id())->where('addressee_id',$tournament->creator_id))
+                ->orWhere(fn($q)=>$q->where('requester_id',$tournament->creator_id)->where('addressee_id',auth()->id()));
+        })->exists();
+        abort_if($blockedWithCreator,403,'لا يمكنك التسجيل في مسابقة ينظمها لاعب محظور بينكما.');
+        $participantIds = $tournament->entries()->pluck('user_id')->map(fn($id)=>(int)$id)->all();
+        $blockedWithParticipant = $participantIds !== [] && Friendship::where('status','blocked')->where(function($query) use($participantIds){
+            $query->where(fn($q)=>$q->where('requester_id',auth()->id())->whereIn('addressee_id',$participantIds))
+                ->orWhere(fn($q)=>$q->whereIn('requester_id',$participantIds)->where('addressee_id',auth()->id()));
+        })->exists();
+        abort_if($blockedWithParticipant,403,'لا يمكنك التسجيل في مسابقة تضم لاعباً محظوراً بينكما.');
         // v142: tournament entry is free; no tokens are deducted during gameplay.
         TournamentEntry::create(['tournament_id'=>$tournament->id,'user_id'=>auth()->id()]);
         $bracket=$tournament->bracket ?: ['round'=>1,'matches'=>[],'messages'=>[]];

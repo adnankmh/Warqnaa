@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.69.0');
-const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 169);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.70.0');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 170);
 
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})
@@ -26,10 +26,14 @@ class WarqnaApiClient {
         ))
             .replaceAll(RegExp(r'/+$'), '');
 
-  final String baseUrl;
+  String baseUrl;
   String? token;
 
   String get webBaseUrl => baseUrl.replaceFirst(RegExp(r'/api/mobile/v1$'), '');
+
+  void updateBaseUrl(String value) {
+    baseUrl = value.trim().replaceAll(RegExp(r'/+$'), '');
+  }
 
   String get platform => kIsWeb
       ? 'web'
@@ -106,6 +110,9 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> social() => get('/social');
   Future<Map<String, dynamic>> searchPlayers(String query) =>
       get('/social/search?q=${Uri.encodeQueryComponent(query)}');
+  Future<Map<String, dynamic>> publicPlayerProfile(int userId) => get('/social/users/$userId/profile');
+  Future<Map<String, dynamic>> inviteFriendToRoom(int userId, String roomCode) => post('/social/users/$userId/room-invite', {'room_code': roomCode});
+  Future<Map<String, dynamic>> inviteAllFriendsToRoom(String roomCode) => post('/social/room-invite-all', {'room_code': roomCode});
   Future<Map<String, dynamic>> requestFriend(int userId) => post('/social/friends/$userId/request', const {});
   Future<Map<String, dynamic>> respondFriend(int friendshipId, String status) =>
       post('/social/friendships/$friendshipId/respond', {'status': status});
@@ -134,6 +141,9 @@ class WarqnaApiClient {
     bool voiceEnabled = false,
     String? roomName,
     String? password,
+    int minLevel = 1,
+    bool allowOwnerKick = true,
+    int? playerCount,
   }) =>
       post('/games/session', {
         'game': game,
@@ -141,16 +151,28 @@ class WarqnaApiClient {
         'visibility': visibility,
         'turn_seconds': turnSeconds,
         'voice_enabled': voiceEnabled,
+        'min_level': minLevel,
+        'allow_owner_kick': allowOwnerKick,
+        if (playerCount != null) 'player_count': playerCount,
         if (roomName != null && roomName.trim().isNotEmpty) 'room_name': roomName.trim(),
         if (visibility == 'private' && password != null && password.isNotEmpty) 'password': password,
       });
   Future<Map<String, dynamic>> availableRooms(String game) => get('/games/$game/rooms');
   Future<Map<String, dynamic>> joinGame(String code, {String? password}) =>
       post('/games/session/$code/join', {if (password != null && password.isNotEmpty) 'password': password});
-  Future<Map<String, dynamic>> gameAction(String code, String action, [Map<String, dynamic>? payload]) =>
-      post('/games/session/$code/action', {'action': action, 'payload': payload ?? const {}});
+  Future<Map<String, dynamic>> gameSession(String code) => get('/games/session/$code');
+  Future<Map<String, dynamic>> gameAction(String code, String action, [Map<String, dynamic>? payload, int? stateRevision]) {
+    final clientActionId = '${DateTime.now().microsecondsSinceEpoch}-${code.hashCode}-${action.hashCode}';
+    return post('/games/session/$code/action', {
+      'action': action,
+      'payload': payload ?? const {},
+      'client_action_id': clientActionId,
+      if (stateRevision != null) 'state_revision': stateRevision,
+    });
+  }
   Future<Map<String, dynamic>> gameTimeout(String code) => post('/games/session/$code/timeout', const {});
   Future<Map<String, dynamic>> leaveGame(String code) => post('/games/session/$code/leave', const {});
+  Future<Map<String, dynamic>> kickRoomPlayer(String code, int userId) => post('/games/session/$code/kick/$userId', const {});
   Future<Map<String, dynamic>> roomChat(String code) => get('/games/session/$code/chat');
   Future<Map<String, dynamic>> sendRoomChat(String code, String body) => post('/games/session/$code/chat', {'body': body});
   Future<Map<String, dynamic>> voiceJoin(String code) => post('/games/session/$code/voice/join', const {});

@@ -114,33 +114,71 @@ Future<void> inviteFriendsToRoomV151(BuildContext context, AppController control
         children: [
           const Text('دعوة الأصدقاء للغرفة', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
           const SizedBox(height: 5),
-          const Text('يصل إشعار مباشر، وعند الضغط عليه يفتح اللعبة ويختار اللاعب أي مقعد فارغ.', style: TextStyle(color: Colors.white60, height: 1.5)),
-          const SizedBox(height: 12),
+          const Text('يمكن دعوة الأصدقاء المتصلين وغير المتصلين. تصل الدعوة كإشعار Push، وعند الضغط عليها تفتح الغرفة مباشرة.', style: TextStyle(color: Colors.white60, height: 1.5)),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(
+              child: FilledButton.tonalIcon(
+                onPressed: controller.friends.isEmpty
+                    ? null
+                    : () async {
+                        Navigator.pop(context);
+                        await inviteAllFriendsV170(context, controller);
+                      },
+                icon: const Icon(Icons.group_add_rounded),
+                label: const FittedBox(child: Text('دعوة كل الأصدقاء')),
+              ),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(
+              onPressed: controller.friends.isEmpty
+                  ? null
+                  : () => setLocalState(() {
+                        if (selected.length == controller.friends.length) {
+                          selected.clear();
+                        } else {
+                          selected
+                            ..clear()
+                            ..addAll(controller.friends.map((friend) => friend.id));
+                        }
+                      }),
+              child: Text(selected.length == controller.friends.length && selected.isNotEmpty ? 'إلغاء الكل' : 'تحديد الكل'),
+            ),
+          ]),
+          const SizedBox(height: 10),
           ...controller.friends.map((friend) => CheckboxListTile(
                 value: selected.contains(friend.id),
-                onChanged: friend.online
-                    ? (value) => setLocalState(() {
-                          if (value == true) { selected.add(friend.id); } else { selected.remove(friend.id); }
-                        })
-                    : null,
-                secondary: CircleAvatar(child: Text(friend.name.substring(0, 1))),
+                onChanged: (value) => setLocalState(() {
+                  if (value == true) {
+                    selected.add(friend.id);
+                  } else {
+                    selected.remove(friend.id);
+                  }
+                }),
+                secondary: Stack(clipBehavior: Clip.none, children: [
+                  CircleAvatar(child: Text(friend.name.isEmpty ? '?' : friend.name.characters.first)),
+                  PositionedDirectional(
+                    end: -2,
+                    bottom: -2,
+                    child: Container(width: 12, height: 12, decoration: BoxDecoration(shape: BoxShape.circle, color: friend.online ? Colors.greenAccent : Colors.grey, border: Border.all(color: Colors.black, width: 2))),
+                  ),
+                ]),
                 title: Text(friend.name, style: const TextStyle(fontWeight: FontWeight.w900)),
-                subtitle: Text(friend.online ? 'متصل الآن • ${friend.activity}' : friend.activity),
+                subtitle: Text(friend.online ? 'متصل الآن • ${friend.activity}' : 'غير متصل • ستصل الدعوة كإشعار'),
               )),
           const SizedBox(height: 10),
           FilledButton.icon(
             onPressed: selected.isEmpty
                 ? null
-                : () {
-                    final names = controller.friends.where((friend) => selected.contains(friend.id)).map((friend) => friend.name).join('، ');
-                    for (final friend in controller.friends.where((friend) => selected.contains(friend.id))) {
-                      controller.notices.insert(0, AppNotice('🎮', 'دعوة لعبة إلى ${friend.name}', 'تم إرسال دعوة $gameId. عند قبولها يمكن اختيار أي مقعد فارغ.'));
-                    }
+                : () async {
+                    final chosen = controller.friends.where((friend) => selected.contains(friend.id)).toList();
                     Navigator.pop(context);
-                    showToast(context, 'تم إرسال الدعوة إلى $names.');
+                    for (final friend in chosen) {
+                      await inviteFriendV170(context, controller, friend);
+                    }
                   },
             icon: const Icon(Icons.send_rounded),
-            label: const Text('إرسال الدعوات'),
+            label: Text('إرسال ${selected.length} دعوة'),
           ),
         ],
       ),

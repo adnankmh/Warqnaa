@@ -1039,6 +1039,35 @@ def check_v169_flutter_ci_regressions() -> None:
     print(result.stdout.strip())
     print("[OK] v169 Flutter localization, notification API and ChangeNotifier CI regressions")
 
+
+def check_v170_responsive_gameplay_security() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v170_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna v170 regression contract failed: " + result.stdout.strip())
+
+    require("backend-laravel/tests/Feature/V170ResponsiveGameplaySecurityContractTest.php", [
+        "test_progressive_xp_curve_matches_the_v170_contract",
+        "test_public_profile_contains_progress_and_country_but_never_private_tokens",
+        "test_v170_authoritative_game_and_security_contracts_are_present",
+    ])
+    require("flutter_app/lib/services/connection_diagnostics.dart", [
+        "رابط خادم الهاتف",
+        "loopbackApi",
+    ])
+    require(".github/workflows/flutter-android.yml", [
+        "--obfuscate",
+        "--split-debug-info=",
+        "flutter_app/build/symbols/**",
+    ])
+    print(result.stdout.strip())
+    print("[OK] v170 responsive UI, public profiles, XP curve, mobile voice diagnostics, room controls and security contracts")
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -1078,6 +1107,7 @@ def main() -> None:
     check_v165_android_workmanager_boot_guard()
     check_v166_global_polish()
     check_v169_flutter_ci_regressions()
+    check_v170_responsive_gameplay_security()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")
