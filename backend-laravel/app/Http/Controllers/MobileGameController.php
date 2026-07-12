@@ -294,29 +294,6 @@ class MobileGameController extends Controller
         return response()->json(['ok'=>true,'message'=>'تم إخراج اللاعب ومنعه من العودة إلى نفس المباراة.']);
     }
 
-    public function preview(Request $request, Room $room)
-    {
-        $room->loadMissing(['game', 'players.user.profile']);
-        abort_if(in_array($room->status, ['closed', 'finished'], true), 410, 'الغرفة مغلقة.');
-        $state = $room->state ?: [];
-        return response()->json([
-            'ok' => true,
-            'room' => [
-                'code' => $room->code,
-                'game' => $room->game?->key,
-                'status' => $room->status,
-                'visibility' => $room->visibility,
-                'room_name' => $state['room_name'] ?? ($room->game?->name ?? 'غرفة ورقنا'),
-                'voice_enabled' => (bool)($state['voice_enabled'] ?? $state['voice_room'] ?? false),
-                'turn_seconds' => (int)($state['turn_seconds'] ?? 10),
-                'min_level' => (int)($room->min_level ?? $state['min_level'] ?? 1),
-                'max_players' => (int)$room->max_players,
-                'allow_owner_kick' => (bool)($state['allow_owner_kick'] ?? false),
-                'already_joined' => $room->players->contains(fn(RoomPlayer $player) => !$player->is_bot && (int)$player->user_id === (int)$request->user()->id),
-            ],
-        ]);
-    }
-
     public function show(Request $request, Room $room)
     {
         $this->authorizeRoom($request, $room);
@@ -539,11 +516,11 @@ class MobileGameController extends Controller
                     'flag' => (string)(config('countries.'.safe_country_code($player->user?->profile?->country_code ?? 'PS').'.flag') ?? '🇵🇸'),
                     'flag_url' => flag_url($player->user?->profile?->country_code ?? 'PS'),
                     'level' => (int)($player->user?->profile?->level ?? 1),
-                    'xp' => $player->is_bot ? 0 : (int)($player->user?->profile?->xp ?? 0),
-                    'xp_next' => $player->is_bot ? 0 : (new \App\Services\Leveling\XpService())->requiredXp((int)($player->user?->profile?->level ?? 1)),
-                    'round_points' => $player->is_bot ? 0 : (int)($player->user?->profile?->round_points ?? 0),
-                    'tournament_points' => $player->is_bot ? 0 : (int)($player->user?->profile?->tournament_points ?? 0),
-                    'club_points' => $player->is_bot ? 0 : (int)($player->user?->profile?->club_points ?? 0),
+                    'xp' => (int)($player->user?->profile?->xp ?? 0),
+                    'xp_next' => app(\App\Services\Leveling\XpService::class)->requiredXp((int)($player->user?->profile?->level ?? 1)),
+                    'round_points' => (int)($player->user?->profile?->round_points ?? 0),
+                    'tournament_points' => (int)($player->user?->profile?->tournament_points ?? 0),
+                    'club_points' => (int)($player->user?->profile?->club_points ?? 0),
                 ];
             })->values(),
             'state' => $state,
@@ -578,7 +555,10 @@ class MobileGameController extends Controller
                 'room_id'=>$room->id,'event_type'=>$eventType,'mode'=>$mode,'won'=>$won,
                 'stage'=>(string)($after['tournament_stage'] ?? ($won && $afterPhase === 'finished' ? 'champion' : 'round')),
                 'game'=>$room->game?->key,'round'=>$afterRound,
-            ]);
+            ]) + [
+                'player_key'=>$key,
+                'player_name'=>$player->user->profile?->display_name ?: $player->user->username,
+            ];
         }
         return $popups;
     }
@@ -594,10 +574,6 @@ class MobileGameController extends Controller
             $copy['hand_counts'][$key] = is_array($cards) ? count($cards) : 0;
         }
         unset($copy['hands'], $copy['_tarneeb_v2'], $copy['_global_engine'], $copy['kicked_user_ids']);
-        if (isset($copy['progression_popup']) && is_array($copy['progression_popup'])) {
-            $ownPopup = $copy['progression_popup'][$myKey] ?? null;
-            $copy['progression_popup'] = is_array($ownPopup) ? [$myKey => $ownPopup] : [];
-        }
         if (isset($copy['deck']) && is_array($copy['deck'])) {
             $copy['deck_count'] = count($copy['deck']);
             unset($copy['deck']);

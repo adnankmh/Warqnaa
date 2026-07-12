@@ -1,49 +1,41 @@
-# رفع Warqna v174 إلى GitHub
+# رفع وبناء Warqna v174 عبر GitHub
+
+## الرفع
+
+ارفع محتويات مجلد المشروع إلى فرع `main` أو `master` مع الحفاظ على المجلدات المخفية، خصوصاً `.github`.
+
+## مسارات الفحص والبناء
+
+- `Production Release Gate`: يتحقق من عقود المصدر والإصدار وعدم وجود أسرار أو تعارضات.
+- `Backend CI`: يثبت Composer ويشغل `php artisan test`.
+- `Flutter Android`: يشغل عقود المصدر و`flutter analyze` و`flutter test` ثم يبني APK/AAB.
+- `Flutter Web Pages`: يشغل التحليل والاختبارات ثم يبني نسخة الويب.
+- `Flutter iOS`: يشغل الفحوص ثم يبني تطبيق iOS غير موقع.
 
 ## قبل الرفع
 
-1. استبدل ملفات المشروع بمحتويات مجلد v174 الداخلي مع إبقاء مجلد `.git`.
-2. شغّل `CHECK_WARQNA_WINDOWS.bat`.
-3. تأكد أن الإصدار الظاهر هو `1.74.0+174`.
-4. نفّذ Commit وPush إلى فرع `main`.
-
-رسالة Commit مقترحة:
-
-```text
-Warqna v174 direct invite stable orientation and authoritative XP
-```
-
-## GitHub Actions المطلوبة
-
-يجب نجاح:
-
-- Production Release Gate
-- Backend CI
-- Flutter Web Pages
-- Flutter Android
-- Flutter iOS
-
-Artifact Android يجب أن يحمل build **174**.
-
-## بعد نجاح البناء
-
-اختبر على جهاز حقيقي:
-
-- إنشاء غرفة والانتقال الفوري إليها.
-- إرسال دعوة للاعب آخر ثم الضغط على الإشعار والتأكد من فتح الغرفة مباشرة.
-- الإشعار أثناء فتح التطبيق، وفي الخلفية، وبعد إغلاقه.
-- ثبات الاتجاه الطولي وعدم التحول المفاجئ إلى الأفقي.
-- اختيار الوضع الأفقي يدوياً ثم إعادة تشغيل التطبيق.
-- انتهاء جولة وظهور XP فوراً لكل لاعب حقيقي وعدم منح البوت نقاطاً.
-- المستويات 40 و51 و60 و70 و80 و90 للتأكد من نسب الانتقال الجديدة.
-
-## نشر Laravel
+شغل:
 
 ```bash
-php artisan migrate --force
-php artisan optimize:clear
-php artisan config:cache
-php artisan route:cache
+python3 tools/test_v174_offline_progression_navigation_contract.py
+python3 tools/verify_release_versions.py
+python3 tools/validate_release.py
 ```
 
-اضبط مفاتيح Firebase وOAuth وAdMob وعنوان API الإنتاجي قبل الاختبار النهائي.
+أو على Windows:
+
+```bat
+CHECK_WARQNA_WINDOWS.bat
+```
+
+## الإعلانات والخادم
+
+أضف متغيرات GitHub المناسبة عند البناء الإنتاجي:
+
+- `WARQNA_API_URL`
+- `ADMOB_ANDROID_APP_ID`
+- `ADMOB_IOS_APP_ID`
+- `ADMOB_REWARDED_ANDROID_ID`
+- `ADMOB_REWARDED_IOS_ID`
+
+يمكن تشغيل التطبيق أوفلاين، لكن المعاملات الاقتصادية والمنافسات تحتاج خادماً متصلاً.

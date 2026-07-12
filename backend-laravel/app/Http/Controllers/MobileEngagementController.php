@@ -14,7 +14,7 @@ class MobileEngagementController extends Controller
         $user = $request->user();
         return response()->json([
             'ok'=>true,
-            'online_only'=>true,
+            'online_only'=>false,
             'tickets'=>$this->tickets($user->id),
             'daily_pack'=>$this->packStatus($user->id),
             'challenges'=>ChallengeDefinition::where('active', true)->orderBy('sort_order')->get(),

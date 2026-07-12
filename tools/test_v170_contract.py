@@ -55,6 +55,7 @@ def main() -> int:
         "Future<void> logout()",
         "const early = <int, int>{1: 100, 2: 220, 3: 360, 4: 500, 5: 650, 6: 800, 7: 1000};",
         "final base = 1000 + (high * 220) + (high * high * 35);",
+        "return (base * multiplier).round();",
     ])
     # The local Tarneeb page is not a lifecycle observer. The server room is.
     local_section = read("flutter_app/lib/main.dart").split("class _TarneebRoomPageState", 1)[1].split("class ServerEngineRoomPage", 1)[0]

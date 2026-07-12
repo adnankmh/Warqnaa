@@ -1,48 +1,49 @@
-WARQNA V174 — VALIDATION RESULTS
-================================
-Release: 1.74.0+174
-Date: 2026-07-12
-Base release: V173
+Warqna v174 — Local Validation Results
+Version: 1.74.0+174
+Date: 2026-07-13
 
-RESULT: SOURCE-PACKAGE PREFLIGHT PASSED
+STATUS: SOURCE PREFLIGHT PASSED
 
-Completed checks
-----------------
-[PASS] PHP syntax lint: 229 Laravel application, route, database and test files.
-[PASS] Python helper compilation.
-[PASS] Bash script syntax.
-[PASS] Release metadata consistency across Flutter, Laravel, CI and environment examples.
-[PASS] JSON syntax: 39 files.
-[PASS] YAML structural audit: 15 files.
-[PASS] Clean-root, conflict-marker, control-character, secret and signing-file checks.
-[PASS] Flutter/Dart delimiter structure.
-[PASS] V169, V170, V171, V172 and V173 regression source contracts.
-[PASS] V174 direct room opening after creation.
-[PASS] V174 notification routing for foreground, background and terminated app launches.
-[PASS] V174 direct transfer from a previous room to an invited room, with best-effort server leave.
-[PASS] V174 saved orientation preference; portrait is default and landscape is only player-selected.
-[PASS] V174 social login method and provider polling contract.
-[PASS] V174 server-authoritative per-round progression payload and client update contract.
-[PASS] Human-player progression only; bots are skipped and receive zero progression fields.
-[PASS] XP requirement multipliers: 40–50 ×1.20, 51–59 ×1.30, 60–69 ×1.50,
-       70–79 ×1.80, 80–89 ×2.20, 90–100 ×6.00.
-[PASS] Legacy Laravel catalog tests updated from 90 to the additive 140-table total.
-[PASS] Daily-pack date assertion made database-portable with whereDate.
-[PASS] Competition test fixture made idempotent with Game::updateOrCreate.
+PASSED CHECKS
+- Release version consistency across Flutter, Laravel, manifests, environment examples and GitHub Actions.
+- Clean project-root policy.
+- Git conflict-marker scan.
+- Text control-character scan.
+- JSON syntax: 39 files.
+- YAML structural audit: 15 files.
+- Python source compilation for tools and GitHub helper scripts.
+- Shell syntax audit for Unix scripts.
+- PHP syntax audit: 292 PHP files, no syntax errors.
+- Flutter delimiter/static source structure.
+- Flutter CI/API compatibility contract.
+- V170 responsive/gameplay/security inherited contract.
+- V171 controller-reference contract.
+- V172 additive brand/table contract.
+- V173 inherited assets, Pasha colors, 50 added tables, tickets, packs, ads and server-authoritative economy contract.
+- V174 offline login/gameplay, fixed orientation, direct room navigation, visible human-player XP and progressive level-curve contract.
 
-Original Flutter analyzer issues addressed
-------------------------------------------
-[FIXED] AppController.loginWithSocialProvider is defined and connected to the UI.
-[FIXED] Legacy private methods are explicitly retained without unused-element warnings.
-[FIXED] Dead social-login branch removed.
-[FIXED] ChangeNotifier protected notifyListeners calls removed from the extension and replaced
-        with AppController.publishChanges().
-[FIXED] Async BuildContext usage is guarded with the owning context's mounted state.
+REGRESSIONS ADDRESSED
+1. AppController.loginWithSocialProvider is now defined and connected to the social-auth API.
+2. _loadAccountState, _registerLocal and _applyLocalLoginStreak are used by real offline flows.
+3. The dead login-code branch was removed.
+4. v173_global.dart no longer calls the protected ChangeNotifier.notifyListeners member; AppController.refreshUi is used.
+5. Async BuildContext use in the reconnect screen is guarded by the State mounted check.
+6. Legacy store tests now expect the correct additive total of 140 tables instead of 90.
+7. daily_pack_claims.claim_date is stored as YYYY-MM-DD while exposed as a Carbon date by the model.
+8. The V173 competition test uses Game::firstOrCreate to avoid duplicate games.key=basra.
 
-Execution limitations in this packaging environment
----------------------------------------------------
-[NOT RUN LOCALLY] flutter analyze / APK / AAB build: Flutter and Dart SDK are unavailable here.
-[NOT RUN LOCALLY] php artisan test: Composer vendor dependencies are not included and Composer
-                  is unavailable here.
+V174 FUNCTIONAL CONTRACTS
+- Explicit offline login and offline account creation buttons.
+- Cached server accounts can reopen locally when the server is unavailable.
+- Local game sessions remain available without internet.
+- Store, token transfers, competitions, daily packs and rewarded-ad rewards remain server-authoritative.
+- Created rooms, code joins and room-invite notification taps navigate directly to the game page.
+- Screen orientation remains at the saved player choice until the player changes it.
+- XP multipliers: 40-50=1.20, 51-59=1.30, 60-69=1.50, 70-79=1.80, 80-89=2.20, 90-100=6.00.
+- Round XP is returned for every human room participant, bots are excluded, and the current player's counters are updated from the server profile snapshot.
 
-The GitHub Actions workflows in this package are configured to run both runtime gates after upload.
+NOT EXECUTED IN THIS LOCAL PACKAGING ENVIRONMENT
+- flutter analyze / flutter test / Flutter APK, AAB, Web and iOS builds: Flutter SDK is not installed here.
+- php artisan test: Composer vendor dependencies are not installed here.
+
+These executable stages remain configured in GitHub Actions. The source contracts and files that caused the supplied CI failures were corrected and the local static/lint preflight passed.

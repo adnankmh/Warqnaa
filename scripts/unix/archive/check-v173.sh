@@ -9,6 +9,5 @@ python3 tools/test_v170_contract.py
 python3 tools/test_v171_controller_references.py
 python3 tools/test_v172_brand_table_contract.py
 python3 tools/test_v173_online_engagement_contract.py
-python3 tools/test_v174_offline_progression_navigation_contract.py
 python3 tools/validate_release.py
-echo "Warqna v174 source package passed local preflight."
+echo "Warqna v173 source package passed local preflight."

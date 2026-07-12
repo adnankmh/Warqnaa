@@ -1,6 +1,6 @@
 part of 'main.dart';
 
-const bool warqnaOnlineOnlyV173 = true;
+const bool warqnaOnlineOnlyV173 = false;
 
 class PashaStyleV173 {
   final String key;
@@ -143,9 +143,9 @@ extension WarqnaV173Controller on AppController {
       try {
         final data = await api.bootstrap();
         _applySession(data);
-        if (!serverConnected) { serverConnected = true; publishChanges(); }
+        if (!serverConnected) { serverConnected = true; refreshUi(); }
       } catch (_) {
-        if (serverConnected) { serverConnected = false; publishChanges(); }
+        if (serverConnected) { serverConnected = false; refreshUi(); }
       }
     });
   }
@@ -159,11 +159,11 @@ extension WarqnaV173Controller on AppController {
       isAuthenticated = true;
       serverConnected = true;
       await _save();
-      publishChanges();
+      refreshUi();
       return true;
     } catch (_) {
       serverConnected = false;
-      publishChanges();
+      refreshUi();
       return false;
     }
   }
@@ -187,7 +187,7 @@ extension WarqnaV173Controller on AppController {
       final wallet = data['wallet'];
       if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
       await _save();
-      publishChanges();
+      refreshUi();
       return null;
     } on ApiException catch (e) { return e.message; } catch (_) { return 'تعذر فتح الحزمة الآن.'; }
   }
@@ -205,7 +205,7 @@ extension WarqnaV173Controller on AppController {
       }
       championRankPointsV173 = int.tryParse(data['rank_points']?.toString() ?? '') ?? championRankPointsV173;
       await _save();
-      publishChanges();
+      refreshUi();
       return null;
     } on ApiException catch (e) { return e.message; } catch (_) { return 'تعذر التسجيل في المنافسة.'; }
   }
@@ -224,11 +224,11 @@ class _OnlineRequiredScreenV173State extends State<OnlineRequiredScreenV173> {
       child: PremiumPanel(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.wifi_off_rounded, size: 76, color: Colors.orangeAccent),
         const SizedBox(height: 14),
-        const Text('الاتصال بالإنترنت مطلوب', textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+        const Text('وضع الأوفلاين مفعل', textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
         const SizedBox(height: 9),
-        const Text('Warqna V174 لعبة أونلاين بالكامل لحماية الحسابات والتوكنز والمنافسات ومنع التلاعب. أعد الاتصال ثم حاول مجدداً.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, height: 1.6)),
+        const Text('يمكنك متابعة اللعب محلياً دون إنترنت، بينما تحتاج المزامنة والمنافسات والمتجر الشبكي إلى اتصال بالخادم.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, height: 1.6)),
         const SizedBox(height: 18),
-        FilledButton.icon(onPressed: busy ? null : () async { setState(() => busy = true); final ok = await widget.controller.reconnectV173(); if (!mounted) return; setState(() => busy = false); if (!ok && context.mounted) showToast(context, 'الخادم غير متاح حالياً. تحقق من الإنترنت ورابط API.'); }, icon: busy ? const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)) : const Icon(Icons.refresh_rounded), label: const Text('إعادة الاتصال')),
+        FilledButton.icon(onPressed: busy ? null : () async { setState(() => busy = true); final ok = await widget.controller.reconnectV173(); if (!mounted) return; setState(() => busy = false); if (!ok) showToast(this.context, 'الخادم غير متاح حالياً. يمكنك متابعة اللعب أوفلاين.'); }, icon: busy ? const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)) : const Icon(Icons.refresh_rounded), label: const Text('إعادة الاتصال')),
         TextButton.icon(onPressed: () => widget.controller.logout(), icon: const Icon(Icons.logout), label: const Text('العودة لتسجيل الدخول')),
       ]))),
     ))),

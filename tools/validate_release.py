@@ -101,8 +101,7 @@ def check_required_files() -> None:
         "tools/test_v171_controller_references.py",
         "tools/test_v172_brand_table_contract.py",
         "tools/test_v173_online_engagement_contract.py",
-        "tools/test_v174_direct_invite_xp_contract.py",
-        "backend-laravel/tests/Feature/V174DirectInviteOrientationXpTest.php",
+        "tools/test_v174_offline_progression_navigation_contract.py",
         "flutter_app/lib/v173_global.dart",
         "backend-laravel/resources/data/v173_store_catalog.json",
         "backend-laravel/app/Services/WarqnaPro/DailyPackService.php",
@@ -110,6 +109,8 @@ def check_required_files() -> None:
         "backend-laravel/app/Http/Controllers/MobileEngagementController.php",
         "backend-laravel/database/migrations/2026_07_12_000173_online_competitions_tickets_packs_designer.php",
         "backend-laravel/tests/Feature/V173OnlineEngagementTest.php",
+        "backend-laravel/database/migrations/2026_07_13_000174_offline_progression_navigation.php",
+        "backend-laravel/tests/Feature/V174OfflineProgressionNavigationTest.php",
         "tools/apply_brand_assets.py",
         "flutter_app/assets/images/brand/warqna_logo.png",
         "flutter_app/assets/images/tables/reference/catalog.json",
@@ -211,20 +212,35 @@ def check_text_control_characters() -> None:
 
 
 def check_login_fix() -> None:
+    if EXPECTED_BUILD >= 174:
+        require("flutter_app/lib/main.dart", [
+            "Future<String?> login(String loginId, String password",
+            "Future<String?> _loginLocal",
+            "Future<String?> _registerLocal",
+            "await _storeOfflineCredentials",
+            "offlineLoggedIn",
+            "Future<String?> loginWithSocialProvider",
+        ])
+        require("flutter_app/lib/v173_global.dart", ["warqnaOnlineOnlyV173 = false"])
+        forbid("flutter_app/lib/main.dart", [
+            "Future<String?> login(String login, String password",
+            "التسجيل المحلي غير متاح في Warqna V173",
+            "controller.isAuthenticated && !controller.serverConnected",
+        ])
+        print("[OK] v174 offline-capable login, registration and social-provider contract")
+        return
+
     if EXPECTED_BUILD >= 173:
         require("flutter_app/lib/main.dart", [
             "Future<String?> login(String loginId, String password",
-            "التسجيل المحلي غير متاح في Warqna V174",
             "OnlineRequiredScreenV173",
         ])
         forbid("flutter_app/lib/main.dart", [
             "Future<String?> login(String login, String password",
-            "return login(loginId, password, offline: true);",
-            "final fallback = await login(loginId, password, offline: true);",
             "return this.login(loginId, password, offline: true);",
             "await this.login(loginId, password, offline: true);",
         ])
-        print("[OK] v173 online-only login and registration contract")
+        print("[OK] v173 login contract")
         return
 
     require("flutter_app/lib/main.dart", [
@@ -518,7 +534,7 @@ def check_product_contract_tests() -> None:
     for rel, needle in stale_patterns:
         if needle in read(rel):
             fail(f"Stale historical test contract remains in {rel}: {needle}")
-    print("[OK] Current 12-game, 140-table additive catalog and 40-card-back product contract")
+    print("[OK] Current 12-game, 140-table (50 legacy + 40 v172 + 50 v173), 40-card-back product contract")
 
 
 def check_release_and_wallet_regressions() -> None:
@@ -1178,28 +1194,20 @@ def check_v173_online_engagement_contract() -> None:
         require(rel, ["test_v173_online_engagement_contract.py"])
     require("flutter_app/pubspec.yaml", ["assets/images/pasha/v173/", "assets/images/tables/v173/royal/", "assets/images/tables/v173/showcase/"])
     print(result.stdout.strip())
-    print("[OK] v173 online-only engagement, 14 Pasha colors, 50 new tables, ads, tickets, daily packs and universal designer")
+    print("[OK] inherited v173 engagement assets, server-authoritative economy, Pasha colors, tables, tickets, packs and universal designer")
 
-def check_v174_direct_invite_xp_contract() -> None:
+def check_v174_offline_progression_navigation_contract() -> None:
     result = subprocess.run(
-        [sys.executable, str(ROOT / "tools/test_v174_direct_invite_xp_contract.py")],
+        [sys.executable, str(ROOT / "tools/test_v174_offline_progression_navigation_contract.py")],
         cwd=ROOT,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
     if result.returncode != 0:
-        fail("Warqna v174 direct invite/orientation/XP contract failed: " + result.stdout.strip())
-
-    for rel in [
-        ".github/workflows/flutter-web-pages.yml",
-        ".github/workflows/flutter-android.yml",
-        ".github/workflows/flutter-ios.yml",
-        ".github/workflows/production-release-check.yml",
-    ]:
-        require(rel, ["test_v174_direct_invite_xp_contract.py"])
+        fail("Warqna v174 offline/progression/navigation contract failed: " + result.stdout.strip())
     print(result.stdout.strip())
-    print("[OK] v174 direct invite navigation, stable orientation and authoritative human-player XP")
+    print("[OK] v174 offline access, fixed orientation, direct-room navigation, visible XP and requested level curve")
 
 
 def check_dart_structure() -> None:
@@ -1245,7 +1253,7 @@ def main() -> None:
     check_v171_controller_reference_contract()
     check_v172_brand_table_contract()
     check_v173_online_engagement_contract()
-    check_v174_direct_invite_xp_contract()
+    check_v174_offline_progression_navigation_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Warqna v173 online-only engagement, cosmetics, and asset contract."""
+"""Inherited v173 engagement, cosmetics, assets, and online-economy contract.
+
+V174 keeps store/reward/competition transactions server-authoritative while allowing
+local login and local gameplay when connectivity is unavailable.
+"""
 from __future__ import annotations
 
 import json
@@ -96,7 +100,7 @@ def main() -> None:
             fail(f"Ticket discount is not exactly 10%: {denomination} -> {item['price']}")
 
     flutter = require_text("flutter_app/lib/v173_global.dart", [
-        "warqnaOnlineOnlyV173 = true",
+        "warqnaOnlineOnlyV173 = false",
         "competitionTicketValuesV173",
         "openDailyPackV173",
         "joinCompetitionV173",
@@ -113,8 +117,8 @@ def main() -> None:
         "part 'v173_global.dart';",
         "unawaited(initializeWarqnaRewardedAdsAfterFirstFrame());",
         "if (!serverConnected) return false;",
-        "التسجيل المحلي غير متاح في Warqna V174",
-        "OnlineRequiredScreenV173",
+        "Future<String?> _registerLocal",
+        "Future<String?> _loginLocal",
     ])
     if "coins -= BigInt.from(priceFor(product));" in main_dart:
         fail("Offline store debit path still exists")
@@ -181,7 +185,7 @@ def main() -> None:
     ]:
         require_text(workflow, ["test_v173_online_engagement_contract.py"])
 
-    print("[PASS] v173 contract: online-only, 14 Pasha styles, 50 new HD tables, ads, daily packs, competitions, tickets, and universal admin designer")
+    print("[PASS] inherited v173 contract: 14 Pasha styles, 50 HD tables, server-authoritative economy, ads, daily packs, competitions, tickets, and universal designer")
 
 
 if __name__ == "__main__":

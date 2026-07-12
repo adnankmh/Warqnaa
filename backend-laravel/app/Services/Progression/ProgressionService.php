@@ -19,7 +19,7 @@ class ProgressionService
     public function award(User $user, string $eventKey, array $context = []): array
     {
         $existing = ProgressionEvent::where('event_key',$eventKey)->first();
-        if ($existing) return $this->payload($existing, true);
+        if ($existing) return $this->payload($existing, true) + ['user_id'=>(int)$user->id,'profile'=>$this->profileSnapshot($user)];
 
         return DB::transaction(function () use ($user,$eventKey,$context) {
             $profile = $user->profile()->lockForUpdate()->firstOrCreate([], [
@@ -64,15 +64,14 @@ class ProgressionService
                 'event_type'=>$eventType,'mode'=>$mode,'base_points'=>$base,'multiplier'=>$multiplier,
                 'awarded_xp'=>$levelResult['earned_xp'],'round_points'=>$roundPoints,
                 'tournament_points'=>$tournamentPoints,'club_points'=>$clubPoints,
-                'meta'=>array_merge($context,[
-                    'pasha_multiplier'=>$pashaMultiplier,
-                    'booster_multiplier'=>$boosterMultiplier,
-                    'level_result'=>$levelResult,
-                    'player_name'=>$profile->display_name ?: $user->username,
-                ]),
+                'meta'=>array_merge($context,['pasha_multiplier'=>$pashaMultiplier,'booster_multiplier'=>$boosterMultiplier]),
             ]);
 
-            return $this->payload($event, false);
+            return $this->payload($event, false) + [
+                'user_id'=>(int)$user->id,
+                'level'=>$levelResult,
+                'profile'=>$this->profileSnapshot($user),
+            ];
         });
     }
 
@@ -105,23 +104,31 @@ class ProgressionService
         return $points;
     }
 
+    /** @return array<string,int> */
+    private function profileSnapshot(User $user): array
+    {
+        $profile = $user->profile()->firstOrCreate([], [
+            'display_name'=>$user->username,'country_code'=>'PS','country_name'=>country_name('PS'),
+        ]);
+        $level = (int)($profile->level ?? 1);
+        $totalXp = (int)($profile->xp ?? 0);
+        $before = 0;
+        for ($current = 1; $current < $level; $current++) $before += $this->xpService->requiredXp($current);
+        return [
+            'level'=>$level,
+            'xp'=>$totalXp,
+            'xp_progress'=>max(0, $totalXp - $before),
+            'xp_next'=>$this->xpService->requiredXp($level),
+            'round_points'=>(int)($profile->round_points ?? 0),
+            'tournament_points'=>(int)($profile->tournament_points ?? 0),
+            'club_points'=>(int)($profile->club_points ?? 0),
+        ];
+    }
+
     private function payload(ProgressionEvent $event, bool $duplicate): array
     {
-        $meta = is_array($event->meta) ? $event->meta : [];
-        return [
-            'ok'=>true,
-            'duplicate'=>$duplicate,
-            'event_key'=>$event->event_key,
-            'xp'=>(int)$event->awarded_xp,
-            'round_points'=>(int)$event->round_points,
-            'tournament_points'=>(int)$event->tournament_points,
-            'club_points'=>(int)$event->club_points,
-            'multiplier'=>(float)$event->multiplier,
-            'won'=>(bool)($meta['won'] ?? false),
-            'mode'=>(string)($meta['mode'] ?? $event->mode ?? 'normal'),
-            'stage'=>(string)($meta['stage'] ?? 'round'),
-            'player_name'=>(string)($meta['player_name'] ?? ''),
-            'level'=>is_array($meta['level_result'] ?? null) ? $meta['level_result'] : null,
-        ];
+        return ['ok'=>true,'duplicate'=>$duplicate,'event_key'=>$event->event_key,'xp'=>(int)$event->awarded_xp,
+            'round_points'=>(int)$event->round_points,'tournament_points'=>(int)$event->tournament_points,
+            'club_points'=>(int)$event->club_points,'multiplier'=>(float)$event->multiplier];
     }
 }

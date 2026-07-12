@@ -163,7 +163,6 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> availableRooms(String game) => get('/games/$game/rooms');
   Future<Map<String, dynamic>> joinGame(String code, {String? password}) =>
       post('/games/session/$code/join', {if (password != null && password.isNotEmpty) 'password': password});
-  Future<Map<String, dynamic>> gameSessionPreview(String code) => get('/games/session/$code/preview');
   Future<Map<String, dynamic>> gameSession(String code) => get('/games/session/$code');
   Future<Map<String, dynamic>> gameAction(String code, String action, [Map<String, dynamic>? payload, int? stateRevision]) {
     final clientActionId = '${DateTime.now().microsecondsSinceEpoch}-${code.hashCode}-${action.hashCode}';

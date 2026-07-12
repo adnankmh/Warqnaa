@@ -62,11 +62,10 @@ class V173OnlineEngagementTest extends TestCase
 
         $reward = $service->open($user);
         $this->assertNotEmpty($reward['type']);
-        $this->assertTrue(
-            DailyPackClaim::where('user_id', $user->id)
-                ->whereDate('claim_date', now()->toDateString())
-                ->exists()
-        );
+        $this->assertDatabaseHas('daily_pack_claims', [
+            'user_id' => $user->id,
+            'claim_date' => now()->toDateString(),
+        ]);
         $this->assertSame(1, DailyPackClaim::where('user_id', $user->id)->count());
 
         $this->expectException(RuntimeException::class);
@@ -76,7 +75,9 @@ class V173OnlineEngagementTest extends TestCase
     public function test_competition_uses_the_lowest_sufficient_ticket_before_tokens(): void
     {
         $user = $this->player('v173ticket');
-        Game::updateOrCreate(['key' => 'basra'], [
+        Game::firstOrCreate([
+            'key' => 'basra',
+        ], [
             'name' => ['ar' => 'بصرة', 'en' => 'Basra'],
             'min_players' => 2,
             'max_players' => 4,

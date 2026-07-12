@@ -52,25 +52,25 @@ class MobileSocialController extends Controller
     {
         $this->assertFriends($request->user()->id, $user->id);
         $data = $request->validate(['room_code' => 'required|string|max:20']);
-        $room = Room::with('game')->where('code', strtoupper($data['room_code']))->whereIn('status', ['waiting','bidding','playing'])->firstOrFail();
+        $room = Room::where('code', strtoupper($data['room_code']))->whereIn('status', ['waiting','bidding','playing'])->firstOrFail();
         abort_unless((int)$room->owner_id === (int)$request->user()->id || $room->players()->where('user_id', $request->user()->id)->exists(), 403, 'يجب أن تكون داخل الغرفة لإرسال الدعوة.');
-        Notification::create(['user_id'=>$user->id,'type'=>'room_invite','title'=>['ar'=>'دعوة لعبة','en'=>'Game invitation'],'body'=>['ar'=>$request->user()->username.' دعاك إلى غرفة '.$room->code,'en'=>$request->user()->username.' invited you to room '.$room->code],'meta'=>['room_code'=>$room->code,'game'=>$room->game?->key,'from'=>$request->user()->id]]);
-        $push->sendToUser($user, 'دعوة لعبة', $request->user()->username.' دعاك إلى غرفة '.$room->code, ['route'=>'room:'.$room->code.':'.$room->game?->key,'type'=>'room_invite','room_code'=>$room->code,'sender_id'=>$request->user()->id]);
+        Notification::create(['user_id'=>$user->id,'type'=>'room_invite','title'=>['ar'=>'دعوة لعبة','en'=>'Game invitation'],'body'=>['ar'=>$request->user()->username.' دعاك إلى غرفة '.$room->code,'en'=>$request->user()->username.' invited you to room '.$room->code],'meta'=>['room_code'=>$room->code,'from'=>$request->user()->id]]);
+        $push->sendToUser($user, 'دعوة لعبة', $request->user()->username.' دعاك إلى غرفة '.$room->code, ['route'=>'room:'.$room->code,'type'=>'room_invite','room_code'=>$room->code,'sender_id'=>$request->user()->id]);
         return response()->json(['ok'=>true,'message'=>'تم إرسال الدعوة حتى لو كان اللاعب خارج التطبيق.']);
     }
 
     public function inviteAllToRoom(Request $request, FirebasePushService $push)
     {
         $data = $request->validate(['room_code' => 'required|string|max:20']);
-        $room = Room::with('game')->where('code', strtoupper($data['room_code']))->whereIn('status', ['waiting','bidding','playing'])->firstOrFail();
+        $room = Room::where('code', strtoupper($data['room_code']))->whereIn('status', ['waiting','bidding','playing'])->firstOrFail();
         abort_unless((int)$room->owner_id === (int)$request->user()->id || $room->players()->where('user_id', $request->user()->id)->exists(), 403);
         $relations = Friendship::where('status','accepted')->where(fn($q)=>$q->where('requester_id',$request->user()->id)->orWhere('addressee_id',$request->user()->id))->get();
         $sent=0;
         foreach($relations as $relation){
             $id=(int)$relation->requester_id===(int)$request->user()->id ? (int)$relation->addressee_id : (int)$relation->requester_id;
             $friend=User::find($id); if(!$friend) continue;
-            $push->sendToUser($friend, 'دعوة جماعية للعبة', $request->user()->username.' دعاك إلى غرفة '.$room->code, ['route'=>'room:'.$room->code.':'.$room->game?->key,'type'=>'room_invite','room_code'=>$room->code,'sender_id'=>$request->user()->id]);
-            Notification::create(['user_id'=>$friend->id,'type'=>'room_invite','title'=>['ar'=>'دعوة لعبة','en'=>'Game invitation'],'body'=>['ar'=>$request->user()->username.' دعاك إلى غرفة '.$room->code],'meta'=>['room_code'=>$room->code,'game'=>$room->game?->key,'from'=>$request->user()->id]]); $sent++;
+            $push->sendToUser($friend, 'دعوة جماعية للعبة', $request->user()->username.' دعاك إلى غرفة '.$room->code, ['route'=>'room:'.$room->code,'type'=>'room_invite','room_code'=>$room->code,'sender_id'=>$request->user()->id]);
+            Notification::create(['user_id'=>$friend->id,'type'=>'room_invite','title'=>['ar'=>'دعوة لعبة','en'=>'Game invitation'],'body'=>['ar'=>$request->user()->username.' دعاك إلى غرفة '.$room->code],'meta'=>['room_code'=>$room->code,'from'=>$request->user()->id]]); $sent++;
         }
         return response()->json(['ok'=>true,'message'=>'تم إرسال الدعوة إلى '.$sent.' صديق.','sent'=>$sent]);
     }
