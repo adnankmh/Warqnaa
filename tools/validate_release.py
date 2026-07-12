@@ -98,6 +98,12 @@ def check_required_files() -> None:
         "backend-laravel/tests/Unit/V163CiRegressionContractTest.php",
         "tools/flutter_analyze_ci.sh",
         "tools/test_flutter_ci_contract.py",
+        "tools/test_v171_controller_references.py",
+        "tools/test_v172_brand_table_contract.py",
+        "tools/apply_brand_assets.py",
+        "flutter_app/assets/images/brand/warqna_logo.png",
+        "flutter_app/assets/images/tables/reference/catalog.json",
+        "backend-laravel/tests/Feature/V172BrandTableCatalogTest.php",
         ".github/workflows/backend-ci.yml",
         ".github/workflows/flutter-android.yml",
         ".github/workflows/flutter-web-pages.yml",
@@ -464,8 +470,15 @@ def check_product_contract_tests() -> None:
         "assertCount(12,GameCatalog::all())",
     ])
     require("backend-laravel/tests/Feature/V128StoreGameplayNavTest.php", [
-        "assertCount(50,$service->tableSkins())",
+        "assertCount(90,$service->tableSkins())",
         "assertCount(40,$service->cardBacks())",
+    ])
+    require("backend-laravel/tests/Feature/V132TarneebEngineAndLuxuryFixesTest.php", ["assertCount(90,$store->tableSkins())"])
+    require("backend-laravel/tests/Feature/V134CriticalFixesTest.php", ["assertCount(90,$store->tableSkins())"])
+    require("backend-laravel/tests/Feature/V172BrandTableCatalogTest.php", [
+        "assertCount(90, $tables)",
+        "assertCount(40, $reference)",
+        "table_reference_40",
     ])
     require("backend-laravel/resources/views/store/index.blade.php", [
         'data-warqna-store-contract="v158"',
@@ -479,7 +492,7 @@ def check_product_contract_tests() -> None:
     for rel, needle in stale_patterns:
         if needle in read(rel):
             fail(f"Stale historical test contract remains in {rel}: {needle}")
-    print("[OK] Current 12-game, 50-table, 40-card-back product contract")
+    print("[OK] Current 12-game, 90-table (50 legacy + 40 additive), 40-card-back product contract")
 
 
 def check_release_and_wallet_regressions() -> None:
@@ -1068,6 +1081,56 @@ def check_v170_responsive_gameplay_security() -> None:
     print(result.stdout.strip())
     print("[OK] v170 responsive UI, public profiles, XP curve, mobile voice diagnostics, room controls and security contracts")
 
+def check_v171_controller_reference_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v171_controller_references.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna v171 controller-reference contract failed: " + result.stdout.strip())
+
+    workflow = read(".github/workflows/flutter-web-pages.yml")
+    if "Incorrect controller references in lib/main.dart" in workflow:
+        fail("Brittle literal controller-reference check returned in Flutter Web workflow")
+    for rel in [
+        ".github/workflows/flutter-web-pages.yml",
+        ".github/workflows/flutter-android.yml",
+        ".github/workflows/flutter-ios.yml",
+        ".github/workflows/production-release-check.yml",
+    ]:
+        require(rel, ["test_v171_controller_references.py"])
+
+    print(result.stdout.strip())
+    print("[OK] v171 semantic AppController reference contract")
+
+
+def check_v172_brand_table_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v172_brand_table_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna v172 brand/table contract failed: " + result.stdout.strip())
+
+    for rel in [
+        ".github/workflows/flutter-web-pages.yml",
+        ".github/workflows/flutter-android.yml",
+        ".github/workflows/flutter-ios.yml",
+        ".github/workflows/production-release-check.yml",
+    ]:
+        require(rel, ["test_v172_brand_table_contract.py"])
+    require(".github/workflows/flutter-android.yml", ["apply_brand_assets.py"])
+    require("flutter_app/pubspec.yaml", ["assets/images/brand/", "assets/images/tables/"])
+    print(result.stdout.strip())
+    print("[OK] v172 additive Warqna brand, 40-table HD collection, and legacy CI compatibility")
+
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -1108,6 +1171,8 @@ def main() -> None:
     check_v166_global_polish()
     check_v169_flutter_ci_regressions()
     check_v170_responsive_gameplay_security()
+    check_v171_controller_reference_contract()
+    check_v172_brand_table_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

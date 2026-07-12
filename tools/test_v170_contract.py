@@ -32,7 +32,8 @@ def forbid(rel: str, needles: list[str]) -> None:
 
 def main() -> int:
     meta = json.loads(read("RELEASE_VERSION.json"))
-    assert meta["version"] == "1.70.0" and int(meta["build"]) == 170
+    version_parts = tuple(int(part) for part in str(meta["version"]).split("."))
+    assert version_parts >= (1, 70, 0) and int(meta["build"]) >= 170
 
     require("flutter_app/lib/main.dart", [
         "part 'v170_global.dart';",

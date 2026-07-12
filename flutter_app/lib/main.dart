@@ -2527,6 +2527,8 @@ class StoreProduct {
   final double? multiplier;
   final Color? previewColor1;
   final Color? previewColor2;
+  final String? imageAsset;
+  final String? collection;
 
   const StoreProduct({
     required this.id,
@@ -2542,6 +2544,8 @@ class StoreProduct {
     this.multiplier,
     this.previewColor1,
     this.previewColor2,
+    this.imageAsset,
+    this.collection,
   });
 
   String name(String lang) => localizeStoreProductNameV151(this, lang);
@@ -2684,6 +2688,46 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "table_premium_48", category: "tables", icon: "💠", nameAr: "طاولة كريستال محيط", nameEn: "Premium Table 48", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 33700, previewColor1: Color(0xfff8fafc), previewColor2: Color(0xff94a3b8)),
   StoreProduct(id: "table_premium_49", category: "tables", icon: "♛", nameAr: "طاولة أسود ذهبي Pro", nameEn: "Premium Table 49", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 34350, previewColor1: Color(0xff422006), previewColor2: Color(0xffb45309)),
   StoreProduct(id: "table_premium_50", category: "tables", icon: "🏆", nameAr: "طاولة ماستر أرينا", nameEn: "Premium Table 50", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 35000, previewColor1: Color(0xff1f3b24), previewColor2: Color(0xff84cc16)),
+  StoreProduct(id: "table_reference_01", category: "tables", icon: "🃏", nameAr: "أزرق ملكي مذهب", nameEn: "Gilded Royal Blue", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 1–10، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 1–10 collection with full preview and in-room activation.", price: 20000, previewColor1: Color(0xff0b2d5b), previewColor2: Color(0xffd6aa59), imageAsset: "assets/images/tables/reference/table_reference_01.png", collection: "reference_1"),
+  StoreProduct(id: "table_reference_02", category: "tables", icon: "🃏", nameAr: "أرجواني ملكي مطعم", nameEn: "Inlaid Royal Purple", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 1–10، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 1–10 collection with full preview and in-room activation.", price: 25000, previewColor1: Color(0xff40103d), previewColor2: Color(0xffc9a6d8), imageAsset: "assets/images/tables/reference/table_reference_02.png", collection: "reference_1"),
+  StoreProduct(id: "table_reference_03", category: "tables", icon: "🃏", nameAr: "جلد عتيق مزخرف", nameEn: "Ornate Antique Leather", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 1–10، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 1–10 collection with full preview and in-room activation.", price: 18000, previewColor1: Color(0xff6b351f), previewColor2: Color(0xffd4a574), imageAsset: "assets/images/tables/reference/table_reference_03.png", collection: "reference_1"),
+  StoreProduct(id: "table_reference_04", category: "tables", icon: "🃏", nameAr: "أسود كربوني فضي", nameEn: "Silver Carbon Black", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 1–10، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 1–10 collection with full preview and in-room activation.", price: 15000, previewColor1: Color(0xff111827), previewColor2: Color(0xffd1d5db), imageAsset: "assets/images/tables/reference/table_reference_04.png", collection: "reference_1"),
+  StoreProduct(id: "table_reference_05", category: "tables", icon: "🃏", nameAr: "رخام إيطالي مصقول", nameEn: "Polished Italian Marble", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 1–10، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 1–10 collection with full preview and in-room activation.", price: 22000, previewColor1: Color(0xfff8fafc), previewColor2: Color(0xff94a3b8), imageAsset: "assets/images/tables/reference/table_reference_05.png", collection: "reference_1"),
+  StoreProduct(id: "table_reference_06", category: "tables", icon: "🃏", nameAr: "خشب جوز بنمط هندسي", nameEn: "Geometric Walnut Wood", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 1–10، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 1–10 collection with full preview and in-room activation.", price: 20000, previewColor1: Color(0xff4b2a15), previewColor2: Color(0xffd7a64a), imageAsset: "assets/images/tables/reference/table_reference_06.png", collection: "reference_1"),
+  StoreProduct(id: "table_reference_07", category: "tables", icon: "🃏", nameAr: "نحاس عتيق مؤكسد", nameEn: "Oxidized Antique Copper", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 1–10، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 1–10 collection with full preview and in-room activation.", price: 18000, previewColor1: Color(0xff7c3f23), previewColor2: Color(0xff5eead4), imageAsset: "assets/images/tables/reference/table_reference_07.png", collection: "reference_1"),
+  StoreProduct(id: "table_reference_08", category: "tables", icon: "🃏", nameAr: "عرق لؤلؤ طبيعي", nameEn: "Natural Mother of Pearl", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 1–10، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 1–10 collection with full preview and in-room activation.", price: 30000, previewColor1: Color(0xfffffbeb), previewColor2: Color(0xfff5c542), imageAsset: "assets/images/tables/reference/table_reference_08.png", collection: "reference_1"),
+  StoreProduct(id: "table_reference_09", category: "tables", icon: "🃏", nameAr: "زمردي أرابيسك عميق", nameEn: "Deep Emerald Arabesque", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 1–10، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 1–10 collection with full preview and in-room activation.", price: 28000, previewColor1: Color(0xff064e3b), previewColor2: Color(0xff22c55e), imageAsset: "assets/images/tables/reference/table_reference_09.png", collection: "reference_1"),
+  StoreProduct(id: "table_reference_10", category: "tables", icon: "🃏", nameAr: "عقيق يماني أحمر", nameEn: "Red Yemeni Agate", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 1–10، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 1–10 collection with full preview and in-room activation.", price: 25000, previewColor1: Color(0xff7f1d1d), previewColor2: Color(0xfffb7185), imageAsset: "assets/images/tables/reference/table_reference_10.png", collection: "reference_1"),
+  StoreProduct(id: "table_reference_11", category: "tables", icon: "🃏", nameAr: "يخت فاخر", nameEn: "Luxury Yacht", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 11–20، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 11–20 collection with full preview and in-room activation.", price: 16000, previewColor1: Color(0xff0b2d5b), previewColor2: Color(0xffd6aa59), imageAsset: "assets/images/tables/reference/table_reference_11.png", collection: "reference_2"),
+  StoreProduct(id: "table_reference_12", category: "tables", icon: "🃏", nameAr: "أسماك كوي خزفية", nameEn: "Porcelain Koi", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 11–20، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 11–20 collection with full preview and in-room activation.", price: 20000, previewColor1: Color(0xff40103d), previewColor2: Color(0xffc9a6d8), imageAsset: "assets/images/tables/reference/table_reference_12.png", collection: "reference_2"),
+  StoreProduct(id: "table_reference_13", category: "tables", icon: "🃏", nameAr: "مجرة كونية", nameEn: "Cosmic Galaxy", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 11–20، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 11–20 collection with full preview and in-room activation.", price: 22000, previewColor1: Color(0xff6b351f), previewColor2: Color(0xffd4a574), imageAsset: "assets/images/tables/reference/table_reference_13.png", collection: "reference_2"),
+  StoreProduct(id: "table_reference_14", category: "tables", icon: "🃏", nameAr: "أرابيسك فضي", nameEn: "Silver Arabesque", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 11–20، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 11–20 collection with full preview and in-room activation.", price: 28000, previewColor1: Color(0xff111827), previewColor2: Color(0xffd1d5db), imageAsset: "assets/images/tables/reference/table_reference_14.png", collection: "reference_2"),
+  StoreProduct(id: "table_reference_15", category: "tables", icon: "🃏", nameAr: "فارس محارب", nameEn: "Warrior Knight", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 11–20، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 11–20 collection with full preview and in-room activation.", price: 26000, previewColor1: Color(0xfff8fafc), previewColor2: Color(0xff94a3b8), imageAsset: "assets/images/tables/reference/table_reference_15.png", collection: "reference_2"),
+  StoreProduct(id: "table_reference_16", category: "tables", icon: "🃏", nameAr: "بونساي يشم", nameEn: "Jade Bonsai", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 11–20، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 11–20 collection with full preview and in-room activation.", price: 18000, previewColor1: Color(0xff4b2a15), previewColor2: Color(0xffd7a64a), imageAsset: "assets/images/tables/reference/table_reference_16.png", collection: "reference_2"),
+  StoreProduct(id: "table_reference_17", category: "tables", icon: "🃏", nameAr: "تنين دمشقي", nameEn: "Damascene Dragon", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 11–20، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 11–20 collection with full preview and in-room activation.", price: 18000, previewColor1: Color(0xff7c3f23), previewColor2: Color(0xff5eead4), imageAsset: "assets/images/tables/reference/table_reference_17.png", collection: "reference_2"),
+  StoreProduct(id: "table_reference_18", category: "tables", icon: "🃏", nameAr: "أسلحة عتيقة", nameEn: "Antique Weapons", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 11–20، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 11–20 collection with full preview and in-room activation.", price: 26000, previewColor1: Color(0xfffffbeb), previewColor2: Color(0xfff5c542), imageAsset: "assets/images/tables/reference/table_reference_18.png", collection: "reference_2"),
+  StoreProduct(id: "table_reference_19", category: "tables", icon: "🃏", nameAr: "لوتس صدفية", nameEn: "Mother-of-Pearl Lotus", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 11–20، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 11–20 collection with full preview and in-room activation.", price: 28000, previewColor1: Color(0xff064e3b), previewColor2: Color(0xff22c55e), imageAsset: "assets/images/tables/reference/table_reference_19.png", collection: "reference_2"),
+  StoreProduct(id: "table_reference_20", category: "tables", icon: "🃏", nameAr: "قناع تيكي منحوت", nameEn: "Carved Tiki Mask", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 11–20، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 11–20 collection with full preview and in-room activation.", price: 16000, previewColor1: Color(0xff7f1d1d), previewColor2: Color(0xfffb7185), imageAsset: "assets/images/tables/reference/table_reference_20.png", collection: "reference_2"),
+  StoreProduct(id: "table_reference_21", category: "tables", icon: "🃏", nameAr: "طائرة خاصة كربونية", nameEn: "Carbon Private Jet", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 21–30، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 21–30 collection with full preview and in-room activation.", price: 24000, previewColor1: Color(0xff0b2d5b), previewColor2: Color(0xffd6aa59), imageAsset: "assets/images/tables/reference/table_reference_21.png", collection: "reference_3"),
+  StoreProduct(id: "table_reference_22", category: "tables", icon: "🃏", nameAr: "مروحية كلاسيكية محفورة", nameEn: "Engraved Classic Helicopter", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 21–30، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 21–30 collection with full preview and in-room activation.", price: 24000, previewColor1: Color(0xff40103d), previewColor2: Color(0xffc9a6d8), imageAsset: "assets/images/tables/reference/table_reference_22.png", collection: "reference_3"),
+  StoreProduct(id: "table_reference_23", category: "tables", icon: "🃏", nameAr: "مركبة استكشاف أعماق البحار", nameEn: "Deep-Sea Explorer", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 21–30، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 21–30 collection with full preview and in-room activation.", price: 28000, previewColor1: Color(0xff6b351f), previewColor2: Color(0xffd4a574), imageAsset: "assets/images/tables/reference/table_reference_23.png", collection: "reference_3"),
+  StoreProduct(id: "table_reference_24", category: "tables", icon: "🃏", nameAr: "هيكل تيرانوصور أحفوري", nameEn: "Fossil Tyrannosaur", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 21–30، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 21–30 collection with full preview and in-room activation.", price: 30000, previewColor1: Color(0xff111827), previewColor2: Color(0xffd1d5db), imageAsset: "assets/images/tables/reference/table_reference_24.png", collection: "reference_3"),
+  StoreProduct(id: "table_reference_25", category: "tables", icon: "🃏", nameAr: "قرش أبيض عميق", nameEn: "Deep Great White Shark", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 21–30، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 21–30 collection with full preview and in-room activation.", price: 26000, previewColor1: Color(0xfff8fafc), previewColor2: Color(0xff94a3b8), imageAsset: "assets/images/tables/reference/table_reference_25.png", collection: "reference_3"),
+  StoreProduct(id: "table_reference_26", category: "tables", icon: "🃏", nameAr: "كيفلار منسوج", nameEn: "Woven Kevlar", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 21–30، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 21–30 collection with full preview and in-room activation.", price: 20000, previewColor1: Color(0xff4b2a15), previewColor2: Color(0xffd7a64a), imageAsset: "assets/images/tables/reference/table_reference_26.png", collection: "reference_3"),
+  StoreProduct(id: "table_reference_27", category: "tables", icon: "🃏", nameAr: "عاج طبيعي محفور", nameEn: "Carved Natural Ivory", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 21–30، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 21–30 collection with full preview and in-room activation.", price: 24000, previewColor1: Color(0xff7c3f23), previewColor2: Color(0xff5eead4), imageAsset: "assets/images/tables/reference/table_reference_27.png", collection: "reference_3"),
+  StoreProduct(id: "table_reference_28", category: "tables", icon: "🃏", nameAr: "جعران الجوهرة مرصعة", nameEn: "Jeweled Scarab", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 21–30، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 21–30 collection with full preview and in-room activation.", price: 28000, previewColor1: Color(0xfffffbeb), previewColor2: Color(0xfff5c542), imageAsset: "assets/images/tables/reference/table_reference_28.png", collection: "reference_3"),
+  StoreProduct(id: "table_reference_29", category: "tables", icon: "🃏", nameAr: "لوحة آرت ديكو ذهبية", nameEn: "Golden Art Deco", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 21–30، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 21–30 collection with full preview and in-room activation.", price: 26000, previewColor1: Color(0xff064e3b), previewColor2: Color(0xff22c55e), imageAsset: "assets/images/tables/reference/table_reference_29.png", collection: "reference_3"),
+  StoreProduct(id: "table_reference_30", category: "tables", icon: "🃏", nameAr: "لوحة ستيمبونك", nameEn: "Steampunk Panel", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 21–30، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 21–30 collection with full preview and in-room activation.", price: 30000, previewColor1: Color(0xff7f1d1d), previewColor2: Color(0xfffb7185), imageAsset: "assets/images/tables/reference/table_reference_30.png", collection: "reference_3"),
+  StoreProduct(id: "table_reference_31", category: "tables", icon: "🃏", nameAr: "نيزك حديدي خام", nameEn: "Raw Iron Meteorite", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 31–40، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 31–40 collection with full preview and in-room activation.", price: 20000, previewColor1: Color(0xff0b2d5b), previewColor2: Color(0xffd6aa59), imageAsset: "assets/images/tables/reference/table_reference_31.png", collection: "reference_4"),
+  StoreProduct(id: "table_reference_32", category: "tables", icon: "🃏", nameAr: "لوحة سديم مجري", nameEn: "Galactic Nebula", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 31–40، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 31–40 collection with full preview and in-room activation.", price: 24000, previewColor1: Color(0xff40103d), previewColor2: Color(0xffc9a6d8), imageAsset: "assets/images/tables/reference/table_reference_32.png", collection: "reference_4"),
+  StoreProduct(id: "table_reference_33", category: "tables", icon: "🃏", nameAr: "أوركيد عقيق", nameEn: "Agate Orchid", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 31–40، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 31–40 collection with full preview and in-room activation.", price: 24000, previewColor1: Color(0xff6b351f), previewColor2: Color(0xffd4a574), imageAsset: "assets/images/tables/reference/table_reference_33.png", collection: "reference_4"),
+  StoreProduct(id: "table_reference_34", category: "tables", icon: "🃏", nameAr: "بونساي يشم فاخر", nameEn: "Luxury Jade Bonsai", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 31–40، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 31–40 collection with full preview and in-room activation.", price: 22000, previewColor1: Color(0xff111827), previewColor2: Color(0xffd1d5db), imageAsset: "assets/images/tables/reference/table_reference_34.png", collection: "reference_4"),
+  StoreProduct(id: "table_reference_35", category: "tables", icon: "🃏", nameAr: "تميمة مصرية قديمة", nameEn: "Ancient Egyptian Amulet", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 31–40، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 31–40 collection with full preview and in-room activation.", price: 22000, previewColor1: Color(0xfff8fafc), previewColor2: Color(0xff94a3b8), imageAsset: "assets/images/tables/reference/table_reference_35.png", collection: "reference_4"),
+  StoreProduct(id: "table_reference_36", category: "tables", icon: "🃏", nameAr: "مطرقة ثور فضية", nameEn: "Silver Thor Hammer", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 31–40، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 31–40 collection with full preview and in-room activation.", price: 24000, previewColor1: Color(0xff4b2a15), previewColor2: Color(0xffd7a64a), imageAsset: "assets/images/tables/reference/table_reference_36.png", collection: "reference_4"),
+  StoreProduct(id: "table_reference_37", category: "tables", icon: "🃏", nameAr: "قناع أزتيك من الريش", nameEn: "Feathered Aztec Mask", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 31–40، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 31–40 collection with full preview and in-room activation.", price: 22000, previewColor1: Color(0xff7c3f23), previewColor2: Color(0xff5eead4), imageAsset: "assets/images/tables/reference/table_reference_37.png", collection: "reference_4"),
+  StoreProduct(id: "table_reference_38", category: "tables", icon: "🃏", nameAr: "سبج أسود مصقول", nameEn: "Polished Black Obsidian", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 31–40، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 31–40 collection with full preview and in-room activation.", price: 20000, previewColor1: Color(0xfffffbeb), previewColor2: Color(0xfff5c542), imageAsset: "assets/images/tables/reference/table_reference_38.png", collection: "reference_4"),
+  StoreProduct(id: "table_reference_39", category: "tables", icon: "🃏", nameAr: "لوحة جليد قطبي", nameEn: "Polar Ice Slab", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 31–40، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 31–40 collection with full preview and in-room activation.", price: 20000, previewColor1: Color(0xff064e3b), previewColor2: Color(0xff22c55e), imageAsset: "assets/images/tables/reference/table_reference_39.png", collection: "reference_4"),
+  StoreProduct(id: "table_reference_40", category: "tables", icon: "🃏", nameAr: "خشب متحجر عتيق", nameEn: "Ancient Petrified Wood", descriptionAr: "طاولة مرجعية فاخرة عالية الجودة ضمن مجموعة الطاولات الجديدة 31–40، مع معاينة كاملة وتفعيل مباشر داخل غرفة اللعب.", descriptionEn: "High-quality reference table skin from the new 31–40 collection with full preview and in-room activation.", price: 18000, previewColor1: Color(0xff7f1d1d), previewColor2: Color(0xfffb7185), imageAsset: "assets/images/tables/reference/table_reference_40.png", collection: "reference_4"),
   StoreProduct(id: "cardback_01", category: "cards", icon: "♣", nameAr: "ظهر ورق كلاسيك أخضر", nameEn: "Card Back 01", descriptionAr: "ظهر ورق فاخر يظهر كما هو داخل يد اللاعب وعلى الطاولة.", descriptionEn: "Premium card back applied to the player hand and game table.", price: 2320, previewColor1: Color(0xff064e3b), previewColor2: Color(0xfff5c542)),
   StoreProduct(id: "cardback_02", category: "cards", icon: "♦", nameAr: "ظهر ورق ملكي ذهبي", nameEn: "Card Back 02", descriptionAr: "ظهر ورق فاخر يظهر كما هو داخل يد اللاعب وعلى الطاولة.", descriptionEn: "Premium card back applied to the player hand and game table.", price: 2840, previewColor1: Color(0xff111827), previewColor2: Color(0xfffacc15)),
   StoreProduct(id: "cardback_03", category: "cards", icon: "♠", nameAr: "ظهر ورق ليل أسود", nameEn: "Card Back 03", descriptionAr: "ظهر ورق فاخر يظهر كما هو داخل يد اللاعب وعلى الطاولة.", descriptionEn: "Premium card back applied to the player hand and game table.", price: 3360, previewColor1: Color(0xff020617), previewColor2: Color(0xff94a3b8)),
@@ -2813,8 +2857,16 @@ class _AppLoadingScreenState extends State<AppLoadingScreen> with SingleTickerPr
     Positioned.fill(child:DecoratedBox(decoration:const BoxDecoration(gradient:RadialGradient(center:Alignment.topCenter,radius:1.35,colors:[Color(0xff173552),Color(0xff07121e),Color(0xff03070c)])))),
     Positioned.fill(child:AnimatedBuilder(animation:animation,builder:(_,__)=>CustomPaint(painter:_SplashParticles(animation.value)))),
     Center(child:Column(mainAxisSize:MainAxisSize.min,children:[
-      RotationTransition(turns:Tween<double>(begin:-.018,end:.018).animate(CurvedAnimation(parent:animation,curve:Curves.easeInOut)),child:Container(width:118,height:118,decoration:BoxDecoration(borderRadius:BorderRadius.circular(32),gradient:const LinearGradient(colors:[Color(0xffffcf67),Color(0xff14b8a6)]),boxShadow:[BoxShadow(color:Color(0x66ffcf67),blurRadius:42,spreadRadius:4)]),child:Stack(alignment:Alignment.center,children:[const Text('W',style:TextStyle(color:Color(0xff07111c),fontSize:57,fontWeight:FontWeight.w900)),Positioned(right:13,top:9,child:Text('♠',style:TextStyle(color:Colors.black.withValues(alpha:.68),fontSize:24))),Positioned(left:13,bottom:9,child:Text('♥',style:TextStyle(color:Colors.red.shade900,fontSize:23))) ]))),
-      const SizedBox(height:22),const Text('WARQNA',style:TextStyle(fontSize:31,fontWeight:FontWeight.w900,letterSpacing:5.5)),const SizedBox(height:6),const Text('الورق • الصوت • الأصدقاء • المنافسات',style:TextStyle(color:Colors.white60,fontWeight:FontWeight.w700)),const SizedBox(height:24),SizedBox(width:210,child:LinearProgressIndicator(borderRadius:BorderRadius.circular(20),minHeight:6)),const SizedBox(height:10),const Text('نجهّز طاولتك…',style:TextStyle(fontSize:11,color:Colors.white54))
+      RotationTransition(
+        turns: Tween<double>(begin: -.012, end: .012).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut)),
+        child: Image.asset('assets/images/brand/warqna_logo.png', width: 240, height: 190, fit: BoxFit.contain),
+      ),
+      const SizedBox(height: 12),
+      const Text('الورق • الصوت • الأصدقاء • المنافسات', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 24),
+      SizedBox(width: 250, child: LinearProgressIndicator(borderRadius: BorderRadius.circular(20), minHeight: 6)),
+      const SizedBox(height: 10),
+      const Text('نجهّز طاولتك…', style: TextStyle(fontSize: 11, color: Colors.white54))
     ])),
   ]));
 }
@@ -2974,19 +3026,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   constraints: const BoxConstraints(maxWidth: 440),
                   child: Column(
                     children: [
-                      Container(
-                        width: 92,
-                        height: 92,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(29),
-                          gradient: LinearGradient(colors: [palette.gold, const Color(0xffb67a20)]),
-                          boxShadow: [BoxShadow(color: palette.gold.withValues(alpha: .35), blurRadius: 34, offset: const Offset(0, 16))],
-                        ),
-                        child: const Text('W', style: TextStyle(color: Color(0xff15100a), fontSize: 46, fontWeight: FontWeight.w900)),
-                      ),
-                      const SizedBox(height: 18),
-                      const Text('WARQNA', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: 5)),
+                      Image.asset('assets/images/brand/warqna_logo.png', width: 260, height: 190, fit: BoxFit.contain),
+                      const SizedBox(height: 8),
                       const SizedBox(height: 5),
                       Text(authTextV151(lang, 'tagline'), style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 28),
@@ -3312,6 +3353,14 @@ class _GamesPageState extends State<GamesPage> {
   }
 }
 
+Widget buildMainFileFriendsButton(BuildContext context, AppController controller) {
+  return IconButton(
+    tooltip: L.t(controller.localeCode, 'friends'),
+    onPressed: () => showFriends(context, controller),
+    icon: const Icon(Icons.people_alt_outlined),
+  );
+}
+
 class StorePage extends StatefulWidget {
   final AppController controller;
 
@@ -3324,6 +3373,7 @@ class StorePage extends StatefulWidget {
 class _StorePageState extends State<StorePage> {
   String category = 'all';
   String tier = 'all';
+  String tableCollection = 'all';
   String query = '';
 
   @override
@@ -3333,8 +3383,11 @@ class _StorePageState extends State<StorePage> {
       if (!widget.controller.isStoreProductVisible(p)) return false;
       final categoryMatch = category == 'all' || p.category == category;
       final tierMatch = tier == 'all' || p.tier == tier;
+      final tableCollectionMatch = category != 'tables' ||
+          tableCollection == 'all' ||
+          (tableCollection == 'legacy' ? p.collection == null : p.collection == tableCollection);
       final text = '${p.name(lang)} ${p.description(lang)}'.toLowerCase();
-      return categoryMatch && tierMatch && text.contains(query.toLowerCase());
+      return categoryMatch && tierMatch && tableCollectionMatch && text.contains(query.toLowerCase());
     }).toList();
     const categories = [
       ('all', 'الكل'),
@@ -3353,10 +3406,19 @@ class _StorePageState extends State<StorePage> {
     return ListView(
       padding: const EdgeInsets.all(13),
       children: [
-        SectionTitle(
-          title: L.t(lang, 'store'),
-          action: '🪙 ${formatNumber(widget.controller.coins)}',
-          onTap: () => showWallet(context, widget.controller),
+        Row(
+          children: [
+            Image.asset('assets/images/brand/warqna_logo.png', width: 56, height: 56, fit: BoxFit.contain),
+            const SizedBox(width: 8),
+            Expanded(
+              child: SectionTitle(
+                title: L.t(lang, 'store'),
+                action: '🪙 ${formatNumber(widget.controller.coins)}',
+                onTap: () => showWallet(context, widget.controller),
+              ),
+            ),
+            buildMainFileFriendsButton(context, widget.controller),
+          ],
         ),
         const SizedBox(height: 10),
         PremiumPanel(child:Padding(padding:const EdgeInsets.all(13),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
@@ -3407,6 +3469,40 @@ class _StorePageState extends State<StorePage> {
             },
           ),
         ),
+        if (category == 'tables') ...[
+          const SizedBox(height: 8),
+          PremiumPanel(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('مجموعات الطاولات', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 7,
+                    runSpacing: 7,
+                    children: [
+                      for (final entry in const [
+                        ('all', 'الكل'),
+                        ('reference_1', 'الجديدة 1–10'),
+                        ('reference_2', 'الجديدة 11–20'),
+                        ('reference_3', 'الجديدة 21–30'),
+                        ('reference_4', 'الجديدة 31–40'),
+                        ('legacy', 'الطاولات السابقة'),
+                      ])
+                        ChoiceChip(
+                          label: Text(entry.$2, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900)),
+                          selected: tableCollection == entry.$1,
+                          onSelected: (_) => setState(() => tableCollection = entry.$1),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         Wrap(
           spacing: 6,
@@ -3832,7 +3928,23 @@ class _CompactProductPreview extends StatelessWidget {
       return SizedBox(width: 140, height: 92, child: ProfileCover(coverId: product.id, height: 92, colors: <Color>[c1, c2], child: Align(alignment: Alignment.bottomCenter, child: Padding(padding: const EdgeInsets.all(7), child: Text(controller.displayName, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900))))));
     }
     if (product.category == 'tables') {
-      return Container(width: 142, height: 92, decoration: BoxDecoration(borderRadius: BorderRadius.circular(25), gradient: RadialGradient(colors: [c2, c1, Color.lerp(c1, Colors.black, .55)!]), border: Border.all(color: c2, width: 3)), child: Stack(children: [const AmbientTableFX(density: 5, subtle: true), Center(child: Text(product.icon, style: const TextStyle(fontSize: 38)))]));
+      return Container(
+        width: 184,
+        height: 112,
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(25),
+          gradient: RadialGradient(colors: [c2, c1, Color.lerp(c1, Colors.black, .55)!]),
+          border: Border.all(color: c2.withValues(alpha: .9), width: 2),
+          boxShadow: [BoxShadow(color: c2.withValues(alpha: .22), blurRadius: 14)],
+        ),
+        child: product.imageAsset == null
+            ? Stack(children: [const AmbientTableFX(density: 5, subtle: true), Center(child: Text(product.icon, style: const TextStyle(fontSize: 38)))])
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset(product.imageAsset!, fit: BoxFit.contain, filterQuality: FilterQuality.high),
+              ),
+      );
     }
     if (product.category == 'names' || product.category == 'chat_colors') {
       return Column(mainAxisSize: MainAxisSize.min, children: [
@@ -4656,11 +4768,16 @@ class _LuxuryTable extends StatelessWidget {
     final c2 = skin == null ? const Color(0xffd6aa59) : (controller?.color2For(skin) ?? skin.previewColor2 ?? const Color(0xffd6aa59));
     final dark = Color.lerp(c1, Colors.black, .62)!;
     final customBytes = decodeDataImage(controller?.customTableBackgroundData);
+    final assetImage = customBytes == null && skin?.imageAsset != null ? AssetImage(skin!.imageAsset!) : null;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        gradient: customBytes == null ? RadialGradient(center: const Alignment(0, -.25), radius: .95, colors: [c2.withValues(alpha: .72), c1, dark]) : null,
-        image: customBytes == null ? null : DecorationImage(image: MemoryImage(customBytes), fit: BoxFit.cover, colorFilter: const ColorFilter.mode(Color(0x33000000), BlendMode.darken)),
+        gradient: customBytes == null && assetImage == null ? RadialGradient(center: const Alignment(0, -.25), radius: .95, colors: [c2.withValues(alpha: .72), c1, dark]) : null,
+        image: customBytes != null
+            ? DecorationImage(image: MemoryImage(customBytes), fit: BoxFit.cover, colorFilter: const ColorFilter.mode(Color(0x33000000), BlendMode.darken))
+            : assetImage != null
+                ? DecorationImage(image: assetImage, fit: BoxFit.cover, colorFilter: const ColorFilter.mode(Color(0x22000000), BlendMode.darken))
+                : null,
         border: Border.all(color: c2, width: 5),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: .62), blurRadius: 32, offset: const Offset(0, 18)),
@@ -4669,9 +4786,11 @@ class _LuxuryTable extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          Positioned.fill(child: CustomPaint(painter: _TablePatternPainter(color: c2))),
+          if (assetImage == null && customBytes == null)
+            Positioned.fill(child: CustomPaint(painter: _TablePatternPainter(color: c2))),
           const Positioned.fill(child: AmbientTableFX(density: 9, subtle: true)),
-          Center(
+          if (assetImage == null && customBytes == null)
+            Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -7438,18 +7557,37 @@ class _ProductLivePreview extends StatelessWidget {
     Widget preview;
     if (product.category == 'tables') {
       preview = Container(
-        width: 290,
-        height: 160,
+        width: 330,
+        height: 205,
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(34),
           gradient: RadialGradient(colors: [c2.withValues(alpha: .88), c1, Color.lerp(c1, Colors.black, .58)!]),
-          border: Border.all(color: c2, width: 5),
+          border: Border.all(color: c2, width: 4),
           boxShadow: [BoxShadow(color: c2.withValues(alpha: .24), blurRadius: 26, spreadRadius: 2), BoxShadow(color: Colors.black.withValues(alpha: .5), blurRadius: 24, offset: const Offset(0, 13))],
         ),
         child: Stack(
           children: [
-            Center(child: Text(product.icon, style: TextStyle(color: Colors.white.withValues(alpha: .25), fontSize: 65, fontWeight: FontWeight.w900))),
-            Positioned(left: 18, right: 18, bottom: 12, child: Text(controller.displayName, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w900))),
+            Positioned.fill(
+              child: product.imageAsset == null
+                  ? const AmbientTableFX(density: 8, subtle: true)
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(26),
+                      child: Image.asset(product.imageAsset!, fit: BoxFit.contain, filterQuality: FilterQuality.high),
+                    ),
+            ),
+            if (product.imageAsset == null)
+              Center(child: Text(product.icon, style: TextStyle(color: Colors.white.withValues(alpha: .25), fontSize: 65, fontWeight: FontWeight.w900))),
+            Positioned(
+              left: 18,
+              right: 18,
+              bottom: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12)),
+                child: Text(controller.displayName, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
+              ),
+            ),
           ],
         ),
       );

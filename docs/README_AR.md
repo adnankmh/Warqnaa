@@ -2,11 +2,11 @@
 
 ## الإصدار الحالي
 
-- البداية: `ar/releases/current/START_HERE_V170_AR.md`
-- ملاحظات الإصدار: `ar/releases/current/RELEASE_NOTES_V170_AR.md`
-- تقرير الجودة: `ar/reports/current/QUALITY_REPORT_V170_AR.md`
-- نتائج الفحص: `ar/validation/current/VALIDATION_RESULTS_V170.txt`
-- رفع GitHub: `ar/deployment/GITHUB_UPLOAD_V170_AR.md`
+- البداية: `ar/releases/current/START_HERE_V172_AR.md`
+- ملاحظات الإصدار: `ar/releases/current/RELEASE_NOTES_V172_AR.md`
+- تقرير الجودة: `ar/reports/current/QUALITY_REPORT_V172_AR.md`
+- نتائج الفحص: `ar/validation/current/VALIDATION_RESULTS_V172.txt`
+- رفع GitHub: `ar/deployment/GITHUB_UPLOAD_V172_AR.md`
 
 ## أدلة ثابتة
 

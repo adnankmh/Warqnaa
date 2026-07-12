@@ -1,0 +1,322 @@
+[
+  {
+    "index": 1,
+    "id": "table_reference_01",
+    "name_ar": "أزرق ملكي مذهب",
+    "name_en": "Gilded Royal Blue",
+    "price": 20000,
+    "asset": "assets/images/tables/reference/table_reference_01.png"
+  },
+  {
+    "index": 2,
+    "id": "table_reference_02",
+    "name_ar": "أرجواني ملكي مطعم",
+    "name_en": "Inlaid Royal Purple",
+    "price": 25000,
+    "asset": "assets/images/tables/reference/table_reference_02.png"
+  },
+  {
+    "index": 3,
+    "id": "table_reference_03",
+    "name_ar": "جلد عتيق مزخرف",
+    "name_en": "Ornate Antique Leather",
+    "price": 18000,
+    "asset": "assets/images/tables/reference/table_reference_03.png"
+  },
+  {
+    "index": 4,
+    "id": "table_reference_04",
+    "name_ar": "أسود كربوني فضي",
+    "name_en": "Silver Carbon Black",
+    "price": 15000,
+    "asset": "assets/images/tables/reference/table_reference_04.png"
+  },
+  {
+    "index": 5,
+    "id": "table_reference_05",
+    "name_ar": "رخام إيطالي مصقول",
+    "name_en": "Polished Italian Marble",
+    "price": 22000,
+    "asset": "assets/images/tables/reference/table_reference_05.png"
+  },
+  {
+    "index": 6,
+    "id": "table_reference_06",
+    "name_ar": "خشب جوز بنمط هندسي",
+    "name_en": "Geometric Walnut Wood",
+    "price": 20000,
+    "asset": "assets/images/tables/reference/table_reference_06.png"
+  },
+  {
+    "index": 7,
+    "id": "table_reference_07",
+    "name_ar": "نحاس عتيق مؤكسد",
+    "name_en": "Oxidized Antique Copper",
+    "price": 18000,
+    "asset": "assets/images/tables/reference/table_reference_07.png"
+  },
+  {
+    "index": 8,
+    "id": "table_reference_08",
+    "name_ar": "عرق لؤلؤ طبيعي",
+    "name_en": "Natural Mother of Pearl",
+    "price": 30000,
+    "asset": "assets/images/tables/reference/table_reference_08.png"
+  },
+  {
+    "index": 9,
+    "id": "table_reference_09",
+    "name_ar": "زمردي أرابيسك عميق",
+    "name_en": "Deep Emerald Arabesque",
+    "price": 28000,
+    "asset": "assets/images/tables/reference/table_reference_09.png"
+  },
+  {
+    "index": 10,
+    "id": "table_reference_10",
+    "name_ar": "عقيق يماني أحمر",
+    "name_en": "Red Yemeni Agate",
+    "price": 25000,
+    "asset": "assets/images/tables/reference/table_reference_10.png"
+  },
+  {
+    "index": 11,
+    "id": "table_reference_11",
+    "name_ar": "يخت فاخر",
+    "name_en": "Luxury Yacht",
+    "price": 16000,
+    "asset": "assets/images/tables/reference/table_reference_11.png"
+  },
+  {
+    "index": 12,
+    "id": "table_reference_12",
+    "name_ar": "أسماك كوي خزفية",
+    "name_en": "Porcelain Koi",
+    "price": 20000,
+    "asset": "assets/images/tables/reference/table_reference_12.png"
+  },
+  {
+    "index": 13,
+    "id": "table_reference_13",
+    "name_ar": "مجرة كونية",
+    "name_en": "Cosmic Galaxy",
+    "price": 22000,
+    "asset": "assets/images/tables/reference/table_reference_13.png"
+  },
+  {
+    "index": 14,
+    "id": "table_reference_14",
+    "name_ar": "أرابيسك فضي",
+    "name_en": "Silver Arabesque",
+    "price": 28000,
+    "asset": "assets/images/tables/reference/table_reference_14.png"
+  },
+  {
+    "index": 15,
+    "id": "table_reference_15",
+    "name_ar": "فارس محارب",
+    "name_en": "Warrior Knight",
+    "price": 26000,
+    "asset": "assets/images/tables/reference/table_reference_15.png"
+  },
+  {
+    "index": 16,
+    "id": "table_reference_16",
+    "name_ar": "بونساي يشم",
+    "name_en": "Jade Bonsai",
+    "price": 18000,
+    "asset": "assets/images/tables/reference/table_reference_16.png"
+  },
+  {
+    "index": 17,
+    "id": "table_reference_17",
+    "name_ar": "تنين دمشقي",
+    "name_en": "Damascene Dragon",
+    "price": 18000,
+    "asset": "assets/images/tables/reference/table_reference_17.png"
+  },
+  {
+    "index": 18,
+    "id": "table_reference_18",
+    "name_ar": "أسلحة عتيقة",
+    "name_en": "Antique Weapons",
+    "price": 26000,
+    "asset": "assets/images/tables/reference/table_reference_18.png"
+  },
+  {
+    "index": 19,
+    "id": "table_reference_19",
+    "name_ar": "لوتس صدفية",
+    "name_en": "Mother-of-Pearl Lotus",
+    "price": 28000,
+    "asset": "assets/images/tables/reference/table_reference_19.png"
+  },
+  {
+    "index": 20,
+    "id": "table_reference_20",
+    "name_ar": "قناع تيكي منحوت",
+    "name_en": "Carved Tiki Mask",
+    "price": 16000,
+    "asset": "assets/images/tables/reference/table_reference_20.png"
+  },
+  {
+    "index": 21,
+    "id": "table_reference_21",
+    "name_ar": "طائرة خاصة كربونية",
+    "name_en": "Carbon Private Jet",
+    "price": 24000,
+    "asset": "assets/images/tables/reference/table_reference_21.png"
+  },
+  {
+    "index": 22,
+    "id": "table_reference_22",
+    "name_ar": "مروحية كلاسيكية محفورة",
+    "name_en": "Engraved Classic Helicopter",
+    "price": 24000,
+    "asset": "assets/images/tables/reference/table_reference_22.png"
+  },
+  {
+    "index": 23,
+    "id": "table_reference_23",
+    "name_ar": "مركبة استكشاف أعماق البحار",
+    "name_en": "Deep-Sea Explorer",
+    "price": 28000,
+    "asset": "assets/images/tables/reference/table_reference_23.png"
+  },
+  {
+    "index": 24,
+    "id": "table_reference_24",
+    "name_ar": "هيكل تيرانوصور أحفوري",
+    "name_en": "Fossil Tyrannosaur",
+    "price": 30000,
+    "asset": "assets/images/tables/reference/table_reference_24.png"
+  },
+  {
+    "index": 25,
+    "id": "table_reference_25",
+    "name_ar": "قرش أبيض عميق",
+    "name_en": "Deep Great White Shark",
+    "price": 26000,
+    "asset": "assets/images/tables/reference/table_reference_25.png"
+  },
+  {
+    "index": 26,
+    "id": "table_reference_26",
+    "name_ar": "كيفلار منسوج",
+    "name_en": "Woven Kevlar",
+    "price": 20000,
+    "asset": "assets/images/tables/reference/table_reference_26.png"
+  },
+  {
+    "index": 27,
+    "id": "table_reference_27",
+    "name_ar": "عاج طبيعي محفور",
+    "name_en": "Carved Natural Ivory",
+    "price": 24000,
+    "asset": "assets/images/tables/reference/table_reference_27.png"
+  },
+  {
+    "index": 28,
+    "id": "table_reference_28",
+    "name_ar": "جعران الجوهرة مرصعة",
+    "name_en": "Jeweled Scarab",
+    "price": 28000,
+    "asset": "assets/images/tables/reference/table_reference_28.png"
+  },
+  {
+    "index": 29,
+    "id": "table_reference_29",
+    "name_ar": "لوحة آرت ديكو ذهبية",
+    "name_en": "Golden Art Deco",
+    "price": 26000,
+    "asset": "assets/images/tables/reference/table_reference_29.png"
+  },
+  {
+    "index": 30,
+    "id": "table_reference_30",
+    "name_ar": "لوحة ستيمبونك",
+    "name_en": "Steampunk Panel",
+    "price": 30000,
+    "asset": "assets/images/tables/reference/table_reference_30.png"
+  },
+  {
+    "index": 31,
+    "id": "table_reference_31",
+    "name_ar": "نيزك حديدي خام",
+    "name_en": "Raw Iron Meteorite",
+    "price": 20000,
+    "asset": "assets/images/tables/reference/table_reference_31.png"
+  },
+  {
+    "index": 32,
+    "id": "table_reference_32",
+    "name_ar": "لوحة سديم مجري",
+    "name_en": "Galactic Nebula",
+    "price": 24000,
+    "asset": "assets/images/tables/reference/table_reference_32.png"
+  },
+  {
+    "index": 33,
+    "id": "table_reference_33",
+    "name_ar": "أوركيد عقيق",
+    "name_en": "Agate Orchid",
+    "price": 24000,
+    "asset": "assets/images/tables/reference/table_reference_33.png"
+  },
+  {
+    "index": 34,
+    "id": "table_reference_34",
+    "name_ar": "بونساي يشم فاخر",
+    "name_en": "Luxury Jade Bonsai",
+    "price": 22000,
+    "asset": "assets/images/tables/reference/table_reference_34.png"
+  },
+  {
+    "index": 35,
+    "id": "table_reference_35",
+    "name_ar": "تميمة مصرية قديمة",
+    "name_en": "Ancient Egyptian Amulet",
+    "price": 22000,
+    "asset": "assets/images/tables/reference/table_reference_35.png"
+  },
+  {
+    "index": 36,
+    "id": "table_reference_36",
+    "name_ar": "مطرقة ثور فضية",
+    "name_en": "Silver Thor Hammer",
+    "price": 24000,
+    "asset": "assets/images/tables/reference/table_reference_36.png"
+  },
+  {
+    "index": 37,
+    "id": "table_reference_37",
+    "name_ar": "قناع أزتيك من الريش",
+    "name_en": "Feathered Aztec Mask",
+    "price": 22000,
+    "asset": "assets/images/tables/reference/table_reference_37.png"
+  },
+  {
+    "index": 38,
+    "id": "table_reference_38",
+    "name_ar": "سبج أسود مصقول",
+    "name_en": "Polished Black Obsidian",
+    "price": 20000,
+    "asset": "assets/images/tables/reference/table_reference_38.png"
+  },
+  {
+    "index": 39,
+    "id": "table_reference_39",
+    "name_ar": "لوحة جليد قطبي",
+    "name_en": "Polar Ice Slab",
+    "price": 20000,
+    "asset": "assets/images/tables/reference/table_reference_39.png"
+  },
+  {
+    "index": 40,
+    "id": "table_reference_40",
+    "name_ar": "خشب متحجر عتيق",
+    "name_en": "Ancient Petrified Wood",
+    "price": 18000,
+    "asset": "assets/images/tables/reference/table_reference_40.png"
+  }
+]

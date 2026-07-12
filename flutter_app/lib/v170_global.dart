@@ -53,6 +53,18 @@ Widget buildV170TopBar(BuildContext context, AppController controller) {
         ),
       );
 
+  Widget brand({double size = 54}) => Semantics(
+        label: 'Warqna',
+        image: true,
+        child: Image.asset(
+          'assets/images/brand/warqna_logo.png',
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+        ),
+      );
+
   Widget notifications() => IconButton(
         tooltip: L.t(lang, 'notifications'),
         onPressed: () => showNotifications(context, controller),
@@ -152,6 +164,8 @@ Widget buildV170TopBar(BuildContext context, AppController controller) {
           return Padding(
             padding: const EdgeInsets.fromLTRB(13, 8, 8, 8),
             child: Row(children: [
+              brand(size: 58),
+              const SizedBox(width: 9),
               Expanded(child: profile()),
               friends(),
               if (controller.isAdmin)
@@ -175,7 +189,7 @@ Widget buildV170TopBar(BuildContext context, AppController controller) {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(children: [Expanded(child: profile()), friends(), notifications(), compactMenu()]),
+              Row(children: [brand(size: 46), const SizedBox(width: 6), Expanded(child: profile()), friends(), notifications(), compactMenu()]),
               const SizedBox(height: 2),
               SizedBox(
                 height: 42,

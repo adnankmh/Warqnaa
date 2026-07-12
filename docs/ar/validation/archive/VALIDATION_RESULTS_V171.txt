@@ -1,0 +1,32 @@
+Warqna v171 validation report
+Release: 1.71.0+171
+Base: v170
+Focus: semantic AppController reference validation for GitHub Actions
+
+Executed checks:
+- Release metadata/version contract: PASS
+- Clean-root policy and Git metadata compatibility: PASS
+- Flutter v169 API/static regression contract: PASS
+- Warqna v170 responsive/gameplay/voice/social/economy/security contract: PASS
+- Warqna v171 semantic controller-reference contract: PASS
+- Full source-package preflight: PASS
+- Python syntax compilation: PASS
+- PHP syntax lint: PASS (241 files)
+- JSON parsing: PASS (27 files)
+- YAML parsing: PASS (15 files)
+- Shell syntax: PASS
+- Dart delimiter structure: PASS
+
+Regression fixed:
+- Removed the brittle exact-string check for:
+  onPressed: () => showFriends(context, controller)
+- The new contract accepts valid callback blocks, validates every actual
+  showFriends(context, ...) call, and permits only controller or
+  widget.controller according to widget scope.
+- The same contract runs in Flutter Web, Android, iOS, and Production Release Gate.
+
+Environment limitations:
+- Flutter SDK is not installed in the packaging environment, so flutter analyze,
+  flutter test, and executable Web/APK builds remain authoritative in GitHub Actions.
+- Composer/vendor is not present locally, so the complete php artisan test suite
+  remains authoritative in Backend CI. PHP syntax lint was completed successfully.

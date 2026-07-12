@@ -47,21 +47,10 @@ jobs:
         working-directory: flutter_app
         run: flutter pub get
 
-      - name: Verify corrected controller references
+      - name: Verify controller references semantically
         working-directory: flutter_app
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          source = Path('lib/main.dart').read_text(encoding='utf-8')
-          required = [
-              "onPressed: () => showFriends(context, controller)",
-              "onTap: () => showFriends(context, widget.controller)",
-          ]
-          missing = [item for item in required if item not in source]
-          if missing:
-              raise SystemExit('Incorrect controller references in lib/main.dart: ' + repr(missing))
-          print('Controller references are correct.')
-          PY
+        run: python3 ../tools/test_v171_controller_references.py
+          python3 ../tools/test_v172_brand_table_contract.py
 
       - name: Verify Flutter API compatibility contract
         working-directory: flutter_app

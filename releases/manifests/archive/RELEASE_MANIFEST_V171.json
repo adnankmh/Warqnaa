@@ -1,0 +1,19 @@
+{
+  "release": "Warqna v171",
+  "version": "1.71.0",
+  "build": 171,
+  "base_release": "v170",
+  "codename": "controller-reference-ci-hotfix",
+  "focus": [
+    "replace brittle literal controller-reference grep with semantic validation",
+    "validate all showFriends controller arguments",
+    "run the same regression contract across Web, Android, iOS and release gate",
+    "preserve all v170 responsive gameplay, voice and security features"
+  ],
+  "guides": {
+    "start": "docs/ar/releases/current/START_HERE_V171_AR.md",
+    "github": "docs/ar/deployment/GITHUB_UPLOAD_V171_AR.md",
+    "quality": "docs/ar/reports/current/QUALITY_REPORT_V171_AR.md",
+    "structure": "docs/ar/STRUCTURE_GUIDE_AR.md"
+  }
+}

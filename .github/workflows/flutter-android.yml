@@ -56,6 +56,7 @@ jobs:
           if [ -f test/widget_test.dart ] && grep -q "MyApp" test/widget_test.dart; then
             rm test/widget_test.dart
           fi
+          python3 ../tools/apply_brand_assets.py
 
       - name: Install Android SDK 36
         run: |
@@ -139,6 +140,8 @@ jobs:
         run: |
           python3 ../tools/test_flutter_ci_contract.py
           python3 ../tools/test_v170_contract.py
+          python3 ../tools/test_v171_controller_references.py
+          python3 ../tools/test_v172_brand_table_contract.py
           bash ../tools/flutter_analyze_ci.sh
           flutter test
 

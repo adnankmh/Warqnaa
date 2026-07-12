@@ -1,8 +1,8 @@
 {
-  "version": "1.70.0",
-  "build": 170,
-  "full": "1.70.0+170",
-  "release": "v170",
+  "version": "1.72.0",
+  "build": 172,
+  "full": "1.72.0+172",
+  "release": "v172",
   "channel": "production",
-  "codename": "responsive-gameplay-security"
+  "codename": "brand-and-40-table-collection"
 }

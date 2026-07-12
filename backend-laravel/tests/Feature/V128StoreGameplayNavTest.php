@@ -11,7 +11,7 @@ class V128StoreGameplayNavTest extends TestCase
     public function test_store_catalog_keeps_expanded_tables_and_card_backs(): void
     {
         $service=new StoreCatalogService();
-        $this->assertCount(50,$service->tableSkins());
+        $this->assertCount(90,$service->tableSkins());
         $this->assertCount(40,$service->cardBacks());
         $pasha7=collect($service->pashaItems())->firstWhere('duration_days',7);
         $this->assertSame(10000,$pasha7['price']);

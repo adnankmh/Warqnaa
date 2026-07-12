@@ -1,0 +1,30 @@
+Warqna v172 validation results
+================================
+Release: 1.72.0+172
+Base: v171
+
+PASS: Release version contract
+PASS: Clean-root policy
+PASS: Legacy literal controller references in flutter_app/lib/main.dart
+PASS: v171 semantic controller-reference contract
+PASS: v172 additive brand/table contract
+PASS: 50 legacy table IDs preserved
+PASS: 40 new table IDs present and unique
+PASS: 90 backend table records expected by tests
+PASS: 40 PNG table assets, each 1024x640
+PASS: Warqna RGBA logo 1107x1007
+PASS: Flutter brand/table asset registration
+PASS: Android post-flutter-create icon application contract
+PASS: Web install-card logo contract
+PASS: PHP syntax — 242 files
+PASS: JSON syntax — 29 files
+PASS: YAML parse — 15 files
+PASS: Python syntax
+PASS: Shell syntax
+PASS: Dart delimiter structure
+PASS: Full source-package preflight
+
+Not executed locally:
+- flutter analyze / flutter test / Flutter builds: Flutter SDK is unavailable in the packaging environment.
+- php artisan test: Composer vendor dependencies are unavailable in the packaging environment.
+These are executed by GitHub Actions after upload.
