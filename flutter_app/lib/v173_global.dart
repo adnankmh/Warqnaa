@@ -125,8 +125,7 @@ class PashaHatV173 extends StatelessWidget {
   const PashaHatV173({super.key, required this.controller, this.width = 44, this.height, this.fit = BoxFit.contain});
   @override
   Widget build(BuildContext context) {
-    final style = pashaStyleV173(controller.selectedPashaStyle);
-    return Image.asset(style.asset, width: width, height: height ?? width * .68, fit: fit, errorBuilder: (_, __, ___) => const Text('🎩'));
+    return Image.asset('assets/images/pasha.png', width: width, height: height ?? width * .68, fit: BoxFit.contain, filterQuality: FilterQuality.high, errorBuilder: (_, __, ___) => const Text('🎩'));
   }
 }
 
@@ -259,14 +258,20 @@ void showPashaStyleSelectorV173(BuildContext context, AppController controller) 
 }
 
 Future<void> showDailyPackV173(BuildContext context, AppController controller) async {
+  const rewards = <(String,String,String)>[
+    ('🎨','ألوان مؤقتة','لون اسم أو دردشة لمدة 24 ساعة'),
+    ('⚡','مسرّع خبرة','مضاعف XP لمدة 6 ساعات'),
+    ('🎴','طاولات نادرة','طاولة كاملة لمدة يومين أو 3 أيام'),
+    ('🪙','توكنز','250 إلى 2,500 توكن'),
+    ('🎟️','تذاكر منافسات','تذاكر من 500 إلى 5,000 توكن'),
+  ];
   await showPremiumSheet(context, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    const Center(child: Text('🎁', style: TextStyle(fontSize: 76))),
-    const Text('الحزمة اليومية المجانية', textAlign: TextAlign.center, style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900)),
-    const SizedBox(height: 8),
-    const Text('تُفتح مرة واحدة يومياً وقد تحتوي على لون لاعب أو لون دردشة ليوم، مسرّع 6 ساعات، طاولة ليومين أو 3 أيام، توكنز أو تذكرة منافسة.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white60, height: 1.6)),
-    if (controller.dailyPackReward != null) Padding(padding: const EdgeInsets.only(top: 10), child: Chip(label: Text('آخر جائزة: ${controller.dailyPackReward}'))),
-    const SizedBox(height: 14),
-    FilledButton.icon(onPressed: controller.dailyPackAvailableV173 ? () async { final error = await controller.openDailyPackV173(); if (context.mounted) { if (error == null) { Navigator.pop(context); showToast(context, 'مبروك! ${controller.dailyPackReward}'); } else { showToast(context, error); } } } : null, icon: const Icon(Icons.redeem_rounded), label: Text(controller.dailyPackAvailableV173 ? 'افتح الحزمة الآن' : 'تم فتح حزمة اليوم')),
+    Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(borderRadius:BorderRadius.circular(26),gradient:const LinearGradient(colors:[Color(0xff6d28d9),Color(0xffdb2777),Color(0xfff59e0b)]),boxShadow:[BoxShadow(color:Colors.purpleAccent,blurRadius:28)]),child:const Column(children:[Text('🎁',style:TextStyle(fontSize:82)),Text('الحزمة الملكية اليومية',style:TextStyle(fontSize:24,fontWeight:FontWeight.w900)),Text('فتح واحد كل 24 ساعة • الجوائز تعتمد من الخادم',style:TextStyle(color:Colors.white70))])),
+    const SizedBox(height:12),
+    ...rewards.map((r)=>Padding(padding:const EdgeInsets.only(bottom:7),child:PremiumListTile(icon:r.$1,title:r.$2,subtitle:r.$3,action:const Icon(Icons.auto_awesome,color:Colors.amberAccent)))),
+    if (controller.dailyPackReward != null) Padding(padding: const EdgeInsets.only(top: 8), child: Chip(avatar:const Icon(Icons.history,size:17),label: Text('آخر جائزة: ${controller.dailyPackReward}'))),
+    const SizedBox(height: 12),
+    FilledButton.icon(onPressed: controller.dailyPackAvailableV173 ? () async { final error = await controller.openDailyPackV173(); if (context.mounted) { if (error == null) { Navigator.pop(context); showToast(context, 'مبروك! ${controller.dailyPackReward}'); } else { showToast(context, error); } } } : null, icon: const Icon(Icons.lock_open_rounded), label: Text(controller.dailyPackAvailableV173 ? 'افتح الحزمة الآن' : 'ارجع غداً لحزمة جديدة'),style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(56))),
   ]));
 }
 
@@ -294,20 +299,7 @@ void showCompetitionsV173(BuildContext context, AppController controller) {
 }
 
 void showChallengesV173(BuildContext context, AppController controller) {
-  const challenges = <(String,String,String,String,int)>[
-    ('daily_wins','🔥','سلسلة النار','حقق 3 انتصارات اليوم من دون انسحاب',750),
-    ('clean_play','🛡️','اللعب النظيف','أكمل 5 مباريات بلا مغادرة أو بلاغ',900),
-    ('tarneeb_master','🂡','سيّد الطرنيب','اربح جولتين بفارق 10 نقاط',1200),
-    ('social','🤝','تحدي الأصدقاء','العب 3 مباريات مع أصدقاء مختلفين',600),
-    ('club','👥','قوة المجموعة','اجمع 25 نقطة لمجموعتك خلال أسبوع',2000),
-    ('legend','🐉','مسار الأسطورة','اربح 10 مباريات مصنفة هذا الموسم',5000),
-  ];
-  showPremiumSheet(context, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    const Text('التحديات الاحترافية', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-    Text('سلسلتك الحالية ${controller.challengeStreakV173} • تحديات يومية وأسبوعية وموسمية وجماعية مع حماية من احتساب الانسحاب.', style: const TextStyle(color: Colors.white60, height: 1.5)),
-    const SizedBox(height: 10),
-    ...challenges.map((entry) => Padding(padding: const EdgeInsets.only(bottom: 9), child: PremiumListTile(icon: entry.$2, title: entry.$3, subtitle: '${entry.$4} • 🪙 ${formatNumber(entry.$5)} + XP', action: FilledButton.tonal(onPressed: () { final ok = controller.joinChallenge(entry.$1); if (ok) controller.challengeStreakV173 += 1; showToast(context, ok ? 'تم تفعيل ${entry.$3}.' : 'أنهِ التحدي الحالي أولاً.'); }, child: const Text('ابدأ'))))),
-  ]));
+  showChallengesV175(context, controller);
 }
 
 class GroupCommandCenterV173 extends StatelessWidget {
@@ -339,10 +331,10 @@ class UniversalDesignerV173 extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('المصمم الشامل V173 — للمدير فقط', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+              const Text('المصمم الشامل V175 — للمدير فقط', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
               const SizedBox(height: 4),
               const Text(
-                'إدارة وإضافة وتعديل وحذف الطاولات والطربوش والمتجر والتذاكر والحزم والتحديات والمنافسات والمجموعات والإعلانات والنصوص والثيمات من قاعدة البيانات.',
+                'إدارة وإضافة وتعديل وحذف جميع مكونات التطبيق: الألعاب والطاولات والمتجر والاقتصاد والمستويات والحزم والتحديات والمنافسات والمجموعات والإعلانات والإشعارات والصفحات والتنقل والترجمات والثيمات والأمان من قاعدة البيانات.',
                 style: TextStyle(color: Colors.white60, height: 1.5, fontSize: 10),
               ),
               const SizedBox(height: 9),
@@ -352,7 +344,6 @@ class UniversalDesignerV173 extends StatelessWidget {
                 children: [
                   for (final entry in const <(String, String, IconData)>[
                     ('الطاولات', 'table', Icons.table_restaurant),
-                    ('الطربوش', 'pasha_style', Icons.workspace_premium),
                     ('التذاكر', 'competition_ticket', Icons.confirmation_number),
                     ('الحزم', 'daily_pack', Icons.redeem),
                     ('التحديات', 'challenge', Icons.bolt),
@@ -361,6 +352,16 @@ class UniversalDesignerV173 extends StatelessWidget {
                     ('الإعلانات', 'ads', Icons.ads_click),
                     ('النصوص والترجمات', 'translation', Icons.translate),
                     ('الثيمات', 'theme', Icons.palette),
+                    ('الألعاب', 'game', Icons.style),
+                    ('المتجر', 'store', Icons.storefront),
+                    ('اقتصاد اللعبة', 'economy', Icons.account_balance_wallet),
+                    ('نقاط المستويات', 'level_xp', Icons.stairs),
+                    ('الصفحات', 'page', Icons.web),
+                    ('التنقل', 'navigation', Icons.alt_route),
+                    ('الإشعارات', 'notification', Icons.notifications_active),
+                    ('الأمان', 'security', Icons.security),
+                    ('مفاتيح الميزات', 'feature_flag', Icons.toggle_on),
+                    ('إعدادات النظام', 'system', Icons.settings_suggest),
                   ])
                     OutlinedButton.icon(
                       onPressed: controller.serverConnected

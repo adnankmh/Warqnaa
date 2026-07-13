@@ -54,6 +54,8 @@ Route::prefix('mobile/v1')->group(function () {
         Route::post('/rewards/rewarded-ad', [MobileApiController::class, 'claimRewardedAd'])->middleware('throttle:warqna-sensitive');
         Route::get('/engagement/center', [MobileEngagementController::class, 'center']);
         Route::post('/packs/daily/open', [MobileEngagementController::class, 'openDailyPack'])->middleware('throttle:warqna-sensitive');
+        Route::post('/challenges/{challengeKey}/activate', [MobileEngagementController::class, 'activateChallenge'])->middleware('throttle:warqna-sensitive');
+        Route::post('/challenges/{challengeKey}/claim', [MobileEngagementController::class, 'claimChallenge'])->middleware('throttle:warqna-sensitive');
         Route::post('/competitions/{competitionKey}/join', [MobileEngagementController::class, 'joinCompetition'])->middleware('throttle:warqna-sensitive');
 
         Route::get('/account/export', [MobileAccountController::class, 'export'])->middleware('throttle:warqna-sensitive');

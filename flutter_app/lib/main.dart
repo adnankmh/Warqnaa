@@ -29,6 +29,7 @@ part 'production_v153.dart';
 part 'v166_polish.dart';
 part 'v170_global.dart';
 part 'v173_global.dart';
+part 'v175_release.dart';
 
 final GlobalKey<NavigatorState> warqnaNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -184,6 +185,8 @@ class AppController extends ChangeNotifier {
   final WarqnaApiClient api = WarqnaApiClient();
   String? _pendingRoomCodeV174;
   bool _openingRoomRouteV174 = false;
+  String? _queuedNavigationRouteV175;
+  bool _openingNavigationRouteV175 = false;
 
   void refreshUi() => notifyListeners();
 
@@ -439,7 +442,7 @@ class AppController extends ChangeNotifier {
   String _offlineAliasKey(String value) => 'warqna.offline.alias.${value.trim().toLowerCase()}';
   String _offlineHashKey(String value) => 'warqna.offline.hash.${value.trim().toLowerCase()}';
   String _offlineCredentialHash(String user, String password) => sha256
-      .convert(utf8.encode('warqna-v174|${user.trim().toLowerCase()}|$password|local-session'))
+      .convert(utf8.encode('warqna-v175|${user.trim().toLowerCase()}|$password|local-session'))
       .toString();
 
   Future<void> _storeOfflineCredentials(SharedPreferences prefs, String user, String mail, String password) async {
@@ -504,6 +507,16 @@ class AppController extends ChangeNotifier {
     return _registerLocal(user, mail, password);
   }
 
+  Future<String?> _loginOrCreateLocalFallback(String loginId, String password) async {
+    final existing = await _loginLocal(loginId, password);
+    if (existing == null) return null;
+    final cleanLogin = loginId.trim();
+    final safeUser = cleanLogin.contains('@') ? cleanLogin.split('@').first : cleanLogin;
+    final user = safeUser.replaceAll(RegExp(r'[^A-Za-z0-9_؀-ۿ.-]'), '_');
+    final mail = cleanLogin.contains('@') ? cleanLogin : '${user.isEmpty ? 'player' : user}@warqna.local';
+    return _registerLocal(user.isEmpty ? 'Player' : user, mail, password);
+  }
+
   Future<void> load() async {
     try {
       await _loadUnsafe();
@@ -538,7 +551,7 @@ class AppController extends ChangeNotifier {
         final code = route.substring('room:'.length).split(':').first.trim().toUpperCase();
         if (code.isNotEmpty) {
           notices.insert(0, AppNotice('🎮', L.t(localeCode, 'activeGame'), L.t(localeCode, 'resumeGame')));
-          unawaited(openRoomFromNotificationV174(code));
+          queueNavigationRoute('/room/$code');
         }
       } else if (route.startsWith('friend-chat:')) {
         notices.insert(0, AppNotice('💬', L.t(localeCode, 'friendsChat'), L.t(localeCode, 'friendsChat')));
@@ -628,6 +641,7 @@ class AppController extends ChangeNotifier {
     activeChallenge = prefs.getString('activeChallenge');
     activeGame = prefs.getString('activeGame');
     activeRoomCode = prefs.getString('activeRoomCode');
+    _queuedNavigationRouteV175 = prefs.getString('queuedNavigationRouteV175');
     activeRoomName = prefs.getString('activeRoomName');
     activeRoomVoice = prefs.getBool('activeRoomVoice') ?? false;
     activeRoomVisibility = prefs.getString('activeRoomVisibility') ?? 'public';
@@ -688,7 +702,8 @@ class AppController extends ChangeNotifier {
     unawaited(startConnectivityMonitorV173());
     ready = true;
     refreshUi();
-    if (_pendingRoomCodeV174 != null) unawaited(openRoomFromNotificationV174(_pendingRoomCodeV174!));
+    if (_pendingRoomCodeV174 != null) queueNavigationRoute('/room/${_pendingRoomCodeV174!}');
+    unawaited(openPendingNavigationRoute());
   }
 
   Future<void> _save() async {
@@ -748,6 +763,7 @@ class AppController extends ChangeNotifier {
     if (activeChallenge == null) { await prefs.remove('activeChallenge'); } else { await prefs.setString('activeChallenge', activeChallenge!); }
     if (activeGame == null) { await prefs.remove('activeGame'); } else { await prefs.setString('activeGame', activeGame!); }
     if (activeRoomCode == null) { await prefs.remove('activeRoomCode'); } else { await prefs.setString('activeRoomCode', activeRoomCode!); }
+    if (_queuedNavigationRouteV175 == null) { await prefs.remove('queuedNavigationRouteV175'); } else { await prefs.setString('queuedNavigationRouteV175', _queuedNavigationRouteV175!); }
     if (activeRoomName == null) { await prefs.remove('activeRoomName'); } else { await prefs.setString('activeRoomName', activeRoomName!); }
     await prefs.setBool('activeRoomVoice', activeRoomVoice);
     await prefs.setString('activeRoomVisibility', activeRoomVisibility);
@@ -803,14 +819,15 @@ class AppController extends ChangeNotifier {
       unawaited(startConnectivityMonitorV173());
       await _save();
       refreshUi();
-      if (_pendingRoomCodeV174 != null) unawaited(openRoomFromNotificationV174(_pendingRoomCodeV174!));
+      if (_pendingRoomCodeV174 != null) queueNavigationRoute('/room/${_pendingRoomCodeV174!}');
+      unawaited(openPendingNavigationRoute());
       return null;
     } on ApiException catch (e) {
-      final localResult = await _loginLocal(loginId, password);
+      if (e.statusCode == 401 || e.statusCode == 422) return e.message;
+      final localResult = await _loginOrCreateLocalFallback(loginId, password);
       return localResult == null ? null : e.message;
     } catch (_) {
-      final localResult = await _loginLocal(loginId, password);
-      return localResult == null ? null : 'تعذر الوصول إلى الخادم، ولا توجد بيانات محلية مطابقة لهذا الحساب.';
+      return _loginOrCreateLocalFallback(loginId, password);
     }
   }
 
@@ -987,27 +1004,11 @@ class AppController extends ChangeNotifier {
 
   int xpNeededForLevel(int currentLevel) {
     final safe = currentLevel.clamp(1, 200).toInt();
-    const early = <int, int>{1: 100, 2: 220, 3: 360, 4: 500, 5: 650, 6: 800, 7: 1000};
-    final fixed = early[safe];
-    if (fixed != null) return fixed;
-    final high = safe - 7;
-    final base = 1000 + (high * 220) + (high * high * 35);
-    var multiplier = 1.0;
-    if (safe >= 40 && safe <= 50) {
-      multiplier = 1.20;
-    } else if (safe >= 51 && safe <= 59) {
-      multiplier = 1.30;
-    } else if (safe >= 60 && safe <= 69) {
-      multiplier = 1.50;
-    } else if (safe >= 70 && safe <= 79) {
-      multiplier = 1.80;
-    } else if (safe >= 80 && safe <= 89) {
-      multiplier = 2.20;
-    } else if (safe >= 90 && safe <= 100) {
-      // "إضافة 500%" تعني القيمة الأصلية + 500% = ستة أضعاف الأساس.
-      multiplier = 6.00;
-    }
-    return (base * multiplier).round();
+    final exact = xpRequirementsV175[safe];
+    if (exact != null) return exact;
+    // Levels above 100 continue smoothly from the official level-100 value.
+    final extra = safe - 100;
+    return (xpRequirementsV175[100]! * math.pow(1.12, extra)).round();
   }
 
   void _recalculateLevel() {
@@ -1454,7 +1455,7 @@ class AppController extends ChangeNotifier {
       await SystemChrome.setPreferredOrientations(
         landscapeMode
             ? <DeviceOrientation>[DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]
-            : <DeviceOrientation>[DeviceOrientation.portraitUp, DeviceOrientation.portraitDown],
+            : <DeviceOrientation>[DeviceOrientation.portraitUp],
       );
     } catch (_) {}
   }
@@ -1474,56 +1475,90 @@ class AppController extends ChangeNotifier {
     refreshUi();
   }
 
-  Future<void> openRoomFromNotificationV174(String code) async {
-    final normalized = code.trim().toUpperCase();
+  void queueNavigationRoute(String route) {
+    final normalized = route.trim();
     if (normalized.isEmpty) return;
-    activeRoomCode = normalized;
-    _pendingRoomCodeV174 = normalized;
-    await _save();
-    refreshUi();
-    if (!isAuthenticated || _openingRoomRouteV174) return;
-    final navigationContext = warqnaNavigatorKey.currentContext;
-    if (navigationContext == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_pendingRoomCodeV174 == normalized) {
-          unawaited(openRoomFromNotificationV174(normalized));
-        }
-      });
+    _queuedNavigationRouteV175 = normalized.startsWith('room:')
+        ? '/room/${normalized.substring('room:'.length).split(':').first.trim().toUpperCase()}'
+        : normalized;
+    unawaited(_save());
+    if (_openingNavigationRouteV175) {
+      final navigator = warqnaNavigatorKey.currentState;
+      if (navigator != null && navigator.canPop()) navigator.pop(true);
+    }
+    unawaited(openPendingNavigationRoute());
+  }
+
+  Future<void> _prepareDirectInviteTransfer(String nextCode) async {
+    final previousCode = activeRoomCode;
+    if (previousCode != null && previousCode.isNotEmpty && previousCode != nextCode && serverConnected) {
+      try {
+        await api.leaveGame(previousCode);
+      } catch (_) {}
+    }
+    if (previousCode != nextCode) {
+      activeGame = null;
+      activeRoomCode = null;
+      activeRoomName = null;
+    }
+  }
+
+  Future<void> openPendingNavigationRoute() async {
+    if (!isAuthenticated || _openingNavigationRouteV175) return;
+    final route = _queuedNavigationRouteV175;
+    if (route == null || route.isEmpty) return;
+    final match = RegExp(r'(?:/room/|room:)([A-Za-z0-9_-]+)').firstMatch(route);
+    if (match == null) {
+      _queuedNavigationRouteV175 = null;
+      await _save();
       return;
     }
-    _openingRoomRouteV174 = true;
+    final normalized = (match.group(1) ?? '').trim().toUpperCase();
+    if (normalized.isEmpty) return;
+    final navigationContext = warqnaNavigatorKey.currentContext;
+    if (navigationContext == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(openPendingNavigationRoute()));
+      return;
+    }
+    _openingNavigationRouteV175 = true;
     try {
       var gameId = activeGame ?? 'tarneeb';
       var voice = activeRoomVoice;
+      var roomName = activeRoomName ?? 'غرفة ورقنا';
+      var visibility = activeRoomVisibility;
+      var turnSeconds = activeRoomTurnSeconds;
       if (serverConnected) {
         try {
           final data = await api.gameSession(normalized);
           final roomData = data['room'];
           if (roomData is Map) {
             gameId = roomData['game']?.toString() ?? gameId;
-            voice = roomData['voice_enabled'] == true;
-            activeRoomName = roomData['room_name']?.toString() ?? activeRoomName;
+            voice = roomData['voice_enabled'] == true || roomData['voice_enabled'] == 1;
+            roomName = roomData['room_name']?.toString() ?? roomName;
+            visibility = roomData['visibility']?.toString() ?? visibility;
+            turnSeconds = int.tryParse(roomData['turn_seconds']?.toString() ?? '') ?? turnSeconds;
           }
         } catch (_) {}
       }
+      await _prepareDirectInviteTransfer(normalized);
       final game = gamesCatalog.firstWhere((item) => item.id == gameId, orElse: () => gamesCatalog.first);
-      if (activeGame != null && activeGame != game.id) activeGame = null;
+      final options = RoomLaunchOptions(roomCode: normalized, roomName: roomName, voiceEnabled: voice, visibility: visibility, turnSeconds: turnSeconds);
+      activeRoomCode = normalized;
+      activeRoomName = roomName;
       _pendingRoomCodeV174 = null;
-      await openGameRoom(
-        navigationContext,
-        this,
-        game,
-        options: RoomLaunchOptions(
-          roomCode: normalized,
-          roomName: activeRoomName ?? 'غرفة ورقنا',
-          voiceEnabled: voice,
-          visibility: activeRoomVisibility,
-          turnSeconds: activeRoomTurnSeconds,
-        ),
-      );
+      _queuedNavigationRouteV175 = null;
+      await _save();
+      final controller = this;
+      await openGameRoom(navigationContext, controller, game, options: options);
     } finally {
-      _openingRoomRouteV174 = false;
+      _openingNavigationRouteV175 = false;
+      if (_queuedNavigationRouteV175 != null) unawaited(openPendingNavigationRoute());
     }
+  }
+
+  Future<void> openRoomFromNotificationV174(String code) async {
+    _pendingRoomCodeV174 = code.trim().toUpperCase();
+    queueNavigationRoute('/room/${_pendingRoomCodeV174!}');
   }
 
   int exitsForGame(String gameId) => gameExitCounts[gameId] ?? 0;
@@ -3493,6 +3528,7 @@ class _StorePageState extends State<StorePage> {
   Widget build(BuildContext context) {
     final lang = widget.controller.localeCode;
     final visible = products.where((p) {
+      if (p.category == 'pasha_style') return false;
       if (!widget.controller.isStoreProductVisible(p)) return false;
       final categoryMatch = category == 'all' || p.category == category;
       final tierMatch = tier == 'all' || p.tier == tier;
@@ -3505,7 +3541,6 @@ class _StorePageState extends State<StorePage> {
     const categories = [
       ('all', 'الكل'),
       ('pasha', 'الباشا'),
-      ('pasha_style', 'ألوان الطربوش'),
       ('competition_ticket', 'تذاكر المنافسات'),
       ('themes', 'الثيمات'),
       ('tables', 'الطاولات'),
@@ -7356,7 +7391,6 @@ void showPashaBenefits(BuildContext context, AppController controller) {
     const SizedBox(height: 8),
     const Text('شارة ذهبية • 20 XP لكل جولة • إنشاء مجموعات ومنافسات • صلاحية إدارة الغرفة • أولوية دخول وملف شخصي فاخر.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white60, height: 1.6)),
     const SizedBox(height: 12),
-    FilledButton.tonalIcon(onPressed: () => showPashaStyleSelectorV173(context, controller), icon: const Icon(Icons.palette), label: const Text('اختيار لون طربوش الباشا')),
     const SizedBox(height: 10),
     SizedBox(height: 118, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: pasha.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) { final product = pasha[i]; return SizedBox(width: 148, child: FilledButton.tonal(onPressed: () => showProductPreview(context, controller, product), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [PashaHatV173(controller: controller, width: 48, height: 34), const SizedBox(height: 3), Text('${controller.durationFor(product) ?? 0} يوم', style: const TextStyle(fontWeight: FontWeight.w900)), Text('🪙 ${formatNumber(controller.priceFor(product))}', style: const TextStyle(fontSize: 9))]))); })),
   ]));
@@ -7393,7 +7427,7 @@ Future<void> openGameRoom(BuildContext context, AppController controller, GameIn
 
 void showChallenges(BuildContext context, AppController controller) {
   // Legacy v170 contract symbol retained: showChallengesV170
-  showChallengesV173(context, controller);
+  showChallengesV175(context, controller);
 }
 
 void showCompetitions(BuildContext context, AppController controller) {

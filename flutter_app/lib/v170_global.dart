@@ -342,66 +342,31 @@ class ProductCardV170 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final owned = controller.owned.contains(product.id);
+    final isPasha = product.category == 'pasha';
     return PremiumPanel(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(children: [
           Row(children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: .07), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white12)),
-              child: Text(product.tierLabel(controller.localeCode), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900)),
-            ),
+            Container(padding:const EdgeInsets.symmetric(horizontal:9,vertical:5),decoration:BoxDecoration(color:Colors.white.withValues(alpha:.07),borderRadius:BorderRadius.circular(20),border:Border.all(color:Colors.white12)),child:Text(product.tierLabel(controller.localeCode),style:const TextStyle(fontSize:10,fontWeight:FontWeight.w900))),
             const Spacer(),
-            if (owned) const Icon(Icons.verified_rounded, color: Colors.greenAccent, size: 20),
+            if (owned) const Icon(Icons.verified_rounded,color:Colors.greenAccent,size:20),
           ]),
-          const SizedBox(height: 7),
-          Expanded(
-            child: InkWell(
-              onTap: () => showProductPreview(context, controller, product),
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(color: Colors.black.withValues(alpha: .14), borderRadius: BorderRadius.circular(20)),
-                child: Center(child: _CompactProductPreview(controller: controller, product: product)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 9),
-          Text(controller.nameFor(product), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, height: 1.25)),
-          const SizedBox(height: 5),
-          Text(controller.descriptionFor(product), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white60, fontSize: 12, height: 1.45)),
-          const SizedBox(height: 8),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text('🪙 ${formatNumber(controller.priceFor(product))}', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 15)),
-          ),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => showProductPreview(context, controller, product),
-                icon: const Icon(Icons.visibility_outlined, size: 17),
-                label: Text(L.t(controller.localeCode, 'preview'), maxLines: 1, overflow: TextOverflow.ellipsis),
-                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48), padding: const EdgeInsets.symmetric(horizontal: 8)),
-              ),
-            ),
-            const SizedBox(width: 7),
-            Expanded(
-              child: FilledButton(
-                onPressed: () async {
-                  if (owned && !product.reusable) {
-                    controller.activateProduct(product);
-                    showToast(context, 'تم تفعيل ${controller.nameFor(product)}.');
-                    return;
-                  }
-                  await showProductPreview(context, controller, product);
-                },
-                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48), padding: const EdgeInsets.symmetric(horizontal: 8)),
-                child: FittedBox(child: Text(owned && !product.reusable ? 'تفعيل' : L.t(controller.localeCode, 'buy'), style: const TextStyle(fontWeight: FontWeight.w900))),
-              ),
-            ),
-          ]),
+          const SizedBox(height:7),
+          Expanded(child:Container(width:double.infinity,padding:EdgeInsets.all(isPasha?6:0),decoration:BoxDecoration(color:Colors.black.withValues(alpha:.14),borderRadius:BorderRadius.circular(20)),child:Center(child:isPasha
+              ? Image.asset('assets/images/pasha.png',fit:BoxFit.contain,width:double.infinity,height:double.infinity,filterQuality:FilterQuality.high,errorBuilder:(_,__,___)=>const Text('🎩',style:TextStyle(fontSize:72)))
+              : InkWell(onTap:()=>showProductPreview(context,controller,product),borderRadius:BorderRadius.circular(20),child:Center(child:_CompactProductPreview(controller:controller,product:product)))))),
+          const SizedBox(height:9),
+          Text(controller.nameFor(product),textAlign:TextAlign.center,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16,height:1.25)),
+          const SizedBox(height:5),
+          Text(controller.descriptionFor(product),textAlign:TextAlign.center,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white60,fontSize:12,height:1.45)),
+          const SizedBox(height:8),
+          FittedBox(fit:BoxFit.scaleDown,child:Text('🪙 ${formatNumber(controller.priceFor(product))}',style:TextStyle(color:Theme.of(context).colorScheme.primary,fontWeight:FontWeight.w900,fontSize:15))),
+          const SizedBox(height:8),
+          if (isPasha)
+            SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:() async { if(owned && !product.reusable){ controller.activateProduct(product); showToast(context,'تم تفعيل ${controller.nameFor(product)}.'); return; } final confirmed=await showDialog<bool>(context:context,builder:(dialogContext)=>AlertDialog(icon:Image.asset('assets/images/pasha.png',height:100,fit:BoxFit.contain),title:Text(controller.nameFor(product)),content:Text('${controller.descriptionFor(product)}\n\nالسعر: ${formatNumber(controller.priceFor(product))} توكن'),actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),child:Text(owned?'تفعيل':'شراء'))])); if(confirmed==true && context.mounted){ if(owned){controller.activateProduct(product);showToast(context,'تم التفعيل.');}else{final ok=await controller.buy(product);if(context.mounted)showToast(context,ok?'تم شراء الباشا وتفعيله.':'تعذر الشراء. تحقق من الاتصال والرصيد.');}} },icon:const Icon(Icons.workspace_premium),label:Text(owned?'تفعيل الباشا':'شراء الباشا'),style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(50))))
+          else
+            Row(children:[Expanded(child:OutlinedButton.icon(onPressed:()=>showProductPreview(context,controller,product),icon:const Icon(Icons.visibility_outlined,size:17),label:Text(L.t(controller.localeCode,'preview'),maxLines:1,overflow:TextOverflow.ellipsis),style:OutlinedButton.styleFrom(minimumSize:const Size.fromHeight(48),padding:const EdgeInsets.symmetric(horizontal:8)))),const SizedBox(width:7),Expanded(child:FilledButton(onPressed:() async { if(owned && !product.reusable){controller.activateProduct(product);showToast(context,'تم تفعيل ${controller.nameFor(product)}.');return;}await showProductPreview(context,controller,product);},style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(48),padding:const EdgeInsets.symmetric(horizontal:8)),child:FittedBox(child:Text(owned&&!product.reusable?'تفعيل':L.t(controller.localeCode,'buy'),style:const TextStyle(fontWeight:FontWeight.w900)))))]),
         ]),
       ),
     );
@@ -434,7 +399,7 @@ class _PashaColorAvatarV170 extends StatelessWidget {
               right: -5,
               child: ColorFiltered(
                 colorFilter: ColorFilter.mode(color, BlendMode.modulate),
-                child: Image.asset('assets/images/pasha/v173/pasha_red.png', width: size * .75, height: size * .55, fit: BoxFit.contain),
+                child: Image.asset('assets/images/pasha.png', width: size * .75, height: size * .55, fit: BoxFit.contain),
               ),
             ),
         ]),

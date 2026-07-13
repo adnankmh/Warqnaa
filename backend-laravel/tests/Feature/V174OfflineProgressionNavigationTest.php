@@ -22,16 +22,12 @@ class V174OfflineProgressionNavigationTest extends TestCase
 
     public function test_v174_progressive_xp_curve_matches_all_requested_ranges(): void
     {
-        $xp = app(XpService::class);
-        $this->assertSame((int)round($this->baseXp(40) * 1.20), $xp->requiredXp(40));
-        $this->assertSame((int)round($this->baseXp(50) * 1.20), $xp->requiredXp(50));
-        $this->assertSame((int)round($this->baseXp(51) * 1.30), $xp->requiredXp(51));
-        $this->assertSame((int)round($this->baseXp(60) * 1.50), $xp->requiredXp(60));
-        $this->assertSame((int)round($this->baseXp(70) * 1.80), $xp->requiredXp(70));
-        $this->assertSame((int)round($this->baseXp(80) * 2.20), $xp->requiredXp(80));
-        $this->assertSame((int)round($this->baseXp(90) * 6.00), $xp->requiredXp(90));
-        $this->assertSame((int)round($this->baseXp(100) * 6.00), $xp->requiredXp(100));
-        $this->assertSame($this->baseXp(101), $xp->requiredXp(101));
+        $xp = app(\App\Services\Leveling\XpService::class);
+        $this->assertSame(80, $xp->requiredXp(1));
+        $this->assertSame(59371, $xp->requiredXp(40));
+        $this->assertSame(150000, $xp->requiredXp(50));
+        $this->assertSame(1000000, $xp->requiredXp(80));
+        $this->assertSame(8000000, $xp->requiredXp(100));
     }
 
     public function test_v174_catalog_remains_additive_and_unique(): void

@@ -19,17 +19,8 @@ class DailyPackService
             throw new RuntimeException('تم فتح حزمة اليوم مسبقاً.');
         }
 
-        $rewards = [
-            ['weight'=>20,'type'=>'name_color','value'=>'#facc15','duration_hours'=>24,'label_ar'=>'لون اسم ذهبي ليوم واحد'],
-            ['weight'=>18,'type'=>'chat_color','value'=>'#22d3ee','duration_hours'=>24,'label_ar'=>'لون كتابة سماوي ليوم واحد'],
-            ['weight'=>18,'type'=>'xp_booster','value'=>'1.5','duration_hours'=>6,'label_ar'=>'مسرّع خبرة ×1.5 لمدة 6 ساعات'],
-            ['weight'=>14,'type'=>'table','value'=>'table_v173_royal_01','duration_hours'=>48,'label_ar'=>'طاولة الزمرد الملكي ليومين'],
-            ['weight'=>10,'type'=>'table','value'=>'table_v173_showcase_01','duration_hours'=>72,'label_ar'=>'طاولة الأسد الملكي لمدة 3 أيام'],
-            ['weight'=>10,'type'=>'tokens','value'=>'250','duration_hours'=>0,'label_ar'=>'250 توكن مجاني'],
-            ['weight'=>7,'type'=>'ticket','value'=>'500','duration_hours'=>0,'label_ar'=>'تذكرة منافسة بقيمة 500 توكن'],
-            ['weight'=>3,'type'=>'ticket','value'=>'2000','duration_hours'=>0,'label_ar'=>'تذكرة منافسة بقيمة 2,000 توكن'],
-        ];
-        $reward = $this->weighted($rewards);
+        $reward = $this->weighted(self::catalog());
+        $reward['opened_at'] = now()->toIso8601String();
 
         DB::transaction(function () use ($user, $today, $reward) {
             $profile = $user->profile()->firstOrCreate(
@@ -91,6 +82,22 @@ class DailyPackService
         });
 
         return $reward;
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    public static function catalog(): array
+    {
+        return [
+            ['weight'=>18,'type'=>'name_color','value'=>'#facc15','duration_hours'=>24,'rarity'=>'rare','icon'=>'🎨','label_ar'=>'لون اسم ذهبي ليوم واحد'],
+            ['weight'=>17,'type'=>'chat_color','value'=>'#22d3ee','duration_hours'=>24,'rarity'=>'rare','icon'=>'💬','label_ar'=>'لون كتابة سماوي ليوم واحد'],
+            ['weight'=>17,'type'=>'xp_booster','value'=>'1.5','duration_hours'=>6,'rarity'=>'epic','icon'=>'⚡','label_ar'=>'مسرّع خبرة ×1.5 لمدة 6 ساعات'],
+            ['weight'=>13,'type'=>'table','value'=>'table_v173_royal_01','duration_hours'=>48,'rarity'=>'epic','icon'=>'🎴','label_ar'=>'طاولة الزمرد الملكي ليومين'],
+            ['weight'=>9,'type'=>'table','value'=>'table_v173_showcase_01','duration_hours'=>72,'rarity'=>'legendary','icon'=>'🦁','label_ar'=>'طاولة الأسد الملكي لمدة 3 أيام'],
+            ['weight'=>13,'type'=>'tokens','value'=>'250','duration_hours'=>0,'rarity'=>'common','icon'=>'🪙','label_ar'=>'250 توكن مجاني'],
+            ['weight'=>5,'type'=>'tokens','value'=>'2500','duration_hours'=>0,'rarity'=>'legendary','icon'=>'💰','label_ar'=>'2,500 توكن مجاني'],
+            ['weight'=>6,'type'=>'ticket','value'=>'500','duration_hours'=>0,'rarity'=>'rare','icon'=>'🎟️','label_ar'=>'تذكرة منافسة بقيمة 500 توكن'],
+            ['weight'=>2,'type'=>'ticket','value'=>'5000','duration_hours'=>0,'rarity'=>'legendary','icon'=>'🏆','label_ar'=>'تذكرة منافسة بقيمة 5,000 توكن'],
+        ];
     }
 
     /** @param array<int,array<string,mixed>> $items */

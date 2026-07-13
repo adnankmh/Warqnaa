@@ -4,6 +4,7 @@ namespace App\Services\Progression;
 
 use App\Models\{ClubMember, ProgressionEvent, Room, User};
 use App\Services\Leveling\XpService;
+use App\Services\WarqnaPro\ChallengeService;
 use Illuminate\Support\Facades\DB;
 
 class ProgressionService
@@ -66,6 +67,15 @@ class ProgressionService
                 'tournament_points'=>$tournamentPoints,'club_points'=>$clubPoints,
                 'meta'=>array_merge($context,['pasha_multiplier'=>$pashaMultiplier,'booster_multiplier'=>$boosterMultiplier]),
             ]);
+
+            $challenges = app(ChallengeService::class);
+            if ($eventType === 'match_complete') $challenges->record($user, 'clean_games', 1);
+            if ($won) {
+                $challenges->record($user, 'wins', 1);
+                if (in_array($mode, ['tournament','sponsored','seasonal'], true)) $challenges->record($user, 'ranked_wins', 1);
+                if (($context['game'] ?? null) === 'tarneeb') $challenges->record($user, 'tarneeb_big_wins', 1);
+            }
+            if ($clubPoints > 0) $challenges->record($user, 'club_points', $clubPoints);
 
             return $this->payload($event, false) + [
                 'user_id'=>(int)$user->id,

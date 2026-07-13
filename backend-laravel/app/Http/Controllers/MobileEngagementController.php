@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\{AdminDesignerEntity,ChallengeDefinition,CompetitionTicket,DailyPackClaim,Tournament};
-use App\Services\WarqnaPro\{CompetitionService,DailyPackService};
+use App\Services\WarqnaPro\{ChallengeService,CompetitionService,DailyPackService};
 use Illuminate\Http\Request;
 use RuntimeException;
 
 class MobileEngagementController extends Controller
 {
-    public function center(Request $request)
+    public function center(Request $request, ChallengeService $challenges)
     {
         $user = $request->user();
         return response()->json([
@@ -17,7 +17,7 @@ class MobileEngagementController extends Controller
             'online_only'=>false,
             'tickets'=>$this->tickets($user->id),
             'daily_pack'=>$this->packStatus($user->id),
-            'challenges'=>ChallengeDefinition::where('active', true)->orderBy('sort_order')->get(),
+            'challenges'=>$challenges->center($user),
             'competitions'=>Tournament::whereIn('status', ['open','running'])->withCount('entries')->orderByDesc('featured')->orderBy('starts_at')->get(),
             'designer'=>AdminDesignerEntity::where('active', true)->orderBy('entity_type')->orderBy('sort_order')->get()->groupBy('entity_type'),
             'champion_rank_points'=>(int)($user->profile?->champion_rank_points ?? 0),
@@ -38,6 +38,21 @@ class MobileEngagementController extends Controller
             'wallet'=>$this->walletPayload($request->user()->fresh()),
             'tickets'=>$this->tickets($request->user()->id),
         ]);
+    }
+
+    public function activateChallenge(Request $request, string $challengeKey, ChallengeService $challenges)
+    {
+        return response()->json(['ok'=>true,'message'=>'تم تفعيل التحدي','challenge'=>$challenges->activate($request->user(), $challengeKey)]);
+    }
+
+    public function claimChallenge(Request $request, string $challengeKey, ChallengeService $challenges)
+    {
+        try {
+            $challenge = $challenges->claim($request->user(), $challengeKey);
+        } catch (RuntimeException $e) {
+            return response()->json(['ok'=>false,'message'=>$e->getMessage()], 409);
+        }
+        return response()->json(['ok'=>true,'message'=>'تمت إضافة مكافأة التحدي مباشرة','challenge'=>$challenge,'wallet'=>$this->walletPayload($request->user()->fresh())]);
     }
 
     public function joinCompetition(Request $request, string $competitionKey, CompetitionService $competitions)
@@ -72,6 +87,9 @@ class MobileEngagementController extends Controller
             'available'=>!$claim || !$claim->claim_date?->isToday(),
             'last_opened'=>$claim?->claim_date?->toDateString(),
             'last_reward'=>data_get($claim?->payload, 'label_ar'),
+            'last_rarity'=>data_get($claim?->payload, 'rarity'),
+            'next_available_at'=>$claim?->claim_date?->copy()->addDay()->startOfDay()->toIso8601String(),
+            'possible_rewards'=>DailyPackService::catalog(),
         ];
     }
 

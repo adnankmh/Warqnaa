@@ -102,6 +102,15 @@ def check_required_files() -> None:
         "tools/test_v172_brand_table_contract.py",
         "tools/test_v173_online_engagement_contract.py",
         "tools/test_v174_offline_progression_navigation_contract.py",
+        "tools/test_v175_xp_challenges_pasha_designer_contract.py",
+        "flutter_app/lib/v175_release.dart",
+        "backend-laravel/config/warqna_xp_levels.php",
+        "backend-laravel/app/Services/WarqnaPro/ChallengeService.php",
+        "backend-laravel/tests/Feature/V174DirectInviteOrientationXpTest.php",
+        "backend-laravel/tests/Feature/V175XpChallengesDesignerTest.php",
+        "docs/reference/XPs_levels_1_to_100_source.xlsx",
+        "docs/reference/XP_LEVELS_V175.csv",
+        "docs/ar/validation/current/VALIDATION_RESULTS_V175.txt",
         "flutter_app/lib/v173_global.dart",
         "backend-laravel/resources/data/v173_store_catalog.json",
         "backend-laravel/app/Services/WarqnaPro/DailyPackService.php",
@@ -1210,6 +1219,37 @@ def check_v174_offline_progression_navigation_contract() -> None:
     print("[OK] v174 offline access, fixed orientation, direct-room navigation, visible XP and requested level curve")
 
 
+
+def check_v175_xp_challenges_pasha_designer_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v175_xp_challenges_pasha_designer_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna v175 XP/challenges/Pasha/designer contract failed: " + result.stdout.strip())
+    for rel in [
+        ".github/workflows/flutter-web-pages.yml",
+        ".github/workflows/flutter-android.yml",
+        ".github/workflows/flutter-ios.yml",
+        ".github/workflows/production-release-check.yml",
+    ]:
+        require(rel, ["test_v175_xp_challenges_pasha_designer_contract.py"])
+    require("backend-laravel/tests/Feature/V174DirectInviteOrientationXpTest.php", [
+        "queueNavigationRoute",
+        "openPendingNavigationRoute",
+        "_prepareDirectInviteTransfer",
+    ])
+    require("backend-laravel/tests/Feature/V175XpChallengesDesignerTest.php", [
+        "test_all_excel_xp_values_are_exact",
+        "test_challenge_can_activate_progress_and_claim_once",
+        "test_v175_ui_contract_hides_pasha_colors_and_keeps_full_pasha",
+    ])
+    print(result.stdout.strip())
+    print("[OK] v175 exact Excel XP, web fallback login, full Pasha, premium challenges/packs and universal designer")
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -1254,6 +1294,7 @@ def main() -> None:
     check_v172_brand_table_contract()
     check_v173_online_engagement_contract()
     check_v174_offline_progression_navigation_contract()
+    check_v175_xp_challenges_pasha_designer_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

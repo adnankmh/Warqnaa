@@ -1,0 +1,23 @@
+{
+  "release": "Warqna v175",
+  "version": "1.75.0",
+  "build": 175,
+  "full": "1.75.0+175",
+  "features": [
+    "exact_excel_xp_1_100",
+    "direct_room_invite_navigation",
+    "stable_user_orientation",
+    "web_local_login_fallback",
+    "server_challenges",
+    "premium_daily_packs",
+    "full_red_pasha",
+    "universal_admin_designer"
+  ],
+  "files": {
+    "start": "docs/ar/releases/current/START_HERE_V175_AR.md",
+    "release_notes": "docs/ar/releases/current/RELEASE_NOTES_V175_AR.md",
+    "github": "docs/ar/deployment/GITHUB_UPLOAD_V175_AR.md",
+    "quality": "docs/ar/reports/current/QUALITY_REPORT_V175_AR.md",
+    "xp_source": "docs/reference/XPs_levels_1_to_100_source.xlsx"
+  }
+}

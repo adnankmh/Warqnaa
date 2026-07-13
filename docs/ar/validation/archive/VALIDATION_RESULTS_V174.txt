@@ -1,0 +1,49 @@
+Warqna v174 — Local Validation Results
+Version: 1.74.0+174
+Date: 2026-07-13
+
+STATUS: SOURCE PREFLIGHT PASSED
+
+PASSED CHECKS
+- Release version consistency across Flutter, Laravel, manifests, environment examples and GitHub Actions.
+- Clean project-root policy.
+- Git conflict-marker scan.
+- Text control-character scan.
+- JSON syntax: 39 files.
+- YAML structural audit: 15 files.
+- Python source compilation for tools and GitHub helper scripts.
+- Shell syntax audit for Unix scripts.
+- PHP syntax audit: 292 PHP files, no syntax errors.
+- Flutter delimiter/static source structure.
+- Flutter CI/API compatibility contract.
+- V170 responsive/gameplay/security inherited contract.
+- V171 controller-reference contract.
+- V172 additive brand/table contract.
+- V173 inherited assets, Pasha colors, 50 added tables, tickets, packs, ads and server-authoritative economy contract.
+- V174 offline login/gameplay, fixed orientation, direct room navigation, visible human-player XP and progressive level-curve contract.
+
+REGRESSIONS ADDRESSED
+1. AppController.loginWithSocialProvider is now defined and connected to the social-auth API.
+2. _loadAccountState, _registerLocal and _applyLocalLoginStreak are used by real offline flows.
+3. The dead login-code branch was removed.
+4. v173_global.dart no longer calls the protected ChangeNotifier.notifyListeners member; AppController.refreshUi is used.
+5. Async BuildContext use in the reconnect screen is guarded by the State mounted check.
+6. Legacy store tests now expect the correct additive total of 140 tables instead of 90.
+7. daily_pack_claims.claim_date is stored as YYYY-MM-DD while exposed as a Carbon date by the model.
+8. The V173 competition test uses Game::firstOrCreate to avoid duplicate games.key=basra.
+
+V174 FUNCTIONAL CONTRACTS
+- Explicit offline login and offline account creation buttons.
+- Cached server accounts can reopen locally when the server is unavailable.
+- Local game sessions remain available without internet.
+- Store, token transfers, competitions, daily packs and rewarded-ad rewards remain server-authoritative.
+- Created rooms, code joins and room-invite notification taps navigate directly to the game page.
+- Screen orientation remains at the saved player choice until the player changes it.
+- XP multipliers: 40-50=1.20, 51-59=1.30, 60-69=1.50, 70-79=1.80, 80-89=2.20, 90-100=6.00.
+- Round XP is returned for every human room participant, bots are excluded, and the current player's counters are updated from the server profile snapshot.
+
+NOT EXECUTED IN THIS LOCAL PACKAGING ENVIRONMENT
+- flutter analyze / flutter test / Flutter APK, AAB, Web and iOS builds: Flutter SDK is not installed here.
+- php artisan test: Composer vendor dependencies are not installed here.
+
+These executable stages remain configured in GitHub Actions. The source contracts and files that caused the supplied CI failures were corrected and the local static/lint preflight passed.
