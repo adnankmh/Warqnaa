@@ -1,0 +1,25 @@
+{
+  "release": "Warqna v176",
+  "version": "0.2.0",
+  "build": 176,
+  "full": "0.2.0+176",
+  "features": [
+    "flutter_analyzer_regression_fixes",
+    "animated_daily_pack_opening",
+    "server_authoritative_pack_inventory",
+    "timed_store_rewards",
+    "inventory_expiry_countdown",
+    "automatic_expired_reward_cleanup",
+    "direct_room_navigation_preserved",
+    "v175_exact_xp_preserved"
+  ],
+  "files": {
+    "start": "docs/ar/releases/current/START_HERE_V176_AR.md",
+    "release_notes": "docs/ar/releases/current/RELEASE_NOTES_V176_AR.md",
+    "github": "docs/ar/deployment/GITHUB_UPLOAD_V176_AR.md",
+    "quality": "docs/ar/reports/current/QUALITY_REPORT_V176_AR.md",
+    "validation": "docs/ar/validation/current/VALIDATION_RESULTS_V176.txt"
+  },
+  "display_release": "V0.2",
+  "name": "Warqna V0.2 Daily Prize Boxes Professional"
+}

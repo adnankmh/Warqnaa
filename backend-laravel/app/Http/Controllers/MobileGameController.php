@@ -516,7 +516,11 @@ class MobileGameController extends Controller
                     'flag' => (string)(config('countries.'.safe_country_code($player->user?->profile?->country_code ?? 'PS').'.flag') ?? '🇵🇸'),
                     'flag_url' => flag_url($player->user?->profile?->country_code ?? 'PS'),
                     'level' => (int)($player->user?->profile?->level ?? 1),
+                    'xp' => (int)($player->user?->profile?->xp ?? 0),
+                    'xp_next' => app(\App\Services\Leveling\XpService::class)->requiredXp((int)($player->user?->profile?->level ?? 1)),
                     'round_points' => (int)($player->user?->profile?->round_points ?? 0),
+                    'tournament_points' => (int)($player->user?->profile?->tournament_points ?? 0),
+                    'club_points' => (int)($player->user?->profile?->club_points ?? 0),
                 ];
             })->values(),
             'state' => $state,
@@ -551,7 +555,10 @@ class MobileGameController extends Controller
                 'room_id'=>$room->id,'event_type'=>$eventType,'mode'=>$mode,'won'=>$won,
                 'stage'=>(string)($after['tournament_stage'] ?? ($won && $afterPhase === 'finished' ? 'champion' : 'round')),
                 'game'=>$room->game?->key,'round'=>$afterRound,
-            ]);
+            ]) + [
+                'player_key'=>$key,
+                'player_name'=>$player->user->profile?->display_name ?: $player->user->username,
+            ];
         }
         return $popups;
     }

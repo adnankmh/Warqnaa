@@ -194,7 +194,7 @@ Future<void> showCreateGroupV151(BuildContext context, AppController controller)
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(children: [Image.asset('assets/images/pasha.png', width: 42, height: 42), const SizedBox(width: 8), const Expanded(child: Text('إنشاء مجموعة باشا', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)))]),
+        Row(children: [PashaHatV173(controller: controller, width: 62, height: 42), const SizedBox(width: 8), const Expanded(child: Text('إنشاء مجموعة باشا', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)))]),
         const SizedBox(height: 10),
         TextField(controller: name, decoration: const InputDecoration(labelText: 'اسم المجموعة', prefixIcon: Icon(Icons.shield_outlined))),
         const SizedBox(height: 9),
@@ -290,7 +290,7 @@ Future<void> showCreateCompetitionV151(BuildContext context, AppController contr
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(children: [Image.asset('assets/images/pasha.png', width: 42, height: 42), const SizedBox(width: 8), const Expanded(child: Text('إنشاء منافسة', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)))]),
+            Row(children: [PashaHatV173(controller: controller, width: 62, height: 42), const SizedBox(width: 8), const Expanded(child: Text('إنشاء منافسة', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)))]),
             const SizedBox(height: 10),
             TextField(controller: name, decoration: const InputDecoration(labelText: 'اسم المنافسة')),
             const SizedBox(height: 9),
@@ -611,7 +611,7 @@ class PashaStatCardV151 extends StatelessWidget {
           padding: const EdgeInsets.all(10),
           child: Row(
             children: [
-              Image.asset('assets/images/pasha.png', width: 31, height: 31, fit: BoxFit.contain),
+              PashaHatV173(controller: controller, width: 44, height: 31),
               const SizedBox(width: 7),
               Expanded(
                 child: Column(

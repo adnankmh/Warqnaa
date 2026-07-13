@@ -1,8 +1,12 @@
-# ابدأ من هنا
+# ابدأ من هنا — ورقنا V0.2
 
-هذه هي Warqna v172 (`1.72.0+172`).
-
-1. اقرأ `docs/ar/releases/current/START_HERE_V172_AR.md`.
-2. شغّل `CHECK_WARQNA_WINDOWS.bat`.
-3. اتبع `docs/ar/deployment/GITHUB_UPLOAD_V172_AR.md`.
-4. الطاولات الجديدة مضافة إلى القديمة وليست بديلة عنها؛ الإجمالي 90 طاولة.
+1. ارفع المشروع كاملاً إلى المستودع، بما في ذلك مجلد `.github/workflows`.
+2. شغّل بالترتيب: **Production Release Check**، ثم **Backend CI**، ثم Flutter Web/Android/iOS.
+3. على خادم Laravel نفّذ:
+   - `composer install --no-dev --optimize-autoloader`
+   - `php artisan migrate --force`
+   - `php artisan optimize:clear`
+4. اضبط `WARQNA_API_URL` ليشير إلى خادم Laravel الحقيقي. اللعب المحلي يعمل أوفلاين، بينما مزامنة الصناديق والمكافآت الرسمية تحتاج الخادم.
+5. صفحة **صندوق الجوائز اليومي** موجودة كبطاقة مستقلة في الصفحة الرئيسية؛ الصناديق ليست داخل المتجر.
+6. كل فوز مكتمل يمنح صندوقاً واحداً، بحد أقصى 4 صناديق في اليوم لكل لاعب.
+7. الإصدار الظاهر: **V0.2**. الإصدار التقني: **0.2.0+176**.

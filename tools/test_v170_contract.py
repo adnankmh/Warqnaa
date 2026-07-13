@@ -32,8 +32,7 @@ def forbid(rel: str, needles: list[str]) -> None:
 
 def main() -> int:
     meta = json.loads(read("RELEASE_VERSION.json"))
-    version_parts = tuple(int(part) for part in str(meta["version"]).split("."))
-    assert version_parts >= (1, 70, 0) and int(meta["build"]) >= 170
+    assert int(meta["build"]) >= 170
 
     require("flutter_app/lib/main.dart", [
         "part 'v170_global.dart';",
@@ -53,8 +52,9 @@ def main() -> int:
         "minLevel",
         "playerCount",
         "Future<void> logout()",
-        "const early = <int, int>{1: 100, 2: 220, 3: 360, 4: 500, 5: 650, 6: 800, 7: 1000};",
-        "return 1000 + (high * 220) + (high * high * 35);",
+        "part 'v175_release.dart';",
+        "final exact = xpRequirementsV175[safe];",
+        "return (xpRequirementsV175[100]! * math.pow(1.12, extra)).round();",
     ])
     # The local Tarneeb page is not a lifecycle observer. The server room is.
     local_section = read("flutter_app/lib/main.dart").split("class _TarneebRoomPageState", 1)[1].split("class ServerEngineRoomPage", 1)[0]
@@ -131,10 +131,32 @@ def main() -> int:
     if "'tokens'" in public_profile or "'wallet'" in public_profile:
         raise AssertionError("Backend publicProfile leaks wallet or tokens")
 
-    require("backend-laravel/app/Services/Leveling/XpService.php", [
-        "[1=>100,2=>220,3=>360,4=>500,5=>650,6=>800,7=>1000]",
-        "1000 + ($high * 220) + ($high * $high * 35)",
-    ])
+    if int(meta["build"]) >= 175:
+        require("flutter_app/lib/v175_release.dart", [
+            "const Map<int, int> xpRequirementsV175",
+            "1: 80",
+            "40: 59371",
+            "50: 150000",
+            "80: 1000000",
+            "100: 8000000",
+        ])
+        require("backend-laravel/app/Services/Leveling/XpService.php", [
+            "config('warqna_xp_levels.'.$safe)",
+            "config('warqna_xp_levels.100', 8000000)",
+            "1.12 ** ($safe - 100)",
+        ])
+        require("backend-laravel/config/warqna_xp_levels.php", [
+            "1 => 80",
+            "40 => 59371",
+            "50 => 150000",
+            "80 => 1000000",
+            "100 => 8000000",
+        ])
+    else:
+        require("backend-laravel/app/Services/Leveling/XpService.php", [
+            "[1=>100,2=>220,3=>360,4=>500,5=>650,6=>800,7=>1000]",
+            "1000 + ($high * 220) + ($high * $high * 35)",
+        ])
     require("backend-laravel/app/Http/Controllers/MobileGameController.php", [
         "'min_level' => 'nullable|integer|min:1|max:200'",
         "'allow_owner_kick' => 'nullable|boolean'",

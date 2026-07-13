@@ -1,0 +1,39 @@
+WARQNA V175 VALIDATION RESULTS
+==============================
+Release: 1.75.0+175
+Date: 2026-07-13
+
+PASS - Full source-package preflight: tools/validate_release.py
+PASS - PHP syntax lint: 296 PHP files
+PASS - Clean root, conflict markers and control-character checks
+PASS - JSON syntax: 40 files
+PASS - YAML structural audit: 15 files
+PASS - Release version consistency
+PASS - Flutter CI/API regression contract
+PASS - V170 responsive/gameplay/security contract updated for exact V175 XP table
+PASS - V171 AppController semantic reference contract
+PASS - V172 additive brand/table contract
+PASS - V173 engagement/store/tickets/packs/designer contract
+PASS - V174 offline/orientation/direct-room/visible-XP contract
+PASS - V175 exact-XP/challenges/full-Pasha/web-login/universal-designer contract
+PASS - XPs.xlsx source SHA-256 preserved: fcdd986a55cfeecb86167b90287221cb1aff9aab7a325261b2df87c7188993aa
+PASS - Exact 100 XP transitions loaded into Flutter and Laravel
+PASS - Previously failing navigation symbols are present:
+       queueNavigationRoute
+       openPendingNavigationRoute
+       _prepareDirectInviteTransfer
+       await api.leaveGame(previousCode)
+       await openGameRoom(navigationContext, controller, game, options: options)
+PASS - Full red Pasha asset is 1920x1080 RGBA and rendered with BoxFit.contain
+PASS - Pasha preview button removed; Pasha color category hidden
+PASS - Web login falls back to a stored/new local account when the server is unavailable
+PASS - Challenge activation/progress/claim and premium daily-pack catalog are server-authoritative
+PASS - Universal admin designer supports games, store, tables, tickets, packs, challenges,
+       competitions, groups, ads, translations, themes, economy, XP levels, pages,
+       navigation, notifications, security, feature flags and system entities
+
+NOT RUN LOCALLY
+---------------
+- flutter analyze / flutter test: Flutter SDK is not installed in this environment.
+- php artisan test: Composer vendor dependencies are not installed in this environment.
+These executable framework tests remain enabled in GitHub Actions.

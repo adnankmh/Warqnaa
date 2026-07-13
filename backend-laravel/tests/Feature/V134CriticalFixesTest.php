@@ -29,7 +29,7 @@ class V134CriticalFixesTest extends TestCase
     public function test_store_tables_are_curated_50_and_pasha_image_exists(): void
     {
         $store=new StoreCatalogService();
-        $this->assertCount(90,$store->tableSkins());
+        $this->assertCount(140,$store->tableSkins());
         $this->assertFileExists(public_path('assets/store/basha1.png'));
     }
 

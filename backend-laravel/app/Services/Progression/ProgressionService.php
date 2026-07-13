@@ -4,6 +4,7 @@ namespace App\Services\Progression;
 
 use App\Models\{ClubMember, ProgressionEvent, Room, User};
 use App\Services\Leveling\XpService;
+use App\Services\WarqnaPro\{ChallengeService, PrizeBoxService};
 use Illuminate\Support\Facades\DB;
 
 class ProgressionService
@@ -19,7 +20,18 @@ class ProgressionService
     public function award(User $user, string $eventKey, array $context = []): array
     {
         $existing = ProgressionEvent::where('event_key',$eventKey)->first();
-        if ($existing) return $this->payload($existing, true);
+        if ($existing) {
+            $meta = is_array($existing->meta) ? $existing->meta : [];
+            $prizeBox = null;
+            if ($existing->event_type === 'match_complete' && (bool)($meta['won'] ?? false)) {
+                $prizeBox = app(PrizeBoxService::class)->awardForWin($user, $eventKey, $meta['game'] ?? null);
+            }
+            return $this->payload($existing, true) + [
+                'user_id'=>(int)$user->id,
+                'profile'=>$this->profileSnapshot($user),
+                'prize_box'=>$prizeBox ? app(PrizeBoxService::class)->boxPayload($prizeBox) : null,
+            ];
+        }
 
         return DB::transaction(function () use ($user,$eventKey,$context) {
             $profile = $user->profile()->lockForUpdate()->firstOrCreate([], [
@@ -67,7 +79,30 @@ class ProgressionService
                 'meta'=>array_merge($context,['pasha_multiplier'=>$pashaMultiplier,'booster_multiplier'=>$boosterMultiplier]),
             ]);
 
-            return $this->payload($event, false) + ['level'=>$levelResult];
+            $challenges = app(ChallengeService::class);
+            if ($eventType === 'match_complete') $challenges->record($user, 'clean_games', 1);
+            if ($won) {
+                $challenges->record($user, 'wins', 1);
+                if (in_array($mode, ['tournament','sponsored','seasonal'], true)) $challenges->record($user, 'ranked_wins', 1);
+                if (($context['game'] ?? null) === 'tarneeb') $challenges->record($user, 'tarneeb_big_wins', 1);
+            }
+            if ($clubPoints > 0) $challenges->record($user, 'club_points', $clubPoints);
+
+            $prizeBox = null;
+            if ($eventType === 'match_complete' && $won) {
+                $prizeBox = app(PrizeBoxService::class)->awardForWin(
+                    $user,
+                    $eventKey,
+                    isset($context['game']) ? (string)$context['game'] : null,
+                );
+            }
+
+            return $this->payload($event, false) + [
+                'user_id'=>(int)$user->id,
+                'level'=>$levelResult,
+                'profile'=>$this->profileSnapshot($user),
+                'prize_box'=>$prizeBox ? app(PrizeBoxService::class)->boxPayload($prizeBox) : null,
+            ];
         });
     }
 
@@ -98,6 +133,27 @@ class ProgressionService
         $membership->club?->increment('weekly_points',$points);
         $membership->club?->increment('total_points',$points);
         return $points;
+    }
+
+    /** @return array<string,int> */
+    private function profileSnapshot(User $user): array
+    {
+        $profile = $user->profile()->firstOrCreate([], [
+            'display_name'=>$user->username,'country_code'=>'PS','country_name'=>country_name('PS'),
+        ]);
+        $level = (int)($profile->level ?? 1);
+        $totalXp = (int)($profile->xp ?? 0);
+        $before = 0;
+        for ($current = 1; $current < $level; $current++) $before += $this->xpService->requiredXp($current);
+        return [
+            'level'=>$level,
+            'xp'=>$totalXp,
+            'xp_progress'=>max(0, $totalXp - $before),
+            'xp_next'=>$this->xpService->requiredXp($level),
+            'round_points'=>(int)($profile->round_points ?? 0),
+            'tournament_points'=>(int)($profile->tournament_points ?? 0),
+            'club_points'=>(int)($profile->club_points ?? 0),
+        ];
     }
 
     private function payload(ProgressionEvent $event, bool $duplicate): array

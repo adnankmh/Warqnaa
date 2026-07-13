@@ -19,10 +19,10 @@ class XpService
     public function requiredXp(int $level): int
     {
         $safe = max(1, min(200, $level));
-        $early = [1=>100,2=>220,3=>360,4=>500,5=>650,6=>800,7=>1000];
-        if (isset($early[$safe])) return $early[$safe];
-        $high = $safe - 7;
-        return 1000 + ($high * 220) + ($high * $high * 35);
+        $exact = config('warqna_xp_levels.'.$safe);
+        if ($exact !== null) return (int) $exact;
+        $level100 = (int) config('warqna_xp_levels.100', 8000000);
+        return (int) round($level100 * (1.12 ** ($safe - 100)));
     }
 
     public function rewardForLevel(int $level): int

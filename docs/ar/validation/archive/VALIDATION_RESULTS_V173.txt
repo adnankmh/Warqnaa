@@ -1,0 +1,40 @@
+Warqna v173 validation results
+================================
+Release: 1.73.0+173
+Base: v172
+Validation date: 2026-07-12
+
+PASSED
+------
+- Full source-package preflight: PASS.
+- Release-version consistency: PASS (1.73.0+173).
+- Clean project-root policy: PASS.
+- Flutter CI/API static contract: PASS.
+- V170 regression contract: PASS.
+- V171 controller-reference contract: PASS.
+- V172 additive brand/table regression contract: PASS.
+- V173 online engagement contract: PASS.
+- Online-only economy hardening: PASS; no offline store debit, daily reward,
+  rewarded-ad credit, or local token-transfer fallback.
+- Pasha assets: 14 valid PNG images at 640x400.
+- New table assets: 30 Royal + 20 Showcase valid HD JPEG images.
+- V173 catalog: 78 products (14 Pasha styles + 50 tables + 14 tickets).
+- Ticket values and exact 10% store discount: PASS.
+- PHP syntax lint: PASS (290 files).
+- Python compilation: PASS (14 files).
+- Shell syntax: PASS (27 files).
+- JSON parsing: PASS (38 files).
+- YAML parsing: PASS (15 files).
+- Dart delimiter/static source structure: PASS.
+- Runtime secret and signing-file scan: PASS.
+
+NOT EXECUTED IN THIS PACKAGING ENVIRONMENT
+------------------------------------------
+- flutter analyze / flutter test / APK / AAB / web / iOS builds:
+  Flutter SDK is not installed in the local packaging environment.
+- php artisan test:
+  Composer vendor dependencies are not installed locally.
+
+The repository includes GitHub Actions workflows and release checks for the
+missing Flutter and Laravel runtime stages. Production AdMob identifiers must
+be supplied through the documented dart-define variables before publishing.

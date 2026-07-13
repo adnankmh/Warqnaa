@@ -1,8 +1,9 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\{User,Room,Tournament,Club,Game,AntiCheatEvent,Notification,StoreItem,SiteSetting,Friendship};
+use App\Models\{AdminDesignerEntity,User,Room,Tournament,Club,Game,AntiCheatEvent,Notification,StoreItem,SiteSetting,Friendship};
 use App\Services\Wallet\WalletService;
+use App\Services\WarqnaPro\StoreCatalogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -12,9 +13,10 @@ class AdminController
 {
     private function guard(){ abort_unless(auth()->user()?->is_admin,403); }
 
-    public function index()
+    public function index(StoreCatalogService $catalog)
     {
         $this->guard();
+        $catalog->sync();
         $storeItems=StoreItem::orderBy('category')->orderBy('price')->get();
         $siteSettings=SiteSetting::all()->keyBy('key');
         return view('admin.index',[
@@ -34,6 +36,7 @@ class AdminController
             'siteSettings'=>$siteSettings,
             'themeOptions'=>$this->themeOptions(),
             'categoryLabels'=>$this->categoryLabels(),
+            'designerEntities'=>AdminDesignerEntity::orderBy('entity_type')->orderBy('sort_order')->orderBy('key')->get(),
         ]);
     }
 
@@ -213,6 +216,41 @@ class AdminController
         return back()->with('ok','تم حفظ مصمم الموقع الشامل وتطبيقه على الواجهة والمتجر وغرف اللعب بدون تعديل أكواد');
     }
 
+
+    public function saveDesignerEntity(Request $r)
+    {
+        $this->guard();
+        $data=$r->validate([
+            'entity_type'=>'required|string|max:80|regex:/^[a-z0-9_-]+$/i',
+            'key'=>'required|string|max:150|regex:/^[a-z0-9_.:-]+$/i',
+            'locale'=>'nullable|string|max:10',
+            'payload_json'=>'required|string|max:1000000',
+            'sort_order'=>'nullable|integer|min:0|max:1000000',
+            'active'=>'nullable|boolean',
+        ]);
+        $payload=json_decode($data['payload_json'],true);
+        if(!is_array($payload)) return back()->withErrors(['payload_json'=>'JSON غير صالح. يجب أن يكون كائناً أو مصفوفة JSON.'])->withInput();
+        $entity=AdminDesignerEntity::firstOrNew([
+            'entity_type'=>strtolower($data['entity_type']),
+            'key'=>$data['key'],
+            'locale'=>$data['locale'] ?? 'all',
+        ]);
+        $entity->payload=$payload;
+        $entity->sort_order=(int)($data['sort_order'] ?? $entity->sort_order ?? 0);
+        $entity->active=$r->boolean('active');
+        $entity->revision=max(1,(int)($entity->revision ?? 0)+1);
+        $entity->updated_by=auth()->id();
+        $entity->save();
+        return back()->with('ok','تم حفظ ونشر عنصر المصمم الشامل.');
+    }
+
+    public function deleteDesignerEntity(AdminDesignerEntity $entity)
+    {
+        $this->guard();
+        $entity->delete();
+        return back()->with('ok','تم حذف العنصر من المصمم الشامل.');
+    }
+
     public function createGame(Request $r)
     {
         $this->guard();
@@ -325,7 +363,7 @@ class AdminController
 
     private function categoryLabels(): array
     {
-        return ['pasha'=>'الباشا','xp_booster'=>'مسرعات XP','table'=>'الطاولات','card_back'=>'ظهر الورق','text_color'=>'ألوان الكتابة','name_color'=>'ألوان اللاعبين وGlow','emoji_pack'=>'الإيموجي','badge'=>'الشارات','effect'=>'مؤثرات الفوز','name_frame'=>'إطارات الاسم','profile_cover'=>'أغلفة الملف الشخصي'];
+        return ['pasha'=>'الباشا','xp_booster'=>'مسرعات XP','table'=>'الطاولات','card_back'=>'ظهر الورق','text_color'=>'ألوان الكتابة','name_color'=>'ألوان اللاعبين وGlow','emoji_pack'=>'الإيموجي','badge'=>'الشارات','effect'=>'مؤثرات الفوز','name_frame'=>'إطارات الاسم','profile_cover'=>'أغلفة الملف الشخصي','pasha_style'=>'ألوان طربوش الباشا','competition_ticket'=>'تذاكر المنافسات'];
     }
     private function themeOptions(): array
     {

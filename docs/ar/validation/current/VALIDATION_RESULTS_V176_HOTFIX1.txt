@@ -1,0 +1,30 @@
+Warqna V176 Hotfix 1 - Validation Results
+=========================================
+
+Fixed issue
+-----------
+flutter_app/lib/v176_release.dart:455
+Removed the unnecessary non-null assertion from productId after the preceding
+hasStoreItem guard had already promoted the value to non-null.
+
+Before:
+remainingForProductV176(productId!)
+
+After:
+remainingForProductV176(productId)
+
+Validation completed
+--------------------
+PASS: tools/validate_release.py
+PASS: release metadata consistency (1.76.0+176)
+PASS: Dart delimiter/static source structure
+PASS: V176 daily-pack and timed-inventory contract
+PASS: no merge-conflict markers or corrupt text control characters
+PASS: ZIP integrity test
+
+Environment limitation
+----------------------
+The Flutter SDK is not installed in this packaging environment, so the real
+`flutter analyze` command was not executed locally. The exact analyzer finding
+reported by GitHub Actions was removed at its source. GitHub Actions remains
+the authoritative framework-level verification step.

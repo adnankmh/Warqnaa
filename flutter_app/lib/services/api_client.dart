@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.72.0');
-const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 172);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.2.0');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 176);
 
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})
@@ -128,6 +128,13 @@ class WarqnaApiClient {
       post('/store/purchase', {'key': key, 'confirmed': true});
   Future<Map<String, dynamic>> claimDaily() => post('/rewards/daily', const {});
   Future<Map<String, dynamic>> claimRewardedAd(String verificationId) => post('/rewards/rewarded-ad', {'verification_id': verificationId, 'network': 'admob', 'reward_type': 'standard'});
+  Future<Map<String, dynamic>> openDailyPackV173() => post('/packs/daily/open', const {});
+  Future<Map<String, dynamic>> prizeBoxesV02() => get('/prize-boxes');
+  Future<Map<String, dynamic>> openPrizeBoxV02(int boxId) => post('/prize-boxes/$boxId/open', const {});
+  Future<Map<String, dynamic>> engagementCenterV173() => get('/engagement/center');
+  Future<Map<String, dynamic>> joinCompetitionV173(String competitionKey, int fee) => post('/competitions/$competitionKey/join', {'entry_fee': fee, 'entry_mode': 'auto'});
+  Future<Map<String, dynamic>> activateChallengeV175(String challengeKey) => post('/challenges/$challengeKey/activate', const {});
+  Future<Map<String, dynamic>> claimChallengeV175(String challengeKey) => post('/challenges/$challengeKey/claim', const {});
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> payload) => patch('/profile', payload);
   Future<Map<String, dynamic>> registerPushDevice(String token) => post('/push/devices', {'token': token, 'platform': platform, 'app_version': warqnaAppVersion, 'app_build': warqnaAppBuild});
   Future<Map<String, dynamic>> removePushDevice(String token) => deleteWithBody('/push/devices', {'token': token});
@@ -188,6 +195,24 @@ class WarqnaApiClient {
         'action': action,
         if (amount != null) 'amount': amount,
       });
+  Future<Map<String, dynamic>> adminDesignerEntitiesV173() => get('/admin/designer');
+  Future<Map<String, dynamic>> upsertAdminDesignerEntityV173({
+    required String entityType,
+    required String key,
+    required Map<String, dynamic> payload,
+    String locale = 'all',
+    int sortOrder = 0,
+    bool active = true,
+  }) => patch(
+        '/admin/designer/${Uri.encodeComponent(entityType)}/${Uri.encodeComponent(key)}',
+        <String, dynamic>{
+          'locale': locale,
+          'payload': payload,
+          'sort_order': sortOrder,
+          'active': active,
+        },
+      );
+  Future<Map<String, dynamic>> deleteAdminDesignerEntityV173(int id) => delete('/admin/designer/$id');
 
   Future<Map<String, dynamic>> get(String path, {bool authenticated = true}) async {
     if (authenticated) _assertToken();

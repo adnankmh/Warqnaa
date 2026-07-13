@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\{StoreItem,InventoryItem,User};
+use App\Models\{CompetitionTicket,StoreItem,InventoryItem,User};
 use App\Services\Wallet\WalletService;
 use App\Services\WarqnaPro\StoreCatalogService;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +24,7 @@ class StoreController
     public function buy(StoreItem $item, WalletService $wallet)
     {
         if(class_exists('\\App\\Models\\SiteSetting') && !\App\Models\SiteSetting::getValue('store_enabled',true)) return $this->friendlyFail('المتجر متوقف مؤقتًا من الإدارة.');
-        if(!$item->duration_days && in_array($item->category,['badge','table','card_back','name_color','text_color','effect','profile_cover'],true)) {
+        if(!$item->duration_days && in_array($item->category,['badge','table','pasha_style','card_back','name_color','text_color','effect','profile_cover'],true)) {
             if(auth()->user()->inventoryItems()->where('store_item_id',$item->id)->exists()) return $this->friendlyFail('هذا العنصر موجود لديك بالفعل. يمكنك تفعيله من مشترياتي.');
         }
         try {
@@ -41,6 +41,13 @@ class StoreController
             if(auth()->user()->profile){ auth()->user()->profile->increment('pasha_days',$days); }
             return $this->friendlyOk('✅ تم شراء '.$days.' يوم باشا. تم تفعيل ميزات الباشا: XP أعلى، أولوية بالغرف، صلاحيات VIP، وإمكانية إنشاء نوادي/منافسات عند توفر التوكنز.');
         }
+        if($item->category==='competition_ticket'){
+            $denomination=(int)(($item->payload ?: [])['denomination'] ?? 0);
+            if($denomination<=0) return $this->friendlyFail('فئة التذكرة غير صحيحة.');
+            $ticket=CompetitionTicket::firstOrCreate(['user_id'=>auth()->id(),'denomination'=>$denomination],['quantity'=>0,'total_used'=>0]);
+            $ticket->increment('quantity');
+            return $this->friendlyOk('✅ تم شراء تذكرة منافسة بقيمة '.$denomination.' توكنز بسعر مخفّض 10%.',['ticket'=>['denomination'=>$denomination,'quantity'=>$ticket->fresh()->quantity]]);
+        }
         $inv=InventoryItem::create(['user_id'=>auth()->id(),'store_item_id'=>$item->id,'expires_at'=>(($item->payload ?: [])['valid_days'] ?? null) ? now()->addDays((int)(($item->payload ?: [])['valid_days'])) : null]);
         return $this->friendlyOk('✅ تم شراء '.($item->name['ar'] ?? $item->key).' بنجاح بدون تحديث الصفحة. تم خصم التوكنز وإضافة العنصر إلى مشترياتي للتفعيل.', ['inventory_id'=>$inv->id,'item'=>['id'=>$item->id,'name'=>$item->name['ar'] ?? $item->key,'category'=>$item->category,'key'=>$item->key,'payload'=>$item->payload ?: [],'duration_days'=>$item->duration_days],'category'=>$item->category,'payload'=>$item->payload ?: []]);
     }
@@ -51,7 +58,7 @@ class StoreController
         $item=$inventory->storeItem;
         DB::transaction(function() use($inventory,$item){
             // العناصر الشكلية: عنصر واحد مفعل من نفس القسم في نفس الوقت.
-            if(in_array($item->category,['name_color','text_color','badge','table','xp_booster','card_back','name_frame','effect','emoji_pack','profile_cover'],true)) {
+            if(in_array($item->category,['name_color','text_color','badge','table','pasha_style','xp_booster','card_back','name_frame','effect','emoji_pack','profile_cover'],true)) {
                 InventoryItem::where('user_id',auth()->id())->whereHas('storeItem',fn($q)=>$q->where('category',$item->category))->update(['active'=>false]);
             }
             $activeDays = ($item->category==='xp_booster') ? 1 : ($item->duration_days ?: null);
@@ -63,6 +70,10 @@ class StoreController
                 if($item->category==='text_color' && isset($payload['color'])) { $profile->chat_color=$payload['color']; $profile->text_color=$payload['color']; }
                 if($item->category==='badge') $profile->badge=$payload['badge'] ?? $item->key;
                 if($item->category==='table') $profile->active_table_skin=$payload['table'] ?? $item->key;
+                if($item->category==='pasha_style') {
+                    $profile->pasha_style=$payload['style'] ?? 'red';
+                    if(isset($payload['color1'])) { $profile->name_color=$payload['color1']; $profile->chat_color=$payload['color1']; $profile->text_color=$payload['color1']; }
+                }
                 if($item->category==='card_back') $profile->active_card_back=$payload['card_back'] ?? $item->key;
                 if($item->category==='name_frame') { $profile->active_name_frame=$payload['frame'] ?? $item->key; if(isset($payload['color'])) $profile->name_color=$payload['color']; }
                 if($item->category==='effect') { if(isset($payload['theme'])) $profile->active_site_theme=(string)$payload['theme']; else $profile->active_effect=$payload['effect'] ?? $item->key; }
