@@ -176,13 +176,7 @@ extension WarqnaV173Controller on AppController {
       final map = reward is Map ? Map<String, dynamic>.from(reward) : <String, dynamic>{};
       dailyPackLastOpened = DateTime.now().toIso8601String().substring(0, 10);
       dailyPackReward = map['label_ar']?.toString() ?? data['message']?.toString() ?? 'هدية يومية';
-      final type = map['type']?.toString();
-      final value = map['value']?.toString();
-      final durationHours = int.tryParse(map['duration_hours']?.toString() ?? '') ?? 0;
-      if (type == 'name_color' && value != null) { selectedNameColor = value; nameColorExpiresAt = DateTime.now().add(Duration(hours: durationHours)); }
-      if (type == 'chat_color' && value != null) { selectedChatColor = value; chatColorExpiresAt = DateTime.now().add(Duration(hours: durationHours)); }
-      if (type == 'xp_booster') { activeXpMultiplier = double.tryParse(value ?? '') ?? 1.5; boosterExpiresAtV173 = DateTime.now().add(Duration(hours: durationHours)); }
-      if (type == 'table' && value != null) { selectedTable = value; temporaryTableExpiresAtV173 = DateTime.now().add(Duration(hours: durationHours)); }
+      applyDailyPackRewardV176(map, data);
       final wallet = data['wallet'];
       if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
       await _save();
@@ -244,7 +238,7 @@ void showPashaStyleSelectorV173(BuildContext context, AppController controller) 
       final style = pashaStylesV173[i];
       final selected = controller.selectedPashaStyle == style.key;
       final product = storeProductById('pasha_style_${style.key}_v173');
-      final owned = product != null && controller.owned.contains(product.id);
+      final owned = product != null && controller.isOwnedActiveV176(product.id);
       return InkWell(onTap: () {
         if (product == null) return;
         if (owned || controller.isAdmin) { controller.activateProduct(product); showToast(context, 'تم اعتماد الطربوش ${style.nameAr}.'); } else { showProductPreview(context, controller, product); }
@@ -257,23 +251,7 @@ void showPashaStyleSelectorV173(BuildContext context, AppController controller) 
   ]));
 }
 
-Future<void> showDailyPackV173(BuildContext context, AppController controller) async {
-  const rewards = <(String,String,String)>[
-    ('🎨','ألوان مؤقتة','لون اسم أو دردشة لمدة 24 ساعة'),
-    ('⚡','مسرّع خبرة','مضاعف XP لمدة 6 ساعات'),
-    ('🎴','طاولات نادرة','طاولة كاملة لمدة يومين أو 3 أيام'),
-    ('🪙','توكنز','250 إلى 2,500 توكن'),
-    ('🎟️','تذاكر منافسات','تذاكر من 500 إلى 5,000 توكن'),
-  ];
-  await showPremiumSheet(context, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(borderRadius:BorderRadius.circular(26),gradient:const LinearGradient(colors:[Color(0xff6d28d9),Color(0xffdb2777),Color(0xfff59e0b)]),boxShadow:[BoxShadow(color:Colors.purpleAccent,blurRadius:28)]),child:const Column(children:[Text('🎁',style:TextStyle(fontSize:82)),Text('الحزمة الملكية اليومية',style:TextStyle(fontSize:24,fontWeight:FontWeight.w900)),Text('فتح واحد كل 24 ساعة • الجوائز تعتمد من الخادم',style:TextStyle(color:Colors.white70))])),
-    const SizedBox(height:12),
-    ...rewards.map((r)=>Padding(padding:const EdgeInsets.only(bottom:7),child:PremiumListTile(icon:r.$1,title:r.$2,subtitle:r.$3,action:const Icon(Icons.auto_awesome,color:Colors.amberAccent)))),
-    if (controller.dailyPackReward != null) Padding(padding: const EdgeInsets.only(top: 8), child: Chip(avatar:const Icon(Icons.history,size:17),label: Text('آخر جائزة: ${controller.dailyPackReward}'))),
-    const SizedBox(height: 12),
-    FilledButton.icon(onPressed: controller.dailyPackAvailableV173 ? () async { final error = await controller.openDailyPackV173(); if (context.mounted) { if (error == null) { Navigator.pop(context); showToast(context, 'مبروك! ${controller.dailyPackReward}'); } else { showToast(context, error); } } } : null, icon: const Icon(Icons.lock_open_rounded), label: Text(controller.dailyPackAvailableV173 ? 'افتح الحزمة الآن' : 'ارجع غداً لحزمة جديدة'),style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(56))),
-  ]));
-}
+Future<void> showDailyPackV173(BuildContext context, AppController controller) => showDailyPackV176(context, controller);
 
 void showCompetitionsV173(BuildContext context, AppController controller) {
   const competitions = <(String,String,String,int,int,int,String)>[

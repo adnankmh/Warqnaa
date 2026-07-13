@@ -1,0 +1,30 @@
+WARQNA V176 VALIDATION RESULTS
+==============================
+Release: 1.76.0+176
+Date: 2026-07-13
+
+PASS - Full source-package preflight: tools/validate_release.py
+PASS - Release version contract: 1.76.0+176
+PASS - PHP syntax lint: 297 PHP files
+PASS - Dart syntax parsing: 21 Dart files, 0 syntax errors
+PASS - Clean root, conflict markers and control-character checks
+PASS - JSON syntax: 41 files
+PASS - YAML structural audit: 15 files
+PASS - Historical contracts V169 through V175 preserved
+PASS - V176 analyzer regression and daily-pack inventory contract
+PASS - Removed unused _openingRoomRouteV174 field
+PASS - Direct-room navigation uses a fresh navigator context after async work
+PASS - Removed unnecessary interpolation in v175_release.dart
+PASS - Animated royal daily-pack reveal is present
+PASS - Timed rewards are added to server inventory and store ownership
+PASS - Active/inactive inventory and expiry are synchronized from the server
+PASS - Expired pack rewards are removed from active ownership automatically
+PASS - Store "مقتنياتي" section and remaining-time labels are present
+PASS - Tokens and competition tickets remain direct balance rewards
+PASS - Root Windows launchers point to V176 without recursive self-calls
+
+NOT RUN LOCALLY
+---------------
+- flutter analyze / flutter test: Flutter SDK is not installed in this environment.
+- php artisan test: Composer vendor dependencies are not installed in this environment.
+These executable framework tests remain enabled in GitHub Actions.

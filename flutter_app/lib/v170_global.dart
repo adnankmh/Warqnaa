@@ -341,7 +341,8 @@ class ProductCardV170 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final owned = controller.owned.contains(product.id);
+    final owned = controller.isOwnedActiveV176(product.id);
+    final expiryLabel = controller.expiryForProductV176(product.id) == null ? null : controller.remainingForProductV176(product.id);
     final isPasha = product.category == 'pasha';
     return PremiumPanel(
       child: Padding(
@@ -361,7 +362,8 @@ class ProductCardV170 extends StatelessWidget {
           const SizedBox(height:5),
           Text(controller.descriptionFor(product),textAlign:TextAlign.center,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white60,fontSize:12,height:1.45)),
           const SizedBox(height:8),
-          FittedBox(fit:BoxFit.scaleDown,child:Text('🪙 ${formatNumber(controller.priceFor(product))}',style:TextStyle(color:Theme.of(context).colorScheme.primary,fontWeight:FontWeight.w900,fontSize:15))),
+          FittedBox(fit:BoxFit.scaleDown,child:Text(product.price == 0 && owned ? '🎁 هدية الحزمة اليومية' : '🪙 ${formatNumber(controller.priceFor(product))}',style:TextStyle(color:Theme.of(context).colorScheme.primary,fontWeight:FontWeight.w900,fontSize:15))),
+          if (expiryLabel != null) ...[const SizedBox(height:5), Container(padding:const EdgeInsets.symmetric(horizontal:9,vertical:5),decoration:BoxDecoration(color:Colors.orangeAccent.withValues(alpha:.12),borderRadius:BorderRadius.circular(20),border:Border.all(color:Colors.orangeAccent.withValues(alpha:.35))),child:Text('⌛ $expiryLabel',textAlign:TextAlign.center,style:const TextStyle(color:Colors.orangeAccent,fontSize:10,fontWeight:FontWeight.w900)))],
           const SizedBox(height:8),
           if (isPasha)
             SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:() async { if(owned && !product.reusable){ controller.activateProduct(product); showToast(context,'تم تفعيل ${controller.nameFor(product)}.'); return; } final confirmed=await showDialog<bool>(context:context,builder:(dialogContext)=>AlertDialog(icon:Image.asset('assets/images/pasha.png',height:100,fit:BoxFit.contain),title:Text(controller.nameFor(product)),content:Text('${controller.descriptionFor(product)}\n\nالسعر: ${formatNumber(controller.priceFor(product))} توكن'),actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),child:Text(owned?'تفعيل':'شراء'))])); if(confirmed==true && context.mounted){ if(owned){controller.activateProduct(product);showToast(context,'تم التفعيل.');}else{final ok=await controller.buy(product);if(context.mounted)showToast(context,ok?'تم شراء الباشا وتفعيله.':'تعذر الشراء. تحقق من الاتصال والرصيد.');}} },icon:const Icon(Icons.workspace_premium),label:Text(owned?'تفعيل الباشا':'شراء الباشا'),style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(50))))

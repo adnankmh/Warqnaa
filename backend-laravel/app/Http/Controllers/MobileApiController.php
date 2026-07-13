@@ -89,6 +89,7 @@ class MobileApiController extends Controller
             'clubs' => Club::query()->latest()->limit(20)->get(),
             'competition_tickets' => CompetitionTicket::where('user_id', $user->id)->pluck('quantity', 'denomination')->map(fn($value)=>(int)$value)->all(),
             'daily_pack' => $this->dailyPackPayload($user->id),
+            'inventory' => $user->inventoryItems()->with('storeItem')->latest()->limit(200)->get(),
             'challenges' => ChallengeDefinition::where('active', true)->orderBy('sort_order')->get(),
             'designer_config' => AdminDesignerEntity::where('active', true)->orderBy('entity_type')->orderBy('sort_order')->get()->groupBy('entity_type'),
             'champion_rank_points' => (int)($user->profile?->champion_rank_points ?? 0),

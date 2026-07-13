@@ -27,6 +27,7 @@ jobs:
           python3 tools/test_v173_online_engagement_contract.py
           python3 tools/test_v174_offline_progression_navigation_contract.py
           python3 tools/test_v175_xp_challenges_pasha_designer_contract.py
+          python3 tools/test_v176_daily_pack_inventory_contract.py
 
       - name: Run source preflight
         run: python3 tools/validate_release.py

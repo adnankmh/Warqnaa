@@ -17,6 +17,7 @@ class MobileEngagementController extends Controller
             'online_only'=>false,
             'tickets'=>$this->tickets($user->id),
             'daily_pack'=>$this->packStatus($user->id),
+            'inventory'=>$user->inventoryItems()->with('storeItem')->latest()->limit(200)->get(),
             'challenges'=>$challenges->center($user),
             'competitions'=>Tournament::whereIn('status', ['open','running'])->withCount('entries')->orderByDesc('featured')->orderBy('starts_at')->get(),
             'designer'=>AdminDesignerEntity::where('active', true)->orderBy('entity_type')->orderBy('sort_order')->get()->groupBy('entity_type'),
@@ -37,6 +38,7 @@ class MobileEngagementController extends Controller
             'reward'=>$reward,
             'wallet'=>$this->walletPayload($request->user()->fresh()),
             'tickets'=>$this->tickets($request->user()->id),
+            'inventory'=>$request->user()->inventoryItems()->with('storeItem')->latest()->limit(200)->get(),
         ]);
     }
 

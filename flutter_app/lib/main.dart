@@ -30,6 +30,7 @@ part 'v166_polish.dart';
 part 'v170_global.dart';
 part 'v173_global.dart';
 part 'v175_release.dart';
+part 'v176_release.dart';
 
 final GlobalKey<NavigatorState> warqnaNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -184,7 +185,6 @@ class _WarqnaAppState extends State<WarqnaApp> {
 class AppController extends ChangeNotifier {
   final WarqnaApiClient api = WarqnaApiClient();
   String? _pendingRoomCodeV174;
-  bool _openingRoomRouteV174 = false;
   String? _queuedNavigationRouteV175;
   bool _openingNavigationRouteV175 = false;
 
@@ -224,6 +224,9 @@ class AppController extends ChangeNotifier {
   String? dailyPackReward;
   DateTime? temporaryTableExpiresAtV173;
   DateTime? boosterExpiresAtV173;
+  final Map<String, DateTime> packInventoryExpiriesV176 = <String, DateTime>{};
+  final List<Map<String, dynamic>> dailyPackHistoryV176 = <Map<String, dynamic>>[];
+  Map<String, dynamic>? lastDailyPackRevealV176;
   int championRankPointsV173 = 0;
   int challengeStreakV173 = 0;
   Timer? connectivityTimerV173;
@@ -617,6 +620,13 @@ class AppController extends ChangeNotifier {
     dailyPackReward = prefs.getString('dailyPackRewardV173');
     temporaryTableExpiresAtV173 = DateTime.tryParse(prefs.getString('temporaryTableExpiresAtV173') ?? '');
     boosterExpiresAtV173 = DateTime.tryParse(prefs.getString('boosterExpiresAtV173') ?? '');
+    packInventoryExpiriesV176
+      ..clear()
+      ..addAll(decodeDateTimeMapV176(prefs.getString('packInventoryExpiriesV176')));
+    dailyPackHistoryV176
+      ..clear()
+      ..addAll(decodeMapListV176(prefs.getString('dailyPackHistoryV176')));
+    if (dailyPackHistoryV176.isNotEmpty) lastDailyPackRevealV176 = Map<String, dynamic>.from(dailyPackHistoryV176.first);
     championRankPointsV173 = prefs.getInt('championRankPointsV173') ?? championRankPointsV173;
     challengeStreakV173 = prefs.getInt('challengeStreakV173') ?? challengeStreakV173;
     gamesPlayed = prefs.getInt('gamesPlayed') ?? gamesPlayed;
@@ -628,7 +638,6 @@ class AppController extends ChangeNotifier {
     lastDailyClaimDate = prefs.getString('lastDailyClaimDate');
     rewardedAdClaimsToday = prefs.getInt('rewardedAdClaimsToday') ?? 0;
     rewardedAdClaimDate = prefs.getString('rewardedAdClaimDate');
-    _normalizeTimedCosmetics();
     _resetAdCounterIfNeeded();
     claimedGiftSteps
       ..clear()
@@ -649,6 +658,7 @@ class AppController extends ChangeNotifier {
     owned
       ..clear()
       ..addAll(prefs.getStringList('owned') ?? const ['emoji_fun']);
+    _normalizeTimedCosmetics();
     storePriceOverrides
       ..clear()
       ..addAll(decodeIntMap(prefs.getString('storePriceOverrides')));
@@ -747,6 +757,8 @@ class AppController extends ChangeNotifier {
     if (dailyPackReward == null) { await prefs.remove('dailyPackRewardV173'); } else { await prefs.setString('dailyPackRewardV173', dailyPackReward!); }
     if (temporaryTableExpiresAtV173 == null) { await prefs.remove('temporaryTableExpiresAtV173'); } else { await prefs.setString('temporaryTableExpiresAtV173', temporaryTableExpiresAtV173!.toIso8601String()); }
     if (boosterExpiresAtV173 == null) { await prefs.remove('boosterExpiresAtV173'); } else { await prefs.setString('boosterExpiresAtV173', boosterExpiresAtV173!.toIso8601String()); }
+    await prefs.setString('packInventoryExpiriesV176', jsonEncode(packInventoryExpiriesV176.map((key, value) => MapEntry(key, value.toIso8601String()))));
+    await prefs.setString('dailyPackHistoryV176', jsonEncode(dailyPackHistoryV176));
     await prefs.setInt('championRankPointsV173', championRankPointsV173);
     await prefs.setInt('challengeStreakV173', challengeStreakV173);
     await prefs.setInt('gamesPlayed', gamesPlayed);
@@ -980,6 +992,7 @@ class AppController extends ChangeNotifier {
       dailyPackLastOpened = pack['last_opened']?.toString() ?? dailyPackLastOpened;
       dailyPackReward = pack['last_reward']?.toString() ?? dailyPackReward;
     }
+    syncPackInventoryV176(data['inventory']);
     selectedPashaStyle = user is Map ? (user['pasha_style']?.toString() ?? selectedPashaStyle) : selectedPashaStyle;
     championRankPointsV173 = int.tryParse(data['champion_rank_points']?.toString() ?? '') ?? championRankPointsV173;
     if (isAdmin && username.toLowerCase() == 'adnan') {
@@ -1064,6 +1077,7 @@ class AppController extends ChangeNotifier {
       selectedTable = 'table_premium_01';
       temporaryTableExpiresAtV173 = null;
     }
+    purgeExpiredPackInventoryV176(now);
   }
 
   void _resetAdCounterIfNeeded() {
@@ -1248,7 +1262,7 @@ class AppController extends ChangeNotifier {
   Future<bool> buy(StoreProduct product) async {
     if (!serverConnected) return false;
     final reusable = product.reusable;
-    if (!reusable && owned.contains(product.id)) {
+    if (!reusable && isOwnedActiveV176(product.id)) {
       activateProduct(product);
       return true;
     }
@@ -1339,19 +1353,24 @@ class AppController extends ChangeNotifier {
         break;
       case 'tables':
         selectedTable = product.id;
+        temporaryTableExpiresAtV173 = expiryForProductV176(product.id);
         break;
       case 'cards':
         selectedCardBack = product.id;
         break;
       case 'names':
         selectedNameColor = product.value ?? selectedNameColor;
+        final nameExpiry = expiryForProductV176(product.id);
+        final nameHours = product.durationHours;
         final nameDays = durationFor(product);
-        nameColorExpiresAt = nameDays == null || nameDays <= 0 ? null : DateTime.now().add(Duration(days: nameDays));
+        nameColorExpiresAt = nameExpiry ?? (nameHours != null && nameHours > 0 ? DateTime.now().add(Duration(hours: nameHours)) : nameDays == null || nameDays <= 0 ? null : DateTime.now().add(Duration(days: nameDays)));
         break;
       case 'chat_colors':
         selectedChatColor = product.value ?? selectedChatColor;
+        final chatExpiry = expiryForProductV176(product.id);
+        final chatHours = product.durationHours;
         final chatDays = durationFor(product);
-        chatColorExpiresAt = chatDays == null || chatDays <= 0 ? null : DateTime.now().add(Duration(days: chatDays));
+        chatColorExpiresAt = chatExpiry ?? (chatHours != null && chatHours > 0 ? DateTime.now().add(Duration(hours: chatHours)) : chatDays == null || chatDays <= 0 ? null : DateTime.now().add(Duration(days: chatDays)));
         break;
       case 'badges':
         selectedBadge = product.id;
@@ -1368,6 +1387,7 @@ class AppController extends ChangeNotifier {
         break;
       case 'boost':
         activeXpMultiplier = product.multiplier ?? 1.0;
+        boosterExpiresAtV173 = expiryForProductV176(product.id) ?? (product.durationHours != null ? DateTime.now().add(Duration(hours: product.durationHours!)) : null);
         break;
     }
     _save();
@@ -1515,8 +1535,7 @@ class AppController extends ChangeNotifier {
     }
     final normalized = (match.group(1) ?? '').trim().toUpperCase();
     if (normalized.isEmpty) return;
-    final navigationContext = warqnaNavigatorKey.currentContext;
-    if (navigationContext == null) {
+    if (warqnaNavigatorKey.currentContext == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(openPendingNavigationRoute()));
       return;
     }
@@ -1548,8 +1567,13 @@ class AppController extends ChangeNotifier {
       _pendingRoomCodeV174 = null;
       _queuedNavigationRouteV175 = null;
       await _save();
-      final controller = this;
-      await openGameRoom(navigationContext, controller, game, options: options);
+      final navigationContext = warqnaNavigatorKey.currentContext;
+      if (navigationContext == null || !navigationContext.mounted) {
+        _queuedNavigationRouteV175 = '/room/$normalized';
+        WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(openPendingNavigationRoute()));
+        return;
+      }
+      await openGameRoom(navigationContext, this, game, options: options);
     } finally {
       _openingNavigationRouteV175 = false;
       if (_queuedNavigationRouteV175 != null) unawaited(openPendingNavigationRoute());
@@ -2660,6 +2684,7 @@ class StoreProduct {
   final String descriptionEn;
   final int price;
   final int? durationDays;
+  final int? durationHours;
   final String? value;
   final double? multiplier;
   final Color? previewColor1;
@@ -2677,6 +2702,7 @@ class StoreProduct {
     required this.descriptionEn,
     required this.price,
     this.durationDays,
+    this.durationHours,
     this.value,
     this.multiplier,
     this.previewColor1,
@@ -2756,6 +2782,9 @@ List<StoreProduct> buildTimedColorProducts() {
 
 
 final List<StoreProduct> products = <StoreProduct>[
+  StoreProduct(id: 'daily_pack_name_gold_24h_v176', category: 'names', icon: '🎨', nameAr: 'هدية الحزمة: لون اسم ذهبي', nameEn: 'Pack Gift: Golden Name Color', descriptionAr: 'لون اسم ذهبي مؤقت من الحزمة اليومية، يظهر في مقتنياتك حتى انتهاء الصلاحية.', descriptionEn: 'A temporary golden name color awarded by the daily pack.', price: 0, durationHours: 24, value: '#facc15', previewColor1: Color(0xfffacc15), previewColor2: Color(0xff422006), collection: 'daily_pack_v176'),
+  StoreProduct(id: 'daily_pack_chat_cyan_24h_v176', category: 'chat_colors', icon: '💬', nameAr: 'هدية الحزمة: لون دردشة سماوي', nameEn: 'Pack Gift: Cyan Chat Color', descriptionAr: 'لون كتابة سماوي مؤقت من الحزمة اليومية، يظهر في مقتنياتك حتى انتهاء الصلاحية.', descriptionEn: 'A temporary cyan chat color awarded by the daily pack.', price: 0, durationHours: 24, value: '#22d3ee', previewColor1: Color(0xff22d3ee), previewColor2: Color(0xff083344), collection: 'daily_pack_v176'),
+  StoreProduct(id: 'daily_pack_xp_15x_6h_v176', category: 'boost', icon: '⚡', nameAr: 'هدية الحزمة: مسرّع XP ×1.5', nameEn: 'Pack Gift: XP Booster ×1.5', descriptionAr: 'مسرّع خبرة مؤقت لمدة 6 ساعات من الحزمة اليومية، يُضاف إلى مقتنيات المتجر مباشرة.', descriptionEn: 'A six-hour XP booster awarded by the daily pack.', price: 0, durationHours: 6, multiplier: 1.5, previewColor1: Color(0xfff59e0b), previewColor2: Color(0xff7c2d12), collection: 'daily_pack_v176'),
   StoreProduct(id: "pasha_1_day_v132", category: "pasha", icon: "🎩", nameAr: "باشا يوم واحد", nameEn: "Pasha 1 Day", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 1700, durationDays: 1, value: "pasha"),
   StoreProduct(id: "pasha_3_days_v132", category: "pasha", icon: "🎩", nameAr: "باشا 3 أيام", nameEn: "Pasha 3 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 5000, durationDays: 3, value: "pasha"),
   StoreProduct(id: "pasha_7_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا 7 أيام", nameEn: "Pasha 7 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 10000, durationDays: 7, value: "pasha"),
@@ -3527,10 +3556,13 @@ class _StorePageState extends State<StorePage> {
   @override
   Widget build(BuildContext context) {
     final lang = widget.controller.localeCode;
+    widget.controller.purgeExpiredPackInventoryV176(DateTime.now());
     final visible = products.where((p) {
       if (p.category == 'pasha_style') return false;
       if (!widget.controller.isStoreProductVisible(p)) return false;
-      final categoryMatch = category == 'all' || p.category == category;
+      final activeOwned = widget.controller.isOwnedActiveV176(p.id);
+      if (p.collection == 'daily_pack_v176' && !activeOwned) return false;
+      final categoryMatch = category == 'inventory' ? activeOwned : category == 'all' || p.category == category;
       final tierMatch = tier == 'all' || p.tier == tier;
       final tableCollectionMatch = category != 'tables' ||
           tableCollection == 'all' ||
@@ -3540,6 +3572,7 @@ class _StorePageState extends State<StorePage> {
     }).toList();
     const categories = [
       ('all', 'الكل'),
+      ('inventory', 'مقتنياتي'),
       ('pasha', 'الباشا'),
       ('competition_ticket', 'تذاكر المنافسات'),
       ('themes', 'الثيمات'),
@@ -3578,6 +3611,10 @@ class _StorePageState extends State<StorePage> {
           trailing: FilledButton.tonal(onPressed: () => showDailyPackV173(context, widget.controller), child: const Text('فتح')),
         )),
         const SizedBox(height: 10),
+        if (widget.controller.dailyPackHistoryV176.isNotEmpty) ...[
+          PackInventoryStripV176(controller: widget.controller, onOpenInventory: () => setState(() => category = 'inventory')),
+          const SizedBox(height: 10),
+        ],
         PremiumPanel(child:Padding(padding:const EdgeInsets.all(13),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Row(children:[Expanded(child:Text('تقدم المستوى ${widget.controller.level}',style:const TextStyle(fontWeight:FontWeight.w900))),Text('${widget.controller.xp} / ${widget.controller.xpNext} XP',style:const TextStyle(color:Colors.amber,fontWeight:FontWeight.w900,fontSize:11))]),
           const SizedBox(height:8),
@@ -3600,7 +3637,7 @@ class _StorePageState extends State<StorePage> {
                 Text('${products.length} عنصر فاخر', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                 Text('طاولات ${products.where((p) => p.category == 'tables').length} • أظهر ورق ${products.where((p) => p.category == 'cards').length} • شراء بتأكيد ومعاينة مباشرة', style: const TextStyle(color: Colors.white60, fontSize: 9, height: 1.4)),
               ])),
-              Chip(label: Text('${widget.controller.owned.length} مملوك')),
+              Chip(label: Text('${widget.controller.activeOwnedCountV176} مملوك')),
             ]),
           ),
         ),
@@ -7783,15 +7820,16 @@ Future<void> showProductPreview(BuildContext context, AppController controller, 
           children: [
             Expanded(child: _StoreFact(icon: '🪙', label: 'السعر', value: formatNumber(controller.priceFor(product)))),
             const SizedBox(width: 8),
-            Expanded(child: _StoreFact(icon: '🛡️', label: 'الحالة', value: controller.owned.contains(product.id) && !product.reusable ? 'مملوك' : product.reusable ? 'قابل للتجديد' : 'متاح')),
+            Expanded(child: _StoreFact(icon: '🛡️', label: 'الحالة', value: controller.isOwnedActiveV176(product.id) && !product.reusable ? 'مملوك' : product.reusable ? 'قابل للتجديد' : 'متاح')),
             const SizedBox(width: 8),
             Expanded(child: _StoreFact(icon: '⭐', label: 'الفئة', value: product.tierLabel(controller.localeCode))),
           ],
         ),
-        if (controller.durationFor(product) != null) ...[const SizedBox(height: 8), _StoreFact(icon: '⏳', label: 'المدة', value: '${controller.durationFor(product)} أيام')],
+        if (controller.productDurationLabelV176(product) != null) ...[const SizedBox(height: 8), _StoreFact(icon: '⏳', label: 'المدة', value: controller.productDurationLabelV176(product)!)],
+        if (controller.expiryForProductV176(product.id) != null) ...[const SizedBox(height: 8), _StoreFact(icon: '⌛', label: 'الصلاحية', value: controller.remainingForProductV176(product.id))],
         const SizedBox(height: 13),
         FilledButton.icon(
-          onPressed: controller.owned.contains(product.id) && !product.reusable
+          onPressed: controller.isOwnedActiveV176(product.id) && !product.reusable
               ? () {
                   controller.activateProduct(product);
                   Navigator.pop(context);
@@ -7816,7 +7854,7 @@ Future<void> showProductPreview(BuildContext context, AppController controller, 
                   showToast(context, ok ? 'تم الشراء وإضافة العنصر إلى مقتنياتك.' : 'تعذر الشراء أو الرصيد غير كافٍ.');
                 },
           icon: const Icon(Icons.shopping_bag_outlined),
-          label: Text(controller.owned.contains(product.id) && !product.reusable ? 'تفعيل العنصر' : '${L.t(controller.localeCode, 'buy')} • ${formatNumber(controller.priceFor(product))} 🪙'),
+          label: Text(controller.isOwnedActiveV176(product.id) && !product.reusable ? 'تفعيل العنصر' : '${L.t(controller.localeCode, 'buy')} • ${formatNumber(controller.priceFor(product))} 🪙'),
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
         ),
       ],

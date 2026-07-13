@@ -103,6 +103,9 @@ def check_required_files() -> None:
         "tools/test_v173_online_engagement_contract.py",
         "tools/test_v174_offline_progression_navigation_contract.py",
         "tools/test_v175_xp_challenges_pasha_designer_contract.py",
+        "tools/test_v176_daily_pack_inventory_contract.py",
+        "flutter_app/lib/v176_release.dart",
+        "backend-laravel/tests/Feature/V176DailyPackInventoryTest.php",
         "flutter_app/lib/v175_release.dart",
         "backend-laravel/config/warqna_xp_levels.php",
         "backend-laravel/app/Services/WarqnaPro/ChallengeService.php",
@@ -153,6 +156,9 @@ def check_required_files() -> None:
     missing = [item for item in required if not (ROOT / item).is_file()]
     if missing:
         fail("Missing release files: " + ", ".join(missing))
+    require("CHECK_WARQNA_WINDOWS.bat", [f"CHECK_V{EXPECTED_BUILD}_WINDOWS.bat"])
+    require("START_WARQNA_WINDOWS.bat", [f"START_WARQNA_V{EXPECTED_BUILD}_WINDOWS.bat"])
+    forbid(f"scripts/windows/current/START_WARQNA_V{EXPECTED_BUILD}_WINDOWS.bat", ["call START_WARQNA_WINDOWS.bat"])
     print(f"[OK] Required v{EXPECTED_BUILD} release files")
 
 
@@ -1250,6 +1256,27 @@ def check_v175_xp_challenges_pasha_designer_contract() -> None:
     print(result.stdout.strip())
     print("[OK] v175 exact Excel XP, web fallback login, full Pasha, premium challenges/packs and universal designer")
 
+def check_v176_daily_pack_inventory_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v176_daily_pack_inventory_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna v176 daily-pack/inventory contract failed: " + result.stdout.strip())
+    for rel in [
+        ".github/workflows/flutter-web-pages.yml",
+        ".github/workflows/flutter-android.yml",
+        ".github/workflows/flutter-ios.yml",
+        ".github/workflows/production-release-check.yml",
+    ]:
+        require(rel, ["test_v176_daily_pack_inventory_contract.py"])
+    print(result.stdout.strip())
+    print("[OK] v176 analyzer fixes, animated pack reveal, server inventory and timed expiry")
+
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -1295,6 +1322,7 @@ def main() -> None:
     check_v173_online_engagement_contract()
     check_v174_offline_progression_navigation_contract()
     check_v175_xp_challenges_pasha_designer_contract()
+    check_v176_daily_pack_inventory_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

@@ -12,7 +12,7 @@ def req(rel,*needles):
     return t
 def main():
     meta=json.loads((ROOT/'RELEASE_VERSION.json').read_text())
-    if meta.get('version')!='1.75.0' or meta.get('build')!=175: fail('metadata is not 1.75.0+175')
+    if int(meta.get('build', 0)) < 175: fail('metadata build is older than v175')
     dart=req('flutter_app/lib/v175_release.dart','const Map<int, int> xpRequirementsV175','1: 80','100: 8000000','class ChallengeCenterV175')
     entries=re.findall(r'^\s*(\d+):\s*(\d+),?$',dart,re.M)
     if len(entries)!=100 or len({int(k) for k,v in entries})!=100: fail('Dart XP table must contain 100 unique levels')

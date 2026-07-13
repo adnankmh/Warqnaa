@@ -187,7 +187,7 @@ class _ChallengeCenterV175State extends State<ChallengeCenterV175> {
           const SizedBox(height:9),
           Row(children:[Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(99),child:LinearProgressIndicator(value:(progress/target).clamp(0.0,1.0).toDouble(),minHeight:9))),const SizedBox(width:8),Text('$progress / $target',style:const TextStyle(fontWeight:FontWeight.w900))]),
           const SizedBox(height:8),
-          Row(children:[Expanded(child:Text('🪙 ${formatNumber(tokens)}  •  ⭐ ${formatNumber(rewardXp)} XP',style:const TextStyle(color:Colors.amberAccent,fontWeight:FontWeight.w800,fontSize:11))),FilledButton.tonal(onPressed:claimed||loading?null:() => _action(item,completed),child:Text(claimed?'تم الاستلام':completed?'استلام':'${activated?'متابعة':'تفعيل'}'))]),
+          Row(children:[Expanded(child:Text('🪙 ${formatNumber(tokens)}  •  ⭐ ${formatNumber(rewardXp)} XP',style:const TextStyle(color:Colors.amberAccent,fontWeight:FontWeight.w800,fontSize:11))),FilledButton.tonal(onPressed:claimed||loading?null:() => _action(item,completed),child:Text(claimed ? 'تم الاستلام' : completed ? 'استلام' : activated ? 'متابعة' : 'تفعيل'))]),
         ]))));
       }),
       if(loading) const Padding(padding:EdgeInsets.only(top:4),child:LinearProgressIndicator()),
