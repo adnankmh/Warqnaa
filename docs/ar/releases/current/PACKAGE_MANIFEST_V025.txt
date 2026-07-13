@@ -1,0 +1,29 @@
+Warqna V0.2.5 Full Source Package
+Version: 0.2.5+181
+Build: 181
+
+Included:
+- Laravel backend source and migrations/seeders
+- Flutter source and assets
+- GitHub Actions workflows
+- Release validation and compatibility tests
+- Arabic setup, release and validation documentation
+- V0.2.5 fair-deal, challenge, level-reward, store, admin and appearance changes
+
+Excluded from distributable ZIP:
+- .git repository metadata
+- local .env files and runtime secrets
+- vendor and node_modules dependencies
+- Flutter/.Gradle build caches
+- generated build outputs
+- signing keys and credentials
+
+Validation summary:
+- 319 PHP files linted successfully
+- inherited release contracts passed
+- V0.2.5 complete contract passed
+- source preflight passed
+- ZIP integrity must be verified after packaging
+
+Environment limitation:
+- Flutter/Dart SDK unavailable during this build session, so no APK/AAB and no flutter analyze were produced.

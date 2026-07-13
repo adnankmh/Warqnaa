@@ -59,14 +59,13 @@ class MobileGameController extends Controller
         if (!$game) return response()->json(['ok' => true, 'rooms' => []]);
 
         $rooms = Room::query()
-            ->with(['players.user.profile', 'game'])
+            ->with(['players.user.profile', 'game', 'owner.profile'])
             ->where('game_id', $game->id)
             ->whereIn('status', ['waiting', 'bidding', 'playing'])
             ->where('visibility', '!=', 'private')
             ->latest('updated_at')
             ->limit(30)
             ->get()
-            ->filter(fn (Room $room) => $room->players->where('is_bot', false)->where('connected', true)->count() > 0)
             ->map(function (Room $room) {
                 $state = $room->state ?: [];
                 $realPlayers = $room->players->where('is_bot', false)->count();
@@ -81,13 +80,23 @@ class MobileGameController extends Controller
                     'min_level' => (int) ($room->min_level ?? 1),
                     'game' => $room->game?->key,
                     'owner' => $room->owner?->username,
-                    'avatars' => $room->players->where('is_bot', false)->take(4)->map(fn ($player) => [
+                    'avatars' => $room->players->where('is_bot', false)->take(6)->map(fn ($player) => [
                         'id' => $player->user_id,
                         'name' => $player->user?->profile?->display_name ?: $player->user?->username,
+                        'username' => $player->user?->username,
                         'avatar' => $player->user?->profile?->avatar,
                         'name_color' => $player->user?->profile?->name_color ?: '#facc15',
                         'country_code' => $player->user?->profile?->country_code ?: 'PS',
+                        'connected' => (bool)$player->connected,
+                        'seat' => (int)$player->seat,
                     ])->values()->all(),
+                    'empty_seats' => max(0, (int)$room->max_players - $realPlayers),
+                    'status_label' => match($room->status) {
+                        'waiting' => 'بانتظار اللاعبين',
+                        'bidding' => 'مرحلة الطلب',
+                        'playing' => 'اللعبة جارية',
+                        default => $room->status,
+                    },
                 ];
             })->values();
 
@@ -107,6 +116,7 @@ class MobileGameController extends Controller
         $user = $request->user();
         abort_if((int)($user->profile?->level ?? 1) < (int)($room->min_level ?? 1), 403, 'مستواك أقل من الحد المطلوب لدخول هذه الغرفة.');
         $state = $room->state ?: [];
+        $state['messages'] = array_values((array)($state['messages'] ?? []));
         $kicked = array_map('intval', (array)($state['kicked_user_ids'] ?? []));
         abort_if(in_array((int)$user->id, $kicked, true), 403, 'تم إخراجك من هذه المباراة ولا يمكنك العودة إليها.');
         $participantIds = $room->players->where('is_bot', false)->pluck('user_id')->filter()->map(fn($id)=>(int)$id)->values()->all();
@@ -125,6 +135,7 @@ class MobileGameController extends Controller
 
         $existing = $room->players()->where('user_id', $user->id)->first();
         if ($existing) {
+            abort_if((bool)$existing->return_blocked || (int)$existing->manual_exit_count >= 3, 403, 'غادرت هذه المباراة ثلاث مرات ولا يمكنك العودة إليها.');
             $existing->update(['connected' => true, 'missed_turns' => 0]);
             return response()->json(['ok' => true, 'message' => 'عدت إلى مقعدك.', 'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $user->id)]);
         }
@@ -207,12 +218,13 @@ class MobileGameController extends Controller
         abort_unless(in_array($maxPlayers, $allowedCounts, true), 422, 'عدد اللاعبين غير مدعوم لهذه اللعبة.');
         abort_if((int)($data['min_level'] ?? 1) > (int)($user->profile?->level ?? 1), 422, 'الحد الأدنى لا يمكن أن يتجاوز مستوى منشئ الغرفة.');
         $botCount = min($maxPlayers - 1, max((int) ($data['bots'] ?? ($maxPlayers - 1)), 0));
+        $locale = strtolower(substr((string)($request->header('X-Locale') ?: $request->header('Accept-Language') ?: 'ar'), 0, 2));
         $playerKeys = ['user:' . $user->id];
         for ($i = 1; $i <= $botCount; $i++) {
-            $playerKeys[] = 'bot:' . $this->botName($i - 1);
+            $playerKeys[] = 'bot:' . $this->botName($i - 1, $locale);
         }
         while (count($playerKeys) < $maxPlayers) {
-            $playerKeys[] = 'bot:' . $this->botName(count($playerKeys) - 1);
+            $playerKeys[] = 'bot:' . $this->botName(count($playerKeys) - 1, $locale);
         }
 
         $target = (int) ($data['target'] ?? $this->defaultTarget($data['game']));
@@ -356,6 +368,7 @@ class MobileGameController extends Controller
             ], 422);
         }
 
+        $room->players()->where('user_id', $user->id)->update(['missed_turns' => 0, 'connected' => true]);
         $next = $engine->apply($state, $playerKey, $data['action'], $payload);
         $next = $this->advanceAutomatedTurns($engine, $next, (string) $room->game->key);
         $next['_revision'] = $currentRevision + 1;
@@ -377,28 +390,73 @@ class MobileGameController extends Controller
     public function timeout(Request $request, Room $room, ProgressionService $progression)
     {
         $this->authorizeRoom($request, $room);
-        $state = $room->state ?: [];
+        $before = $room->state ?: [];
+        $state = $before;
+        $state['messages'] = array_values((array)($state['messages'] ?? []));
+        $turn = (string)($state['turn'] ?? '');
+        $ejected = false;
+        if (str_starts_with($turn, 'user:')) {
+            $turnUserId = (int)substr($turn, 5);
+            $turnPlayer = $room->players()->where('user_id', $turnUserId)->where('is_bot', false)->first();
+            if ($turnPlayer) {
+                $missed = min(3, (int)$turnPlayer->missed_turns + 1);
+                $ejected = $missed >= 3;
+                $turnPlayer->update([
+                    'missed_turns' => $missed,
+                    'absence_ejections' => (int)$turnPlayer->absence_ejections + ($ejected ? 1 : 0),
+                    'connected' => !$ejected,
+                ]);
+                $state['messages'][] = $ejected
+                    ? '⏳ تم إخراج اللاعب مؤقتاً بعد ثلاث لفات غياب متتالية، ويمكنه العودة إلى مقعده.'
+                    : '⏱️ انتهى وقت اللاعب؛ نُفذت حركة قانونية تلقائياً ('.$missed.'/3).';
+            }
+        }
         $engine = GameFactory::make($room->game->key);
         if (method_exists($engine, 'onTurnTimeout')) {
             $state = $engine->onTurnTimeout($state);
         } else {
             $state = $this->automaticMove($engine, $state, (string) $room->game->key);
         }
-        $before = $room->state ?: [];
         $state = $this->advanceAutomatedTurns($engine, $state, (string) $room->game->key);
         $state['_revision'] = (int)($before['_revision'] ?? 0) + 1;
         $progressionPopup = $this->awardProgressionTransition($progression, $room, $before, $state);
         if ($progressionPopup !== []) $state['progression_popup'] = $progressionPopup;
         $room->update(['state' => $state, 'status' => $this->roomStatus((string) ($state['phase'] ?? 'playing'))]);
-        return response()->json(['ok' => true, 'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $request->user()->id)]);
+        return response()->json([
+            'ok' => true,
+            'absence_ejected' => $ejected,
+            'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $request->user()->id),
+        ]);
     }
 
     public function leave(Request $request, Room $room)
     {
         $player = $room->players()->where('user_id', $request->user()->id)->first();
         abort_unless($player, 403, 'أنت لست داخل هذه الغرفة');
-        $player->update(['connected' => false]);
-        return response()->json(['ok' => true, 'message' => 'تمت مغادرة الغرفة دون خصم توكنز.']);
+        $nextExitCount = min(3, (int)$player->manual_exit_count + 1);
+        $blocked = $nextExitCount >= 3;
+        $state = $room->state ?: [];
+        $state['messages'] = array_values((array)($state['messages'] ?? []));
+        $state['messages'][] = $blocked
+            ? '🚪 غادر اللاعب المباراة للمرة الثالثة؛ تم إغلاق العودة إلى هذه المباراة فقط.'
+            : '🚪 غادر اللاعب المباراة ويمكنه العودة إلى مقعده ('.$nextExitCount.'/3).';
+        DB::transaction(function () use ($player, $room, $state, $nextExitCount, $blocked) {
+            $player->update([
+                'connected' => false,
+                'missed_turns' => 0,
+                'manual_exit_count' => $nextExitCount,
+                'return_blocked' => $blocked,
+            ]);
+            $room->update(['state' => $state]);
+        });
+        return response()->json([
+            'ok' => true,
+            'manual_exit_count' => $nextExitCount,
+            'return_blocked' => $blocked,
+            'message' => $blocked
+                ? 'غادرت المباراة ثلاث مرات؛ لن تتمكن من العودة إلى هذه المباراة.'
+                : 'تمت المغادرة دون خصم توكنز، ويمكنك العودة قبل بلوغ ثلاث مغادرات.',
+        ]);
     }
 
     public function chat(Request $request, Room $room)
@@ -503,6 +561,10 @@ class MobileGameController extends Controller
                     'seat' => (int) $player->seat,
                     'bot' => (bool) $player->is_bot,
                     'connected' => (bool) $player->connected,
+                    'missed_turns' => (int) $player->missed_turns,
+                    'manual_exit_count' => (int) $player->manual_exit_count,
+                    'absence_ejections' => (int) $player->absence_ejections,
+                    'return_blocked' => (bool) $player->return_blocked,
                     'voice_muted' => (bool) ($player->voice_muted ?? false),
                     'voice_deafened' => (bool) ($player->voice_deafened ?? false),
                     'avatar' => $player->user?->profile?->avatar,
@@ -751,8 +813,11 @@ class MobileGameController extends Controller
         };
     }
 
-    private function botName(int $seat): string
+    private function botName(int $seat, string $locale = 'ar'): string
     {
-        return ['عاصم', 'جميل', 'ليلى', 'سامر', 'نور', 'كريم', 'رنا', 'يزن'][$seat % 8];
+        $arabic = ['عدنان','بيان','كنان','جميل','رعد','عاصم','معتصم','حسام','جنان','حور','جنات','آلاء','أفنان','شهد','حلا','شذى','قمر'];
+        $english = ['Adnan','Bayan','Kenan','Jameel','Raad','Asem','Moatasem','Hossam','Janan','Hoor','Jannat','Alaa','Afnan','Shahd','Hala','Shatha','Qamar'];
+        $names = $locale === 'ar' ? $arabic : $english;
+        return $names[$seat % count($names)];
     }
 }

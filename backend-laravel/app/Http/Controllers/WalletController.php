@@ -17,7 +17,7 @@ class WalletController
 
     public function transfer(Request $r, WalletService $wallet)
     {
-        $data=$r->validate(['receiver'=>'required|string','amount'=>'required|integer|min:1|max:100000000']);
+        $data=$r->validate(['receiver'=>'required|string','amount'=>'required|integer|min:10|max:100000000']);
         $to=User::where('username',$data['receiver'])->orWhere('email',$data['receiver'])->first();
         if(!$to) return $this->fail('لم يتم العثور على اللاعب المستلم.');
         if($to->id===auth()->id()) return $this->fail('لا يمكنك إرسال التوكنز لنفسك.');
@@ -29,8 +29,8 @@ class WalletController
                 $admin=User::where('is_admin',true)->first();
                 if($admin && $fee>0) $wallet->credit($admin,$fee,'transfer_fee',['from'=>auth()->id(),'to'=>$to->id]);
             });
-        }catch(\Throwable $e){ return $this->fail('رصيدك غير كافٍ. المبلغ المطلوب مع العمولة: '.number_format($data['amount']+$fee).' توكنز.'); }
-        return $this->ok('تم إرسال '.number_format($data['amount']).' توكنز بنجاح. تم خصم عمولة 10%.');
+        }catch(\Throwable $e){ return $this->fail('رصيدك غير كافٍ. المبلغ المطلوب شامل رسوم التحويل: '.number_format($data['amount']+$fee).' توكنز.'); }
+        return $this->ok('تم إرسال '.number_format($data['amount']).' توكنز بنجاح. تم خصم رسوم تحويل 10%.');
     }
     private function ok(string $m){ if(request()->expectsJson()||request()->ajax()) return response()->json(['ok'=>true,'message'=>$m]); return back()->with('ok',$m); }
     private function fail(string $m){ if(request()->expectsJson()||request()->ajax()) return response()->json(['ok'=>false,'message'=>$m],200); return back()->withErrors(['msg'=>$m]); }

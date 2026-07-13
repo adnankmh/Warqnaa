@@ -15,6 +15,7 @@ class LightCardTurnRules implements GameRuleContract
         for($i=0;$i<$cardsEach;$i++){
             foreach($players as $p){ if($deck) $hands[$p][]=array_shift($deck)->id(); }
         }
+        $hands=FairDealBalancer::balance($hands,'light');
         foreach($hands as $p=>$h)$hands[$p]=$this->sortCards($h);
         $discard=[]; if($deck) $discard[]=array_shift($deck)->id();
         $top=end($discard) ?: null;

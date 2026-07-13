@@ -105,6 +105,18 @@ def check_required_files() -> None:
         "tools/test_v175_xp_challenges_pasha_designer_contract.py",
         "tools/test_v176_daily_pack_inventory_contract.py",
         "tools/test_v02_daily_prize_boxes_contract.py",
+        "tools/test_v022_economy_rooms_clubs_engines_contract.py",
+        "tools/test_v025_complete_contract.py",
+        "flutter_app/lib/v025_release.dart",
+        "flutter_app/lib/engines/fair_deal.dart",
+        "backend-laravel/app/Services/GameEngine/FairDealBalancer.php",
+        "backend-laravel/app/Services/WarqnaPro/ChallengeJourneyService.php",
+        "backend-laravel/app/Services/Progression/LevelRewardService.php",
+        "backend-laravel/app/Http/Controllers/MobileChallengeJourneyController.php",
+        "backend-laravel/database/migrations/2026_07_13_140000_v025_absence_challenge_level_rewards.php",
+        "backend-laravel/database/seeders/DemoPlayersV025Seeder.php",
+        "backend-laravel/tests/Unit/V025FairDealBalancerTest.php",
+        "docs/ar/product/DEMO_ACCOUNTS_V025_AR.md",
         "flutter_app/lib/v176_release.dart",
         "flutter_app/lib/v02_release.dart",
         "backend-laravel/app/Models/PrizeBox.php",
@@ -1297,6 +1309,34 @@ def check_v02_daily_prize_boxes_contract() -> None:
     print("[OK] V0.2 dedicated prize-box page, 4-win limit, front-opening animation, ticket art and translated rewards")
 
 
+def check_v022_economy_rooms_clubs_engines_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v022_economy_rooms_clubs_engines_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna V0.2.2 economy/rooms/clubs/engines contract failed: " + result.stdout.strip())
+    print(result.stdout.strip())
+    print("[OK] V0.2.2 server economy, public rooms, club permissions, delegated admin and rummy engine contracts")
+
+
+
+def check_v025_complete_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v025_complete_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna V0.2.5 complete contract failed: " + result.stdout.strip())
+    print(result.stdout.strip())
+    print("[OK] V0.2.5 fair play, challenge journey, level rewards, localized bots, admin tools and ads")
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -1344,6 +1384,8 @@ def main() -> None:
     check_v175_xp_challenges_pasha_designer_contract()
     check_v176_daily_pack_inventory_contract()
     check_v02_daily_prize_boxes_contract()
+    check_v022_economy_rooms_clubs_engines_contract()
+    check_v025_complete_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

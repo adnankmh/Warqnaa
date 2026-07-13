@@ -2,6 +2,7 @@
 namespace Database\Seeders;
 use Illuminate\Database\Seeder; use Illuminate\Support\Facades\{Hash,DB}; use App\Models\{User,Profile,Wallet,Club,ClubMember,Tournament}; use App\Services\Games\GameCatalog; use App\Services\WarqnaPro\StoreCatalogService;
 class DatabaseSeeder extends Seeder { public function run(): void {
+ $this->call(DemoPlayersV025Seeder::class);
  // v136: country_name() now returns a scalar string, so Seeder can use it directly without helper variables.
  $admin=User::updateOrCreate(['email'=>env('ADMIN_EMAIL','adnanasd63@gmail.com')],['username'=>env('ADMIN_USERNAME','Adnan'),'password'=>Hash::make(env('ADMIN_PASSWORD','Adnan123')),'is_admin'=>true]);
  Profile::updateOrCreate(['user_id'=>$admin->id],['display_name'=>'Adnan','avatar'=>'🦁','country_code'=>'PS','country_name'=>'Palestine','level'=>90,'xp'=>9000000,'games_played'=>20000,'wins'=>15000,'name_color'=>'#facc15','chat_color'=>'#facc15','pasha_days'=>3650,'badge'=>'king']);

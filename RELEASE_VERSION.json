@@ -1,8 +1,10 @@
 {
-  "version": "0.2.0",
-  "build": 176,
-  "full": "0.2.0+176",
-  "release": "v176",
-  "display_release": "V0.2",
-  "name": "Warqna V0.2 Daily Prize Boxes Professional"
+  "version": "0.2.5",
+  "build": 181,
+  "full": "0.2.5+181",
+  "release": "v181",
+  "display_release": "V0.2.5",
+  "name": "Warqna V0.2.5 Fair Play Challenge Journey",
+  "build_number": 181,
+  "display_version": "V0.2.5"
 }

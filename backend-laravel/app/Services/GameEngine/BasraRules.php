@@ -110,6 +110,7 @@ class BasraRules extends AbstractCardRules
     private function dealFour(array &$state): void
     {
         for($i=0;$i<4;$i++)foreach($state['players'] as $player)if($state['deck'])$state['hands'][$player][]=array_shift($state['deck']);
+        $state['hands']=FairDealBalancer::balance($state['hands'],'capture');
         foreach($state['hands'] as $player=>$cards)$state['hands'][$player]=$this->sortHand($cards);
     }
 

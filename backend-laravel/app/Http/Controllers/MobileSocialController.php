@@ -30,7 +30,7 @@ class MobileSocialController extends Controller
     public function search(Request $request)
     {
         $query = trim((string) $request->query('q', ''));
-        $users = User::with('profile')
+        $users = User::with('profile','clubMembership.club','adminDelegation')
             ->where('id', '!=', $request->user()->id)
             ->when($query !== '', fn ($q) => $q->where(function ($q) use ($query) {
                 $q->where('username', 'like', '%' . $query . '%')
@@ -45,7 +45,7 @@ class MobileSocialController extends Controller
     public function profile(Request $request, User $user)
     {
         $this->assertNotBlocked($request->user()->id, $user->id);
-        return response()->json(['ok' => true, 'user' => $this->userPayload($user->load('profile'))]);
+        return response()->json(['ok' => true, 'user' => $this->userPayload($user->load('profile','clubMembership.club','adminDelegation'))]);
     }
 
     public function inviteToRoom(Request $request, User $user, FirebasePushService $push)
@@ -207,7 +207,7 @@ class MobileSocialController extends Controller
     public function transfer(Request $request, WalletService $wallet, ProductionConfigService $productionConfig)
     {
         abort_unless($productionConfig->enabled('token_transfers', true), 503, 'تحويل التوكنز متوقف مؤقتًا.');
-        $data = $request->validate(['receiver' => 'required|string|max:120', 'amount' => 'required|integer|min:1|max:1000000000000']);
+        $data = $request->validate(['receiver' => 'required|string|max:120', 'amount' => 'required|integer|min:10|max:1000000000000']);
         $sender = $request->user();
         $receiver = User::where('username', $data['receiver'])->orWhere('email', $data['receiver'])->first();
         abort_unless($receiver, 404, 'لم يتم العثور على المستلم');
@@ -226,14 +226,14 @@ class MobileSocialController extends Controller
                 }
             });
         } catch (\Throwable) {
-            return response()->json(['ok' => false, 'message' => 'الرصيد غير كافٍ. المطلوب مع عمولة الإدارة: ' . number_format($total)], 422);
+            return response()->json(['ok' => false, 'message' => 'الرصيد غير كافٍ. المطلوب شامل رسوم التحويل: ' . number_format($total)], 422);
         }
 
         $freshWallet = $sender->wallet()->firstOrFail();
 
         return response()->json([
             'ok' => true,
-            'message' => 'تم إرسال ' . number_format((int) $data['amount']) . ' توكنز، وخصم عمولة إدارة ' . $feePercent . '% بقيمة ' . number_format($fee) . '.',
+            'message' => 'تم إرسال ' . number_format((int) $data['amount']) . ' توكنز وخصم رسوم تحويل ' . $feePercent . '%.',
             'amount' => (int) $data['amount'],
             'fee' => $fee,
             'total_debited' => $total,
@@ -284,6 +284,13 @@ class MobileSocialController extends Controller
             'round_points' => (int) ($profile?->round_points ?? 0),
             'tournament_points' => (int) ($profile?->tournament_points ?? 0),
             'club_points' => (int) ($profile?->club_points ?? 0),
+            'club' => $user->clubMembership?->club ? [
+                'id'=>$user->clubMembership->club->id,
+                'name'=>$user->clubMembership->club->name,
+                'logo'=>$user->clubMembership->club->logo,
+                'level'=>(int)$user->clubMembership->club->level,
+                'role'=>$user->clubMembership->role,
+            ] : null,
             'online' => $user->last_seen_at?->gt(now()->subMinutes(3)) ?? false,
         ];
     }
