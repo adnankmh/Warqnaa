@@ -19,10 +19,10 @@ class XpService
     public function requiredXp(int $level): int
     {
         $safe = max(1, min(200, $level));
-        $exact = config('warqna_xp_levels.'.$safe);
-        if ($exact !== null) return (int) $exact;
-        $level100 = (int) config('warqna_xp_levels.100', 8000000);
-        return (int) round($level100 * (1.12 ** ($safe - 100)));
+        $early = [1=>100,2=>220,3=>360,4=>500,5=>650,6=>800,7=>1000];
+        if (isset($early[$safe])) return $early[$safe];
+        $high = $safe - 7;
+        return 1000 + ($high * 220) + ($high * $high * 35);
     }
 
     public function rewardForLevel(int $level): int
@@ -46,12 +46,8 @@ class XpService
         $profile->xp = (int) $profile->xp + $earnedXp;
         $newLevel = $this->levelForXp((int) $profile->xp);
         $bonus = 0;
-        $levelRewards = [];
         if ($newLevel > $oldLevel) {
-            for ($i = $oldLevel + 1; $i <= $newLevel; $i++) {
-                $bonus += $this->rewardForLevel($i);
-                $levelRewards[] = app(LevelUpRewardService::class)->grant($user, $i);
-            }
+            for ($i = $oldLevel + 1; $i <= $newLevel; $i++) $bonus += $this->rewardForLevel($i);
         }
         $profile->level = $newLevel;
         $profile->games_played = (int) ($profile->games_played ?? 0) + ($countGame ? 1 : 0);
@@ -61,6 +57,6 @@ class XpService
             $wallet->tokens += max(0, $tokens) + $bonus;
             $wallet->save();
         }
-        return ['old_level'=>$oldLevel,'new_level'=>$newLevel,'level_bonus'=>$bonus,'level_rewards'=>$levelRewards,'earned_xp'=>$earnedXp ?? $xp];
+        return ['old_level'=>$oldLevel,'new_level'=>$newLevel,'level_bonus'=>$bonus,'earned_xp'=>$earnedXp ?? $xp];
     }
 }

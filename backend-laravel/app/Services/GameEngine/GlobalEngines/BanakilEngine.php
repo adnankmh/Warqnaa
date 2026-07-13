@@ -12,16 +12,13 @@ class BanakilEngine extends GlobalCardEngineCore
     {
         return [
             'mode' => 'rummy',
-            'players' => [4],
-            'partnership' => true,
+            'players' => [2, 3, 4],
+            'partnership' => false,
             'deck' => 'double-joker',
-            'rounds' => 7,
-            'cardsEach' => 18,
-            'firstExtra' => 1,
-            'opening' => 51,
-            'wildTwos' => true,
-            'wildValue' => 20,
-            'targetScore' => 222,
+            'rounds' => 5,
+            'cardsEach' => 14,
+            'opening' => 40,
+            'targetScore' => 41,
             'targetOptions' => [],
             'minBid' => 7,
             'maxBid' => 13,
@@ -40,10 +37,10 @@ class BanakilEngine extends GlobalCardEngineCore
             'slug'=>'banakil',
             'title_ar'=>'بناكل',
             'emoji'=>'🂮',
-            'description'=>'محرك بناكل شراكة لأربعة لاعبين: 18 ورقة، أول لاعب بورقة إضافية، افتتاح 51 عبر عدة مجموعات، تركيب، جوكر واثنان بري، وحساب فرق كامل.',
+            'description'=>'محرك بناكل فردي 2-4 لاعبين مع تنزيل مجموعات وسلاسل وجوكر وحساب نقاط.',
             'version'=>'final-v1',
-            'players'=>[4],
-            'partnership'=>true,
+            'players'=>[2, 3, 4],
+            'partnership'=>false,
         ];
     }
 }

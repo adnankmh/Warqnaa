@@ -100,45 +100,6 @@ def check_required_files() -> None:
         "tools/test_flutter_ci_contract.py",
         "tools/test_v171_controller_references.py",
         "tools/test_v172_brand_table_contract.py",
-        "tools/test_v173_online_engagement_contract.py",
-        "tools/test_v174_offline_progression_navigation_contract.py",
-        "tools/test_v175_xp_challenges_pasha_designer_contract.py",
-        "tools/test_v176_daily_pack_inventory_contract.py",
-        "tools/test_v02_daily_prize_boxes_contract.py",
-        "tools/test_v022_economy_rooms_clubs_engines_contract.py",
-        "tools/test_v03_platform_contract.py",
-        "flutter_app/lib/v03_release.dart",
-        "backend-laravel/app/Services/GameEngine/GlobalEngines/BalancedDealV03.php",
-        "backend-laravel/app/Services/WarqnaPro/ChallengeCampaignService.php",
-        "backend-laravel/app/Services/Leveling/LevelUpRewardService.php",
-        "backend-laravel/database/factories/UserFactory.php",
-        "backend-laravel/database/seeders/V03DemoPlayersSeeder.php",
-        "backend-laravel/database/migrations/2026_07_13_140000_v03_challenge_campaigns_level_rewards_and_room_presence.php",
-        "backend-laravel/tests/Feature/V03GlobalReleaseTest.php",
-        "flutter_app/lib/v176_release.dart",
-        "flutter_app/lib/v02_release.dart",
-        "backend-laravel/app/Models/PrizeBox.php",
-        "backend-laravel/app/Services/WarqnaPro/PrizeBoxService.php",
-        "backend-laravel/database/migrations/2026_07_13_000200_create_v02_prize_boxes.php",
-        "backend-laravel/tests/Feature/V02DailyPrizeBoxesTest.php",
-        "backend-laravel/tests/Feature/V176DailyPackInventoryTest.php",
-        "flutter_app/lib/v175_release.dart",
-        "backend-laravel/config/warqna_xp_levels.php",
-        "backend-laravel/app/Services/WarqnaPro/ChallengeService.php",
-        "backend-laravel/tests/Feature/V174DirectInviteOrientationXpTest.php",
-        "backend-laravel/tests/Feature/V175XpChallengesDesignerTest.php",
-        "docs/reference/XPs_levels_1_to_100_source.xlsx",
-        "docs/reference/XP_LEVELS_V175.csv",
-        "docs/ar/validation/current/VALIDATION_RESULTS_V175.txt",
-        "flutter_app/lib/v173_global.dart",
-        "backend-laravel/resources/data/v173_store_catalog.json",
-        "backend-laravel/app/Services/WarqnaPro/DailyPackService.php",
-        "backend-laravel/app/Services/WarqnaPro/CompetitionService.php",
-        "backend-laravel/app/Http/Controllers/MobileEngagementController.php",
-        "backend-laravel/database/migrations/2026_07_12_000173_online_competitions_tickets_packs_designer.php",
-        "backend-laravel/tests/Feature/V173OnlineEngagementTest.php",
-        "backend-laravel/database/migrations/2026_07_13_000174_offline_progression_navigation.php",
-        "backend-laravel/tests/Feature/V174OfflineProgressionNavigationTest.php",
         "tools/apply_brand_assets.py",
         "flutter_app/assets/images/brand/warqna_logo.png",
         "flutter_app/assets/images/tables/reference/catalog.json",
@@ -172,9 +133,6 @@ def check_required_files() -> None:
     missing = [item for item in required if not (ROOT / item).is_file()]
     if missing:
         fail("Missing release files: " + ", ".join(missing))
-    require("CHECK_WARQNA_WINDOWS.bat", [f"CHECK_V{EXPECTED_BUILD}_WINDOWS.bat"])
-    require("START_WARQNA_WINDOWS.bat", [f"START_WARQNA_V{EXPECTED_BUILD}_WINDOWS.bat"])
-    forbid(f"scripts/windows/current/START_WARQNA_V{EXPECTED_BUILD}_WINDOWS.bat", ["call START_WARQNA_WINDOWS.bat"])
     print(f"[OK] Required v{EXPECTED_BUILD} release files")
 
 
@@ -192,22 +150,11 @@ ROOT_IGNORED_METADATA = {
 }
 
 
-ROOT_LEGACY_DOCUMENT_PATTERNS = (
-    re.compile(r"^APPLY_PATCH(?:_[A-Z0-9.]+)?_?AR\.md$", re.IGNORECASE),
-    re.compile(r"^CHANGELOG_[A-Z0-9._-]+_AR\.md$", re.IGNORECASE),
-    re.compile(r"^FILES_MANIFEST(?:_[A-Z0-9._-]+)?\.txt$", re.IGNORECASE),
-    re.compile(r"^VALIDATION(?:_RESULTS)?_[A-Z0-9._-]+\.txt$", re.IGNORECASE),
-)
-
-def _is_allowed_root_entry(name: str) -> bool:
-    if name in ROOT_ALLOWED_ENTRIES or name in ROOT_IGNORED_METADATA:
-        return True
-    # Older patch-only packages placed their read-only handoff documents in the root.
-    # They are safe release metadata, not runtime clutter, so full releases remain compatible.
-    return any(pattern.fullmatch(name) for pattern in ROOT_LEGACY_DOCUMENT_PATTERNS)
-
 def unexpected_root_entries(names) -> list[str]:
-    return sorted(str(name) for name in names if not _is_allowed_root_entry(str(name)))
+    return sorted(
+        str(name) for name in names
+        if str(name) not in ROOT_ALLOWED_ENTRIES and str(name) not in ROOT_IGNORED_METADATA
+    )
 
 
 def check_clean_root_policy_self_test() -> None:
@@ -254,37 +201,6 @@ def check_text_control_characters() -> None:
 
 
 def check_login_fix() -> None:
-    if EXPECTED_BUILD >= 174:
-        require("flutter_app/lib/main.dart", [
-            "Future<String?> login(String loginId, String password",
-            "Future<String?> _loginLocal",
-            "Future<String?> _registerLocal",
-            "await _storeOfflineCredentials",
-            "offlineLoggedIn",
-            "Future<String?> loginWithSocialProvider",
-        ])
-        require("flutter_app/lib/v173_global.dart", ["warqnaOnlineOnlyV173 = false"])
-        forbid("flutter_app/lib/main.dart", [
-            "Future<String?> login(String login, String password",
-            "التسجيل المحلي غير متاح في Warqna V173",
-            "controller.isAuthenticated && !controller.serverConnected",
-        ])
-        print("[OK] v174 offline-capable login, registration and social-provider contract")
-        return
-
-    if EXPECTED_BUILD >= 173:
-        require("flutter_app/lib/main.dart", [
-            "Future<String?> login(String loginId, String password",
-            "OnlineRequiredScreenV173",
-        ])
-        forbid("flutter_app/lib/main.dart", [
-            "Future<String?> login(String login, String password",
-            "return this.login(loginId, password, offline: true);",
-            "await this.login(loginId, password, offline: true);",
-        ])
-        print("[OK] v173 login contract")
-        return
-
     require("flutter_app/lib/main.dart", [
         "Future<String?> login(String loginId, String password",
         "return login(loginId, password, offline: true);",
@@ -554,13 +470,13 @@ def check_product_contract_tests() -> None:
         "assertCount(12,GameCatalog::all())",
     ])
     require("backend-laravel/tests/Feature/V128StoreGameplayNavTest.php", [
-        "assertCount(140,$service->tableSkins())",
+        "assertCount(90,$service->tableSkins())",
         "assertCount(40,$service->cardBacks())",
     ])
-    require("backend-laravel/tests/Feature/V132TarneebEngineAndLuxuryFixesTest.php", ["assertCount(140,$store->tableSkins())"])
-    require("backend-laravel/tests/Feature/V134CriticalFixesTest.php", ["assertCount(140,$store->tableSkins())"])
+    require("backend-laravel/tests/Feature/V132TarneebEngineAndLuxuryFixesTest.php", ["assertCount(90,$store->tableSkins())"])
+    require("backend-laravel/tests/Feature/V134CriticalFixesTest.php", ["assertCount(90,$store->tableSkins())"])
     require("backend-laravel/tests/Feature/V172BrandTableCatalogTest.php", [
-        "assertCount(140, $tables)",
+        "assertCount(90, $tables)",
         "assertCount(40, $reference)",
         "table_reference_40",
     ])
@@ -576,7 +492,7 @@ def check_product_contract_tests() -> None:
     for rel, needle in stale_patterns:
         if needle in read(rel):
             fail(f"Stale historical test contract remains in {rel}: {needle}")
-    print("[OK] Current 12-game, 140-table (50 legacy + 40 v172 + 50 v173), 40-card-back product contract")
+    print("[OK] Current 12-game, 90-table (50 legacy + 40 additive), 40-card-back product contract")
 
 
 def check_release_and_wallet_regressions() -> None:
@@ -1215,134 +1131,6 @@ def check_v172_brand_table_contract() -> None:
     print("[OK] v172 additive Warqna brand, 40-table HD collection, and legacy CI compatibility")
 
 
-
-def check_v173_online_engagement_contract() -> None:
-    result = subprocess.run(
-        [sys.executable, str(ROOT / "tools/test_v173_online_engagement_contract.py")],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if result.returncode != 0:
-        fail("Warqna v173 online engagement contract failed: " + result.stdout.strip())
-
-    for rel in [
-        ".github/workflows/flutter-web-pages.yml",
-        ".github/workflows/flutter-android.yml",
-        ".github/workflows/flutter-ios.yml",
-        ".github/workflows/production-release-check.yml",
-    ]:
-        require(rel, ["test_v173_online_engagement_contract.py"])
-    require("flutter_app/pubspec.yaml", ["assets/images/pasha/v173/", "assets/images/tables/v173/royal/", "assets/images/tables/v173/showcase/"])
-    print(result.stdout.strip())
-    print("[OK] inherited v173 engagement assets, server-authoritative economy, Pasha colors, tables, tickets, packs and universal designer")
-
-def check_v174_offline_progression_navigation_contract() -> None:
-    result = subprocess.run(
-        [sys.executable, str(ROOT / "tools/test_v174_offline_progression_navigation_contract.py")],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if result.returncode != 0:
-        fail("Warqna v174 offline/progression/navigation contract failed: " + result.stdout.strip())
-    print(result.stdout.strip())
-    print("[OK] v174 offline access, fixed orientation, direct-room navigation, visible XP and requested level curve")
-
-
-
-def check_v175_xp_challenges_pasha_designer_contract() -> None:
-    result = subprocess.run(
-        [sys.executable, str(ROOT / "tools/test_v175_xp_challenges_pasha_designer_contract.py")],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if result.returncode != 0:
-        fail("Warqna v175 XP/challenges/Pasha/designer contract failed: " + result.stdout.strip())
-    for rel in [
-        ".github/workflows/flutter-web-pages.yml",
-        ".github/workflows/flutter-android.yml",
-        ".github/workflows/flutter-ios.yml",
-        ".github/workflows/production-release-check.yml",
-    ]:
-        require(rel, ["test_v175_xp_challenges_pasha_designer_contract.py"])
-    require("backend-laravel/tests/Feature/V174DirectInviteOrientationXpTest.php", [
-        "queueNavigationRoute",
-        "openPendingNavigationRoute",
-        "_prepareDirectInviteTransfer",
-    ])
-    require("backend-laravel/tests/Feature/V175XpChallengesDesignerTest.php", [
-        "test_all_excel_xp_values_are_exact",
-        "test_challenge_can_activate_progress_and_claim_once",
-        "test_v175_ui_contract_hides_pasha_colors_and_keeps_full_pasha",
-    ])
-    print(result.stdout.strip())
-    print("[OK] v175 exact Excel XP, web fallback login, full Pasha, premium challenges/packs and universal designer")
-
-def check_v176_daily_pack_inventory_contract() -> None:
-    result = subprocess.run(
-        [sys.executable, str(ROOT / "tools/test_v176_daily_pack_inventory_contract.py")],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if result.returncode != 0:
-        fail("Warqna v176 daily-pack/inventory contract failed: " + result.stdout.strip())
-    for rel in [
-        ".github/workflows/flutter-web-pages.yml",
-        ".github/workflows/flutter-android.yml",
-        ".github/workflows/flutter-ios.yml",
-        ".github/workflows/production-release-check.yml",
-    ]:
-        require(rel, ["test_v176_daily_pack_inventory_contract.py"])
-    print(result.stdout.strip())
-    print("[OK] v176 analyzer fixes, animated pack reveal, server inventory and timed expiry")
-
-
-def check_v02_daily_prize_boxes_contract() -> None:
-    result = subprocess.run(
-        [sys.executable, str(ROOT / "tools/test_v02_daily_prize_boxes_contract.py")],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if result.returncode != 0:
-        fail("Warqna V0.2 daily prize boxes contract failed: " + result.stdout.strip())
-    print(result.stdout.strip())
-    print("[OK] V0.2 dedicated prize-box page, 4-win limit, front-opening animation, ticket art and translated rewards")
-
-
-def check_v022_economy_rooms_clubs_engines_contract() -> None:
-    result = subprocess.run(
-        [sys.executable, str(ROOT / "tools/test_v022_economy_rooms_clubs_engines_contract.py")],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if result.returncode != 0:
-        fail("Warqna V0.2.2 economy/rooms/clubs/engines contract failed: " + result.stdout.strip())
-    print(result.stdout.strip())
-    print("[OK] V0.2.2 server economy, public rooms, club permissions, delegated admin and rummy engine contracts")
-
-
-def check_v03_platform_contract() -> None:
-    result = subprocess.run(
-        [sys.executable, str(ROOT / "tools/test_v03_platform_contract.py")],
-        cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-    )
-    if result.returncode != 0:
-        fail("Warqna V0.3 platform contract failed: " + result.stdout.strip())
-    print(result.stdout.strip())
-    print("[OK] V0.3 balanced premium deal, 3-turn absence, challenge road, level rewards, localized bots, owner designer and test ads")
-
-
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -1385,13 +1173,6 @@ def main() -> None:
     check_v170_responsive_gameplay_security()
     check_v171_controller_reference_contract()
     check_v172_brand_table_contract()
-    check_v173_online_engagement_contract()
-    check_v174_offline_progression_navigation_contract()
-    check_v175_xp_challenges_pasha_designer_contract()
-    check_v176_daily_pack_inventory_contract()
-    check_v02_daily_prize_boxes_contract()
-    check_v022_economy_rooms_clubs_engines_contract()
-    check_v03_platform_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

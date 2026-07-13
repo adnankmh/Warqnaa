@@ -29,7 +29,7 @@ class V132TarneebEngineAndLuxuryFixesTest extends TestCase
     public function test_store_has_50_tables_and_new_pasha_days(): void
     {
         $store=new StoreCatalogService();
-        $this->assertCount(140,$store->tableSkins());
+        $this->assertCount(90,$store->tableSkins());
         $pasha=collect($store->pashaItems());
         $this->assertSame(1700,$pasha->firstWhere('duration_days',1)['price']);
         $this->assertSame(5000,$pasha->firstWhere('duration_days',3)['price']);

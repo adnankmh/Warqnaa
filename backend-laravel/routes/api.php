@@ -13,9 +13,7 @@ use App\Http\Controllers\{
     MobileModerationController,
     MobileAuthRecoveryController,
     SocialAuthController,
-    MobilePushController,
-    MobileEngagementController,
-    MobileClubController
+    MobilePushController
 };
 
 // Backward-compatible public aliases for older Flutter/PWA builds. They
@@ -53,15 +51,6 @@ Route::prefix('mobile/v1')->group(function () {
         Route::delete('/push/devices', [MobilePushController::class, 'destroy']);
         Route::post('/rewards/daily', [MobileApiController::class, 'claimDaily'])->middleware('throttle:warqna-sensitive');
         Route::post('/rewards/rewarded-ad', [MobileApiController::class, 'claimRewardedAd'])->middleware('throttle:warqna-sensitive');
-        Route::get('/engagement/center', [MobileEngagementController::class, 'center']);
-        Route::get('/prize-boxes', [MobileEngagementController::class, 'prizeBoxes']);
-        Route::post('/prize-boxes/{prizeBox}/open', [MobileEngagementController::class, 'openPrizeBox'])->middleware('throttle:warqna-sensitive');
-        Route::post('/packs/daily/open', [MobileEngagementController::class, 'openDailyPack'])->middleware('throttle:warqna-sensitive');
-        Route::post('/challenge-road/start', [MobileEngagementController::class, 'startChallengeRoad'])->middleware('throttle:warqna-sensitive');
-        Route::post('/challenge-road/{run}/report', [MobileEngagementController::class, 'reportChallengeRoad'])->middleware('throttle:warqna-sensitive');
-        Route::post('/challenges/{challengeKey}/activate', [MobileEngagementController::class, 'activateChallenge'])->middleware('throttle:warqna-sensitive');
-        Route::post('/challenges/{challengeKey}/claim', [MobileEngagementController::class, 'claimChallenge'])->middleware('throttle:warqna-sensitive');
-        Route::post('/competitions/{competitionKey}/join', [MobileEngagementController::class, 'joinCompetition'])->middleware('throttle:warqna-sensitive');
 
         Route::get('/account/export', [MobileAccountController::class, 'export'])->middleware('throttle:warqna-sensitive');
         Route::get('/account/sessions', [MobileAccountController::class, 'sessions']);
@@ -90,11 +79,6 @@ Route::prefix('mobile/v1')->group(function () {
         Route::patch('/games/session/{room:code}/voice/controls', [MobileVoiceController::class, 'controls'])->middleware('throttle:60,1');
         Route::post('/games/session/{room:code}/voice/leave', [MobileVoiceController::class, 'leave'])->middleware('throttle:30,1');
 
-        Route::get('/clubs', [MobileClubController::class, 'index']);
-        Route::get('/clubs/mine', [MobileClubController::class, 'mine']);
-        Route::get('/clubs/{club}/activity', [MobileClubController::class, 'activity']);
-        Route::patch('/clubs/{club}/members/{member}', [MobileClubController::class, 'updateMember']);
-
         Route::get('/social', [MobileSocialController::class, 'index']);
         Route::get('/social/search', [MobileSocialController::class, 'search']);
         Route::get('/social/users/{user}/profile', [MobileSocialController::class, 'profile']);
@@ -110,19 +94,11 @@ Route::prefix('mobile/v1')->group(function () {
         Route::post('/social/transfer', [MobileSocialController::class, 'transfer'])->middleware('throttle:warqna-sensitive');
 
         Route::get('/admin/dashboard', [MobileAdminController::class, 'dashboard']);
-        Route::get('/admin/delegations', [MobileAdminController::class, 'delegations']);
-        Route::patch('/admin/delegations/{user}', [MobileAdminController::class, 'updateDelegation']);
-        Route::delete('/admin/delegations/{user}', [MobileAdminController::class, 'deleteDelegation']);
         Route::patch('/admin/games/{game}', [MobileAdminController::class, 'updateGame']);
         Route::patch('/admin/store/{item}', [MobileAdminController::class, 'updateStore']);
         Route::post('/admin/users/{user}/action', [MobileAdminController::class, 'userAction']);
-        Route::post('/admin/users/{user}/send-tokens', [MobileAdminController::class, 'sendTokens']);
-        Route::post('/admin/users/{user}/friend-request', [MobileAdminController::class, 'sendFriendRequest']);
         Route::patch('/admin/feature-flags/{flag}', [MobileAdminController::class, 'updateFeatureFlag']);
         Route::post('/admin/releases', [MobileAdminController::class, 'createRelease']);
-        Route::get('/admin/designer', [MobileAdminController::class, 'designerIndex']);
-        Route::patch('/admin/designer/{entityType}/{key}', [MobileAdminController::class, 'upsertDesigner']);
-        Route::delete('/admin/designer/{entity}', [MobileAdminController::class, 'deleteDesigner']);
         Route::get('/admin/moderation/reports', [MobileModerationController::class, 'index']);
         Route::patch('/admin/moderation/reports/{report}', [MobileModerationController::class, 'resolve']);
 

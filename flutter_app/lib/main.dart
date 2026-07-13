@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,15 +27,6 @@ part 'premium_v151.dart';
 part 'production_v153.dart';
 part 'v166_polish.dart';
 part 'v170_global.dart';
-part 'v173_global.dart';
-part 'v175_release.dart';
-part 'v176_release.dart';
-part 'v02_release.dart';
-part 'v021_patch.dart';
-part 'v022_patch.dart';
-part 'v03_release.dart';
-
-final GlobalKey<NavigatorState> warqnaNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
   // The Flutter binding and runApp must be created in the same zone. Keeping
@@ -103,7 +93,6 @@ class _WarqnaAppState extends State<WarqnaApp> {
       builder: (context, _) {
         final palette = AppPalette.fromCode(controller.themeCode);
         return MaterialApp(
-          navigatorKey: warqnaNavigatorKey,
           debugShowCheckedModeBanner: false,
           locale: Locale(controller.localeCode),
           supportedLocales: const [
@@ -126,12 +115,7 @@ class _WarqnaAppState extends State<WarqnaApp> {
             final safeScale = (current * controller.uiFontScale).clamp(.85, widthCap).toDouble();
             return MediaQuery(
               data: media.copyWith(textScaler: TextScaler.linear(safeScale)),
-              child: ClipRect(
-                child: Stack(children: [
-                  Positioned.fill(child: child ?? const SizedBox.shrink()),
-                  if (controller.isAuthenticated) GlobalSettingsDockV03(controller: controller),
-                ]),
-              ),
+              child: ClipRect(child: child ?? const SizedBox.shrink()),
             );
           },
           theme: ThemeData(
@@ -175,23 +159,8 @@ class _WarqnaAppState extends State<WarqnaApp> {
                   borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble()),
                 ),
                 minimumSize: Size(48, controller.uiButtonHeight),
-                elevation: 7,
-                shadowColor: colorFromHex(controller.uiAccentHex).withValues(alpha: .45),
-                textStyle: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: .15),
-              ),
-            ),
-            outlinedButtonTheme: OutlinedButtonThemeData(
-              style: OutlinedButton.styleFrom(
-                minimumSize: Size(48, controller.uiButtonHeight),
-                side: BorderSide(color: colorFromHex(controller.uiAccentHex).withValues(alpha: .72), width: 1.3),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble())),
                 textStyle: const TextStyle(fontWeight: FontWeight.w900),
               ),
-            ),
-            chipTheme: ChipThemeData(
-              labelStyle: const TextStyle(fontWeight: FontWeight.w800),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              side: BorderSide(color: Colors.white.withValues(alpha: .12)),
             ),
             fontFamily: controller.uiFontFamily,
           ),
@@ -208,16 +177,10 @@ class _WarqnaAppState extends State<WarqnaApp> {
 
 class AppController extends ChangeNotifier {
   final WarqnaApiClient api = WarqnaApiClient();
-  String? _pendingRoomCodeV174;
-  String? _queuedNavigationRouteV175;
-  bool _openingNavigationRouteV175 = false;
-
-  void refreshUi() => notifyListeners();
 
   bool ready = false;
   bool isAuthenticated = false;
   bool isAdmin = false;
-  int? currentUserId;
   bool serverConnected = false;
   bool soundEnabled = true;
   bool landscapeMode = false;
@@ -236,27 +199,13 @@ class AppController extends ChangeNotifier {
   String botDifficultyCode = 'pro';
   double uiButtonHeight = 48;
   double uiRadius = 18;
-  double uiFontScale = 1.08;
+  double uiFontScale = 1.0;
   double uiChatScale = 1.0;
   String uiFontFamily = 'Roboto';
   String? customTableBackgroundData;
   String? customCardBackData;
   String uiAccentHex = '#ffcf67';
   bool tableAmbientEffects = true;
-  String selectedPashaStyle = 'red';
-  final Map<int, int> competitionTickets = <int, int>{};
-  String? dailyPackLastOpened;
-  String? dailyPackReward;
-  DateTime? temporaryTableExpiresAtV173;
-  DateTime? boosterExpiresAtV173;
-  final Map<String, DateTime> packInventoryExpiriesV176 = <String, DateTime>{};
-  final List<Map<String, dynamic>> dailyPackHistoryV176 = <Map<String, dynamic>>[];
-  Map<String, dynamic>? lastDailyPackRevealV176;
-  final List<Map<String, dynamic>> prizeBoxesV02 = <Map<String, dynamic>>[];
-  String prizeBoxesDateV02 = '';
-  int championRankPointsV173 = 0;
-  int challengeStreakV173 = 0;
-  Timer? connectivityTimerV173;
   bool awayMode = false;
   final Map<String, int> gameExitCounts = <String, int>{};
   int gamesPlayed = 842;
@@ -266,7 +215,6 @@ class AppController extends ChangeNotifier {
   final Set<int> claimedGiftSteps = <int>{};
   String? activeCompetition;
   String? activeChallenge;
-  Map<String, dynamic>? challengeRoadV03;
   String? activeGame;
   String? activeRoomCode;
   String? activeRoomName;
@@ -281,12 +229,6 @@ class AppController extends ChangeNotifier {
   String username = 'Adnan';
   String displayName = 'Adnan';
   String email = 'adnan@warqna.local';
-  String? lastPurchaseErrorV022;
-  final List<String> homeGameIdsV022 = <String>['tarneeb', 'hand', 'banakil'];
-  final Set<String> delegatedAdminPermissionsV022 = <String>{};
-  String? clubNameV022;
-  String? clubLogoV022;
-  int clubLevelV022 = 0;
   String countryCode = 'PS';
   String countryName = 'فلسطين';
   int roundPoints = 0;
@@ -381,7 +323,6 @@ class AppController extends ChangeNotifier {
       gameExitCounts.clear();
       await prefs.setBool(initializedKey, true);
       await _saveAccountState(prefs);
-      await loadHomeGamesV022();
       return;
     }
 
@@ -427,7 +368,6 @@ class AppController extends ChangeNotifier {
       ..clear()
       ..addAll(decodeIntMap(prefs.getString(_accountKey('gameExitCounts'))));
     _normalizeTimedCosmetics();
-    await loadHomeGamesV022();
   }
 
   Future<void> _saveAccountState(SharedPreferences prefs) async {
@@ -478,82 +418,28 @@ class AppController extends ChangeNotifier {
     await prefs.setString(_accountKey('gameExitCounts'), jsonEncode(gameExitCounts));
   }
 
-  String _offlineAliasKey(String value) => 'warqna.offline.alias.${value.trim().toLowerCase()}';
-  String _offlineHashKey(String value) => 'warqna.offline.hash.${value.trim().toLowerCase()}';
-  String _offlineCredentialHash(String user, String password) => sha256
-      .convert(utf8.encode('warqna-v175|${user.trim().toLowerCase()}|$password|local-session'))
-      .toString();
-
-  Future<void> _storeOfflineCredentials(SharedPreferences prefs, String user, String mail, String password) async {
-    final canonical = user.trim().toLowerCase();
-    await prefs.setString(_offlineAliasKey(user), canonical);
-    if (mail.trim().isNotEmpty) await prefs.setString(_offlineAliasKey(mail), canonical);
-    await prefs.setString(_offlineHashKey(canonical), _offlineCredentialHash(canonical, password));
-    await prefs.setString('warqna.offline.username.$canonical', user.trim());
-    await prefs.setString('warqna.offline.email.$canonical', mail.trim());
-    await prefs.setString('lastOfflineUsername', user.trim());
-    await prefs.setBool('offlineLoggedIn', true);
-  }
-
-  Future<String?> _loginLocal(String loginId, String password) async {
-    final prefs = await SharedPreferences.getInstance();
-    final alias = prefs.getString(_offlineAliasKey(loginId)) ?? loginId.trim().toLowerCase();
-    final expected = prefs.getString(_offlineHashKey(alias));
-    if (expected == null || expected != _offlineCredentialHash(alias, password)) {
-      return 'لا يوجد حساب محلي مطابق أو كلمة المرور غير صحيحة. اتصل بالإنترنت مرة واحدة أو أنشئ حساباً محلياً.';
-    }
-    username = prefs.getString('warqna.offline.username.$alias') ?? loginId.trim();
-    email = prefs.getString('warqna.offline.email.$alias') ?? '$alias@warqna.local';
-    displayName = username;
-    isAdmin = username.toLowerCase() == 'adnan';
-    await _loadAccountState(prefs, defaultCoins: isAdmin ? '1000000000000000000' : '1500', defaultLevel: isAdmin ? 90 : 1, defaultVipDays: isAdmin ? 3650 : 0);
-    _applyLocalLoginStreak();
-    authToken = null;
-    api.token = null;
-    isAuthenticated = true;
-    serverConnected = false;
-    await prefs.setBool('offlineLoggedIn', true);
-    await _save();
-    refreshUi();
-    return null;
-  }
-
   Future<String?> _registerLocal(String user, String mail, String password) async {
+    final normalized = user.trim().toLowerCase();
+    if (normalized.length < 3) return 'اسم المستخدم يجب أن يتكون من 3 أحرف على الأقل.';
+    if (password.length < 6) return 'كلمة المرور يجب أن تتكون من 6 أحرف على الأقل.';
     final prefs = await SharedPreferences.getInstance();
-    if (prefs.containsKey(_offlineAliasKey(user)) || prefs.containsKey(_offlineAliasKey(mail))) {
-      return 'اسم المستخدم أو البريد مسجّل محلياً مسبقاً.';
+    final prefix = 'warqna.account.$normalized.';
+    if ((prefs.getBool('${prefix}initialized') ?? false) || demoAccounts.containsKey(normalized)) {
+      return 'اسم المستخدم مستخدم مسبقاً.';
     }
+    await prefs.setString('${prefix}localPassword', base64Encode(utf8.encode(password)));
     username = user.trim();
-    displayName = username;
-    email = mail.trim();
-    isAdmin = username.toLowerCase() == 'adnan';
-    await _storeOfflineCredentials(prefs, username, email, password);
-    await _loadAccountState(prefs, defaultCoins: isAdmin ? '1000000000000000000' : '1500', defaultLevel: isAdmin ? 90 : 1, defaultVipDays: isAdmin ? 3650 : 0);
-    _applyLocalLoginStreak();
-    authToken = null;
-    api.token = null;
+    displayName = user.trim();
+    email = mail.trim().isEmpty ? '$normalized@warqna.local' : mail.trim();
+    isAdmin = false;
     isAuthenticated = true;
     serverConnected = false;
+    authToken = null;
+    await _loadAccountState(prefs, defaultCoins: '1500', defaultLevel: 1, defaultVipDays: 0);
+    _applyLocalLoginStreak();
     await _save();
-    refreshUi();
+    notifyListeners();
     return null;
-  }
-
-  Future<String?> registerOffline(String user, String mail, String password) {
-    if (user.trim().isEmpty || mail.trim().isEmpty || password.length < 8) {
-      return Future<String?>.value('أدخل اسم المستخدم والبريد وكلمة مرور من 8 أحرف على الأقل.');
-    }
-    return _registerLocal(user, mail, password);
-  }
-
-  Future<String?> _loginOrCreateLocalFallback(String loginId, String password) async {
-    final existing = await _loginLocal(loginId, password);
-    if (existing == null) return null;
-    final cleanLogin = loginId.trim();
-    final safeUser = cleanLogin.contains('@') ? cleanLogin.split('@').first : cleanLogin;
-    final user = safeUser.replaceAll(RegExp(r'[^A-Za-z0-9_؀-ۿ.-]'), '_');
-    final mail = cleanLogin.contains('@') ? cleanLogin : '${user.isEmpty ? 'player' : user}@warqna.local';
-    return _registerLocal(user.isEmpty ? 'Player' : user, mail, password);
   }
 
   Future<void> load() async {
@@ -577,7 +463,6 @@ class AppController extends ChangeNotifier {
 
   void _initializeOptionalServices() {
     AppSounds.enabled = soundEnabled;
-    unawaited(initializeWarqnaRewardedAdsAfterFirstFrame());
     PushNotifications.onForeground = (title, body, data) {
       notices.insert(0, AppNotice('🔔', title, body));
       AppSounds.fire('notification');
@@ -587,15 +472,15 @@ class AppController extends ChangeNotifier {
     PushNotifications.onTap = (route) {
       if (route == null || route.isEmpty) return;
       if (route.startsWith('room:')) {
-        final code = route.substring('room:'.length).split(':').first.trim().toUpperCase();
+        final code = route.substring('room:'.length);
         if (code.isNotEmpty) {
+          activeRoomCode = code;
           notices.insert(0, AppNotice('🎮', L.t(localeCode, 'activeGame'), L.t(localeCode, 'resumeGame')));
-          queueNavigationRoute('/room/$code');
         }
       } else if (route.startsWith('friend-chat:')) {
         notices.insert(0, AppNotice('💬', L.t(localeCode, 'friendsChat'), L.t(localeCode, 'friendsChat')));
-        refreshUi();
       }
+      notifyListeners();
     };
     unawaited(_refreshPushRegistration());
   }
@@ -648,28 +533,6 @@ class AppController extends ChangeNotifier {
     customCardBackData = prefs.getString('customCardBackData');
     uiAccentHex = prefs.getString('uiAccentHex') ?? uiAccentHex;
     tableAmbientEffects = prefs.getBool('tableAmbientEffects') ?? tableAmbientEffects;
-    selectedPashaStyle = 'red';
-    competitionTickets
-      ..clear()
-      ..addAll(decodeIntMap(prefs.getString('competitionTicketsV173')).map((key, value) => MapEntry(int.tryParse(key) ?? 0, value)));
-    dailyPackLastOpened = prefs.getString('dailyPackLastOpenedV173');
-    dailyPackReward = prefs.getString('dailyPackRewardV173');
-    temporaryTableExpiresAtV173 = DateTime.tryParse(prefs.getString('temporaryTableExpiresAtV173') ?? '');
-    boosterExpiresAtV173 = DateTime.tryParse(prefs.getString('boosterExpiresAtV173') ?? '');
-    packInventoryExpiriesV176
-      ..clear()
-      ..addAll(decodeDateTimeMapV176(prefs.getString('packInventoryExpiriesV176')));
-    dailyPackHistoryV176
-      ..clear()
-      ..addAll(decodeMapListV176(prefs.getString('dailyPackHistoryV176')));
-    if (dailyPackHistoryV176.isNotEmpty) lastDailyPackRevealV176 = Map<String, dynamic>.from(dailyPackHistoryV176.first);
-    prizeBoxesV02
-      ..clear()
-      ..addAll(decodeMapListV176(prefs.getString('prizeBoxesV02')));
-    prizeBoxesDateV02 = prefs.getString('prizeBoxesDateV02') ?? '';
-    normalizePrizeBoxesV02();
-    championRankPointsV173 = prefs.getInt('championRankPointsV173') ?? championRankPointsV173;
-    challengeStreakV173 = prefs.getInt('challengeStreakV173') ?? challengeStreakV173;
     gamesPlayed = prefs.getInt('gamesPlayed') ?? gamesPlayed;
     wins = prefs.getInt('wins') ?? wins;
     activeXpMultiplier = prefs.getDouble('activeXpMultiplier') ?? activeXpMultiplier;
@@ -679,6 +542,7 @@ class AppController extends ChangeNotifier {
     lastDailyClaimDate = prefs.getString('lastDailyClaimDate');
     rewardedAdClaimsToday = prefs.getInt('rewardedAdClaimsToday') ?? 0;
     rewardedAdClaimDate = prefs.getString('rewardedAdClaimDate');
+    _normalizeTimedCosmetics();
     _resetAdCounterIfNeeded();
     claimedGiftSteps
       ..clear()
@@ -691,7 +555,6 @@ class AppController extends ChangeNotifier {
     activeChallenge = prefs.getString('activeChallenge');
     activeGame = prefs.getString('activeGame');
     activeRoomCode = prefs.getString('activeRoomCode');
-    _queuedNavigationRouteV175 = prefs.getString('queuedNavigationRouteV175');
     activeRoomName = prefs.getString('activeRoomName');
     activeRoomVoice = prefs.getBool('activeRoomVoice') ?? false;
     activeRoomVisibility = prefs.getString('activeRoomVisibility') ?? 'public';
@@ -699,7 +562,6 @@ class AppController extends ChangeNotifier {
     owned
       ..clear()
       ..addAll(prefs.getStringList('owned') ?? const ['emoji_fun']);
-    _normalizeTimedCosmetics();
     storePriceOverrides
       ..clear()
       ..addAll(decodeIntMap(prefs.getString('storePriceOverrides')));
@@ -723,13 +585,6 @@ class AppController extends ChangeNotifier {
       ..addAll(prefs.getStringList('hiddenStoreProducts') ?? const <String>[]);
     authToken = prefs.getString('authToken');
     final offlineLoggedIn = prefs.getBool('offlineLoggedIn') ?? false;
-    final storedUsername = prefs.getString('username') ?? prefs.getString('lastOfflineUsername');
-    if (storedUsername != null && storedUsername.trim().isNotEmpty) {
-      username = storedUsername.trim();
-      displayName = prefs.getString('displayName') ?? username;
-      email = prefs.getString('email') ?? email;
-      isAdmin = (prefs.getBool('isAdmin') ?? false) || username.trim().toLowerCase() == 'adnan' || displayName.trim().toLowerCase() == 'adnan';
-    }
     if (authToken != null && authToken!.isNotEmpty) {
       api.token = authToken;
       try {
@@ -738,23 +593,34 @@ class AppController extends ChangeNotifier {
         isAuthenticated = true;
         serverConnected = true;
       } catch (_) {
-        await _loadAccountState(prefs, defaultCoins: isAdmin ? '1000000000000000000' : '1500', defaultLevel: isAdmin ? 90 : 1, defaultVipDays: isAdmin ? 3650 : 0);
-        _applyLocalLoginStreak();
-        isAuthenticated = true;
-        serverConnected = false;
+        authToken = null;
+        api.token = null;
       }
-    } else if (offlineLoggedIn && storedUsername != null && storedUsername.trim().isNotEmpty) {
-      await _loadAccountState(prefs, defaultCoins: isAdmin ? '1000000000000000000' : '1500', defaultLevel: isAdmin ? 90 : 1, defaultVipDays: isAdmin ? 3650 : 0);
-      _applyLocalLoginStreak();
+    }
+    if (!isAuthenticated && offlineLoggedIn && !warqnaProductionMode) {
+      username = prefs.getString('username') ?? username;
+      displayName = prefs.getString('displayName') ?? username;
+      email = prefs.getString('email') ?? email;
+      isAdmin = prefs.getBool('isAdmin') ?? username.toLowerCase() == 'adnan';
+      final seed = demoAccounts[username.toLowerCase()];
+      await _loadAccountState(
+        prefs,
+        defaultCoins: seed?['coins']?.toString(),
+        defaultLevel: int.tryParse(seed?['level']?.toString() ?? ''),
+        defaultVipDays: isAdmin ? 3650 : 0,
+        defaultAvatar: demoAvatarFor(username),
+      );
+      if (isAdmin) {
+        coins = BigInt.parse('1000000000000000000');
+        level = math.max(level, 90);
+        vipDays = math.max(vipDays, 3650);
+      }
       isAuthenticated = true;
       serverConnected = false;
+      _applyLocalLoginStreak();
     }
-    await _applyPreferredOrientationV174();
-    unawaited(startConnectivityMonitorV173());
     ready = true;
-    refreshUi();
-    if (_pendingRoomCodeV174 != null) queueNavigationRoute('/room/${_pendingRoomCodeV174!}');
-    unawaited(openPendingNavigationRoute());
+    notifyListeners();
   }
 
   Future<void> _save() async {
@@ -792,18 +658,6 @@ class AppController extends ChangeNotifier {
     if (customCardBackData == null) { await prefs.remove('customCardBackData'); } else { await prefs.setString('customCardBackData', customCardBackData!); }
     await prefs.setString('uiAccentHex', uiAccentHex);
     await prefs.setBool('tableAmbientEffects', tableAmbientEffects);
-    await prefs.setString('selectedPashaStyleV173', selectedPashaStyle);
-    await prefs.setString('competitionTicketsV173', jsonEncode(competitionTickets.map((key, value) => MapEntry('$key', value))));
-    if (dailyPackLastOpened == null) { await prefs.remove('dailyPackLastOpenedV173'); } else { await prefs.setString('dailyPackLastOpenedV173', dailyPackLastOpened!); }
-    if (dailyPackReward == null) { await prefs.remove('dailyPackRewardV173'); } else { await prefs.setString('dailyPackRewardV173', dailyPackReward!); }
-    if (temporaryTableExpiresAtV173 == null) { await prefs.remove('temporaryTableExpiresAtV173'); } else { await prefs.setString('temporaryTableExpiresAtV173', temporaryTableExpiresAtV173!.toIso8601String()); }
-    if (boosterExpiresAtV173 == null) { await prefs.remove('boosterExpiresAtV173'); } else { await prefs.setString('boosterExpiresAtV173', boosterExpiresAtV173!.toIso8601String()); }
-    await prefs.setString('packInventoryExpiriesV176', jsonEncode(packInventoryExpiriesV176.map((key, value) => MapEntry(key, value.toIso8601String()))));
-    await prefs.setString('dailyPackHistoryV176', jsonEncode(dailyPackHistoryV176));
-    await prefs.setString('prizeBoxesV02', jsonEncode(prizeBoxesV02));
-    await prefs.setString('prizeBoxesDateV02', prizeBoxesDateV02);
-    await prefs.setInt('championRankPointsV173', championRankPointsV173);
-    await prefs.setInt('challengeStreakV173', challengeStreakV173);
     await prefs.setInt('gamesPlayed', gamesPlayed);
     await prefs.setInt('wins', wins);
     await prefs.setDouble('activeXpMultiplier', activeXpMultiplier);
@@ -818,7 +672,6 @@ class AppController extends ChangeNotifier {
     if (activeChallenge == null) { await prefs.remove('activeChallenge'); } else { await prefs.setString('activeChallenge', activeChallenge!); }
     if (activeGame == null) { await prefs.remove('activeGame'); } else { await prefs.setString('activeGame', activeGame!); }
     if (activeRoomCode == null) { await prefs.remove('activeRoomCode'); } else { await prefs.setString('activeRoomCode', activeRoomCode!); }
-    if (_queuedNavigationRouteV175 == null) { await prefs.remove('queuedNavigationRouteV175'); } else { await prefs.setString('queuedNavigationRouteV175', _queuedNavigationRouteV175!); }
     if (activeRoomName == null) { await prefs.remove('activeRoomName'); } else { await prefs.setString('activeRoomName', activeRoomName!); }
     await prefs.setBool('activeRoomVoice', activeRoomVoice);
     await prefs.setString('activeRoomVisibility', activeRoomVisibility);
@@ -831,7 +684,7 @@ class AppController extends ChangeNotifier {
     await prefs.setString('storeColor1Overrides', jsonEncode(storeColor1Overrides));
     await prefs.setString('storeColor2Overrides', jsonEncode(storeColor2Overrides));
     await prefs.setStringList('hiddenStoreProducts', hiddenStoreProducts.toList());
-    await prefs.setBool('offlineLoggedIn', isAuthenticated);
+    await prefs.setBool('offlineLoggedIn', isAuthenticated && !serverConnected);
     await prefs.setString('username', username);
     await prefs.setString('displayName', displayName);
     await prefs.setString('email', email);
@@ -851,7 +704,59 @@ class AppController extends ChangeNotifier {
 
   Future<String?> login(String loginId, String password, {bool offline = false}) async {
     if (loginId.trim().isEmpty || password.isEmpty) return 'أدخل اسم المستخدم وكلمة المرور.';
-    if (offline) return _loginLocal(loginId, password);
+    final loopbackApi = api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost');
+    if (!offline && kIsWeb && loopbackApi && !warqnaProductionMode) {
+      return login(loginId, password, offline: true);
+    }
+    if (offline && warqnaProductionMode) return 'وضع الدخول المحلي معطل في نسخة الإنتاج.';
+    if (offline) {
+      final normalized = loginId.trim().toLowerCase();
+      var user = demoAccounts[normalized];
+      final prefs = await SharedPreferences.getInstance();
+      if (user == null && (prefs.getBool('warqna.account.$normalized.initialized') ?? false)) {
+        final stored = prefs.getString('warqna.account.$normalized.localPassword');
+        if (stored == base64Encode(utf8.encode(password))) {
+          user = <String, Object>{
+            'password': password,
+            'name': prefs.getString('warqna.account.$normalized.displayName') ?? loginId.trim(),
+            'coins': prefs.getString('warqna.account.$normalized.coins') ?? '1500',
+            'admin': false,
+            'level': prefs.getInt('warqna.account.$normalized.level') ?? 1,
+          };
+        }
+      }
+      if (user == null || user['password'] != password) {
+        return 'بيانات الدخول المحلي غير صحيحة. استخدم أحد حسابات التجربة المرفقة.';
+      }
+      username = loginId.trim();
+      displayName = user['name']!.toString();
+      email = '$normalized@warqna.local';
+      isAdmin = user['admin'] == true;
+      coins = BigInt.parse(user['coins']!.toString());
+      level = int.tryParse(user['level']!.toString()) ?? 1;
+      if (isAdmin) level = math.max(level, 90);
+      xp = 0;
+      xpNext = xpNeededForLevel(level);
+      await _loadAccountState(
+        prefs,
+        defaultCoins: user['coins']!.toString(),
+        defaultLevel: int.tryParse(user['level']!.toString()) ?? 1,
+        defaultVipDays: isAdmin ? 3650 : 0,
+        defaultAvatar: demoAvatarFor(username),
+      );
+      if (isAdmin) {
+        coins = BigInt.parse('1000000000000000000');
+        level = math.max(level, 90);
+        vipDays = math.max(vipDays, 3650);
+      }
+      isAuthenticated = true;
+      serverConnected = false;
+      authToken = null;
+      _applyLocalLoginStreak();
+      await _save();
+      notifyListeners();
+      return null;
+    }
     try {
       final data = await api.login(loginId.trim(), password);
       authToken = data['token']?.toString();
@@ -861,33 +766,82 @@ class AppController extends ChangeNotifier {
       if (streak is Map) {
         consecutiveLoginDays = int.tryParse(streak['streak']?.toString() ?? '') ?? consecutiveLoginDays;
         final awarded = int.tryParse(streak['pasha_awarded']?.toString() ?? '') ?? 0;
-        if (awarded > 0) notices.insert(0, AppNotice('👑', 'مكافأة الاستمرارية', 'حصلت على يوم باشا مجاني بعد 3 أيام دخول متواصلة.'));
+        if (awarded > 0) notices.insert(0, AppNotice('🎩', 'مكافأة الاستمرارية', 'حصلت على يوم باشا مجاني بعد 3 أيام دخول متواصلة.'));
       }
       if (data['account_reactivated'] == true) {
-        notices.insert(0, AppNotice('✅', 'تمت استعادة الحساب', data['reactivation_message']?.toString() ?? 'تمت استعادة الحساب.'));
+        notices.insert(0, AppNotice('✅', 'تمت استعادة الحساب', data['reactivation_message']?.toString() ?? 'أُلغي الحذف النهائي لأنك سجلت الدخول خلال مهلة 30 يوماً.'));
       }
       isAuthenticated = true;
       serverConnected = true;
-      final prefs = await SharedPreferences.getInstance();
-      await _storeOfflineCredentials(prefs, username, email, password);
       unawaited(_refreshPushRegistration());
-      unawaited(startConnectivityMonitorV173());
       await _save();
-      refreshUi();
-      if (_pendingRoomCodeV174 != null) queueNavigationRoute('/room/${_pendingRoomCodeV174!}');
-      unawaited(openPendingNavigationRoute());
+      notifyListeners();
       return null;
     } on ApiException catch (e) {
-      if (e.statusCode == 401 || e.statusCode == 422) return e.message;
-      final localResult = await _loginOrCreateLocalFallback(loginId, password);
-      return localResult == null ? null : e.message;
+      if (warqnaProductionMode) return e.message;
+      final fallback = await login(loginId, password, offline: true);
+      if (fallback == null) {
+        notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
+        return null;
+      }
+      return e.message;
     } catch (_) {
-      return _loginOrCreateLocalFallback(loginId, password);
+      if (warqnaProductionMode) return 'تعذر الاتصال بخادم Warqna. تحقق من الإنترنت وحاول مجددًا.';
+      final fallback = await login(loginId, password, offline: true);
+      if (fallback == null) {
+        notices.insert(0, AppNotice('📱', 'دخول محلي', 'تم فتح الحساب محلياً لأن خادم Laravel غير متاح.'));
+        return null;
+      }
+      return 'تعذر الاتصال بالخادم، ولم يتم العثور على حساب محلي بهذه البيانات.';
+    }
+  }
+
+  Future<String?> loginWithSocialProvider(String provider) async {
+    if (api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost')) {
+      return 'تسجيل $provider يحتاج رابط Laravel API منشورًا عبر HTTPS، وليس 127.0.0.1.';
+    }
+    try {
+      final start = await api.startSocialAuth(provider);
+      final url = Uri.tryParse(start['authorize_url']?.toString() ?? '');
+      final state = start['state']?.toString() ?? '';
+      if (url == null || state.isEmpty) return 'لم يعُد الخادم برابط OAuth صالح.';
+      final opened = await launchUrl(url, mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication, webOnlyWindowName: '_blank');
+      if (!opened) return 'تعذر فتح صفحة تسجيل $provider.';
+      final deadline = DateTime.now().add(const Duration(minutes: 3));
+      while (DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(seconds: 2));
+        final status = await api.socialAuthStatus(state);
+        final value = status['status']?.toString();
+        if (value == 'completed') {
+          authToken = status['token']?.toString();
+          if (authToken == null || authToken!.isEmpty) return 'أكمل المزود الدخول لكن الخادم لم يُرجع جلسة.';
+          api.token = authToken;
+          _applySession(status);
+          isAuthenticated = true;
+          serverConnected = true;
+          unawaited(_refreshPushRegistration());
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('authToken', authToken!);
+          await _save();
+          notifyListeners();
+          return null;
+        }
+        if (value == 'failed' || value == 'expired' || value == 'consumed') {
+          return status['error']?.toString() ?? 'لم يكتمل تسجيل الدخول عبر $provider.';
+        }
+      }
+      return 'انتهت مهلة تسجيل الدخول. أعد المحاولة وأكمل نافذة المزود.';
+    } on ApiException catch (e) {
+      return e.message;
+    } catch (e) {
+      return 'تعذر تسجيل الدخول عبر $provider: $e';
     }
   }
 
   Future<String?> register(String user, String mail, String password) async {
-    if (user.trim().isEmpty || mail.trim().isEmpty || password.length < 8) return 'أدخل اسم المستخدم والبريد وكلمة مرور من 8 أحرف على الأقل.';
+    final loopbackApi = api.baseUrl.contains('127.0.0.1') || api.baseUrl.contains('localhost');
+    if (kIsWeb && loopbackApi && !warqnaProductionMode) return _registerLocal(user, mail, password);
+    if (warqnaProductionMode && loopbackApi) return 'يجب ضبط رابط الخادم الحقيقي قبل تشغيل نسخة الإنتاج.';
     try {
       final data = await api.register(username: user.trim(), email: mail.trim(), password: password);
       authToken = data['token']?.toString();
@@ -895,72 +849,36 @@ class AppController extends ChangeNotifier {
       _applySession(data);
       isAuthenticated = true;
       serverConnected = true;
-      final prefs = await SharedPreferences.getInstance();
-      await _storeOfflineCredentials(prefs, username, email, password);
       unawaited(_refreshPushRegistration());
-      unawaited(startConnectivityMonitorV173());
       await _save();
-      refreshUi();
+      notifyListeners();
       return null;
     } on ApiException catch (e) {
-      return e.message;
+      if (warqnaProductionMode) return e.message;
+      return _registerLocal(user, mail, password);
     } catch (_) {
+      if (warqnaProductionMode) return 'تعذر إنشاء الحساب بسبب عدم توفر الخادم.';
       return _registerLocal(user, mail, password);
     }
   }
 
-  Future<String?> loginWithSocialProvider(String provider) async {
-    if (!const {'google', 'facebook', 'apple'}.contains(provider)) return 'مزود تسجيل الدخول غير مدعوم.';
-    try {
-      final start = await api.startSocialAuth(provider);
-      final state = start['state']?.toString() ?? '';
-      final url = start['authorize_url']?.toString() ?? '';
-      if (state.isEmpty || url.isEmpty) return start['message']?.toString() ?? 'لم يجهز الخادم رابط تسجيل الدخول.';
-      final launched = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-      if (!launched) return 'تعذر فتح صفحة تسجيل الدخول الخارجية.';
-      for (var attempt = 0; attempt < 90; attempt++) {
-        await Future<void>.delayed(const Duration(seconds: 2));
-        final status = await api.socialAuthStatus(state);
-        final value = status['status']?.toString();
-        if (value == 'completed') {
-          authToken = status['token']?.toString();
-          api.token = authToken;
-          _applySession(status);
-          isAuthenticated = true;
-          serverConnected = true;
-          await _save();
-          unawaited(_refreshPushRegistration());
-          unawaited(startConnectivityMonitorV173());
-          refreshUi();
-          return null;
-        }
-        if (value == 'failed' || value == 'expired' || value == 'consumed') {
-          return status['error']?.toString() ?? 'تعذر إكمال تسجيل الدخول الاجتماعي.';
-        }
-      }
-      return 'انتهت مهلة تسجيل الدخول. حاول مرة أخرى.';
-    } on ApiException catch (e) {
-      return e.message;
-    } catch (_) {
-      return 'تسجيل الدخول الاجتماعي يحتاج اتصالاً بالإنترنت وخادماً مهيأً.';
-    }
-  }
-
   Future<void> loginAsGuest() async {
-    final prefs = await SharedPreferences.getInstance();
-    username = prefs.getString('lastGuestUsername') ?? 'Guest';
-    displayName = 'ضيف ورقنا';
-    email = 'guest@warqna.local';
+    final stamp = DateTime.now().millisecondsSinceEpoch.toString();
+    username = 'Guest${stamp.substring(stamp.length - 5)}';
+    displayName = localeCode == 'ar' ? 'ضيف جديد' : 'New Guest';
+    email = '$username@guest.warqna.local';
     isAdmin = false;
-    await prefs.setString('lastGuestUsername', username);
-    await _loadAccountState(prefs, defaultCoins: '1500', defaultLevel: 1, defaultVipDays: 0, defaultAvatar: '🃏');
-    _applyLocalLoginStreak();
-    authToken = null;
-    api.token = null;
     isAuthenticated = true;
     serverConnected = false;
+    authToken = null;
+    coins = BigInt.from(500);
+    level = 1;
+    xp = 0;
+    xpNext = xpNeededForLevel(level);
+    vipDays = 0;
+    _applyLocalLoginStreak();
     await _save();
-    refreshUi();
+    notifyListeners();
   }
 
   Future<void> logout() async {
@@ -988,7 +906,6 @@ class AppController extends ChangeNotifier {
     final user = data['user'];
     final wallet = data['wallet'];
     if (user is Map) {
-      currentUserId = int.tryParse(user['id']?.toString() ?? '') ?? currentUserId;
       username = user['username']?.toString() ?? username;
       displayName = user['display_name']?.toString() ?? user['name']?.toString() ?? username;
       email = user['email']?.toString() ?? email;
@@ -1004,16 +921,7 @@ class AppController extends ChangeNotifier {
       nameColorExpiresAt = DateTime.tryParse(user['name_color_expires_at']?.toString() ?? '');
       chatColorExpiresAt = DateTime.tryParse(user['chat_color_expires_at']?.toString() ?? '');
       consecutiveLoginDays = int.tryParse(user['login_streak']?.toString() ?? '') ?? consecutiveLoginDays;
-      delegatedAdminPermissionsV022
-        ..clear()
-        ..addAll((user['admin_permissions'] is List)
-            ? (user['admin_permissions'] as List).map((value) => value.toString())
-            : const <String>[]);
-      isAdmin = user['is_admin'] == true ||
-          user['is_admin'] == 1 ||
-          username.trim().toLowerCase() == 'adnan' ||
-          displayName.trim().toLowerCase() == 'adnan' ||
-          delegatedAdminPermissionsV022.isNotEmpty;
+      isAdmin = user['is_admin'] == true || user['is_admin'] == 1;
       level = int.tryParse(user['level']?.toString() ?? '') ?? level;
       final serverTotalXp = int.tryParse(user['xp']?.toString() ?? '');
       if (serverTotalXp != null) xp = xpProgressFromTotal(serverTotalXp, level);
@@ -1029,36 +937,11 @@ class AppController extends ChangeNotifier {
       }
       gamesPlayed = int.tryParse(user['games_played']?.toString() ?? '') ?? gamesPlayed;
       wins = int.tryParse(user['wins']?.toString() ?? '') ?? wins;
-      final club = user['club'];
-      if (club is Map) {
-        clubNameV022 = club['name']?.toString();
-        clubLogoV022 = club['logo']?.toString();
-        clubLevelV022 = int.tryParse(club['level']?.toString() ?? '') ?? 0;
-      } else {
-        clubNameV022 = null;
-        clubLogoV022 = null;
-        clubLevelV022 = 0;
-      }
       xpNext = xpNeededForLevel(level);
     }
     if (wallet is Map) {
       coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
     }
-    final tickets = data['competition_tickets'];
-    if (tickets is Map) {
-      competitionTickets
-        ..clear()
-        ..addAll(tickets.map((key, value) => MapEntry(int.tryParse(key.toString()) ?? 0, int.tryParse(value.toString()) ?? 0)));
-    }
-    final pack = data['daily_pack'];
-    if (pack is Map) {
-      dailyPackLastOpened = pack['last_opened']?.toString() ?? dailyPackLastOpened;
-      dailyPackReward = pack['last_reward']?.toString() ?? dailyPackReward;
-    }
-    syncPackInventoryV176(data['inventory']);
-    syncPrizeBoxesV02(data['prize_boxes']);
-    selectedPashaStyle = 'red';
-    championRankPointsV173 = int.tryParse(data['champion_rank_points']?.toString() ?? '') ?? championRankPointsV173;
     if (isAdmin && username.toLowerCase() == 'adnan') {
       if (coins < BigInt.parse('1000000000000000000')) coins = BigInt.parse('1000000000000000000');
       level = math.max(level, 90);
@@ -1081,11 +964,11 @@ class AppController extends ChangeNotifier {
 
   int xpNeededForLevel(int currentLevel) {
     final safe = currentLevel.clamp(1, 200).toInt();
-    final exact = xpRequirementsV175[safe];
-    if (exact != null) return exact;
-    // Levels above 100 continue smoothly from the official level-100 value.
-    final extra = safe - 100;
-    return (xpRequirementsV175[100]! * math.pow(1.12, extra)).round();
+    const early = <int, int>{1: 100, 2: 220, 3: 360, 4: 500, 5: 650, 6: 800, 7: 1000};
+    final fixed = early[safe];
+    if (fixed != null) return fixed;
+    final high = safe - 7;
+    return 1000 + (high * 220) + (high * high * 35);
   }
 
   void _recalculateLevel() {
@@ -1103,28 +986,6 @@ class AppController extends ChangeNotifier {
     }
   }
 
-  void applyServerRoundProgressV174(Map<String, dynamic> result) {
-    final profile = result['profile'];
-    if (profile is Map) {
-      level = int.tryParse(profile['level']?.toString() ?? '') ?? level;
-      xp = int.tryParse(profile['xp_progress']?.toString() ?? profile['xp']?.toString() ?? '') ?? xp;
-      xpNext = int.tryParse(profile['xp_next']?.toString() ?? '') ?? xpNeededForLevel(level);
-      roundPoints = int.tryParse(profile['round_points']?.toString() ?? '') ?? roundPoints;
-      tournamentPoints = int.tryParse(profile['tournament_points']?.toString() ?? '') ?? tournamentPoints;
-      clubPoints = int.tryParse(profile['club_points']?.toString() ?? '') ?? clubPoints;
-    } else {
-      xp += int.tryParse((result['awarded_xp'] ?? 0).toString()) ?? 0;
-      roundPoints += int.tryParse((result['round_points'] ?? 0).toString()) ?? 0;
-      tournamentPoints += int.tryParse((result['tournament_points'] ?? 0).toString()) ?? 0;
-      clubPoints += int.tryParse((result['club_points'] ?? 0).toString()) ?? 0;
-      _recalculateLevel();
-    }
-    final prizeBox = result['prize_box'];
-    if (prizeBox is Map) upsertPrizeBoxV02(Map<String, dynamic>.from(prizeBox));
-    unawaited(_save());
-    refreshUi();
-  }
-
   void _normalizeTimedCosmetics() {
     final now = DateTime.now();
     if (nameColorExpiresAt != null && now.isAfter(nameColorExpiresAt!)) {
@@ -1135,15 +996,6 @@ class AppController extends ChangeNotifier {
       selectedChatColor = '#ffffff';
       chatColorExpiresAt = null;
     }
-    if (boosterExpiresAtV173 != null && now.isAfter(boosterExpiresAtV173!)) {
-      activeXpMultiplier = 1.0;
-      boosterExpiresAtV173 = null;
-    }
-    if (temporaryTableExpiresAtV173 != null && now.isAfter(temporaryTableExpiresAtV173!)) {
-      selectedTable = 'table_premium_01';
-      temporaryTableExpiresAtV173 = null;
-    }
-    purgeExpiredPackInventoryV176(now);
   }
 
   void _resetAdCounterIfNeeded() {
@@ -1172,7 +1024,7 @@ class AppController extends ChangeNotifier {
     lastLoginDate = todayText;
     if (consecutiveLoginDays % 3 == 0) {
       vipDays += 1;
-      notices.insert(0, AppNotice('👑', 'يوم باشا مجاني', 'أكملت 3 أيام دخول متواصلة، وتمت إضافة يوم باشا.'));
+      notices.insert(0, AppNotice('🎩', 'يوم باشا مجاني', 'أكملت 3 أيام دخول متواصلة، وتمت إضافة يوم باشا.'));
     }
   }
 
@@ -1257,29 +1109,27 @@ class AppController extends ChangeNotifier {
 
   Future<String?> grantRewardedAd(String verificationId) async {
     _resetAdCounterIfNeeded();
-    if (!serverConnected) return 'يلزم اتصال فعّال بالخادم لاعتماد مكافأة الإعلان.';
     if (rewardedAdClaimsToday >= 5) return 'وصلت إلى الحد اليومي: 5 إعلانات مكافِئة.';
     var tokens = 50;
     var earnedXp = 15;
-    try {
-      final data = await api.claimRewardedAd(verificationId);
-      tokens = int.tryParse(data['tokens']?.toString() ?? '') ?? tokens;
-      earnedXp = int.tryParse(data['xp']?.toString() ?? '') ?? earnedXp;
-      final wallet = data['wallet'];
-      if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
-      final profile = data['profile'];
-      if (profile is Map) {
-        level = int.tryParse(profile['level']?.toString() ?? '') ?? level;
-        final totalXp = int.tryParse(profile['xp']?.toString() ?? '');
-        if (totalXp != null) xp = xpProgressFromTotal(totalXp, level);
-        xpNext = xpNeededForLevel(level);
+    if (serverConnected) {
+      try {
+        final data = await api.claimRewardedAd(verificationId);
+        tokens = int.tryParse(data['tokens']?.toString() ?? '') ?? tokens;
+        earnedXp = int.tryParse(data['xp']?.toString() ?? '') ?? earnedXp;
+        final wallet = data['wallet'];
+        if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
+      } on ApiException catch (e) {
+        return e.message;
       }
-    } on ApiException catch (e) {
-      return e.message;
+    } else {
+      coins += BigInt.from(tokens);
     }
     rewardedAdClaimsToday += 1;
+    xp += earnedXp;
+    _recalculateLevel();
     transactions.insert(0, TokenTransaction('مكافأة مشاهدة إعلان', tokens, 'الآن'));
-    notices.insert(0, AppNotice('📺', 'مكافأة إعلان', 'اعتمد الخادم $tokens توكن و$earnedXp XP.'));
+    notices.insert(0, AppNotice('📺', 'مكافأة إعلان', 'حصلت على $tokens توكن و$earnedXp XP.'));
     await _save();
     notifyListeners();
     return null;
@@ -1292,9 +1142,6 @@ class AppController extends ChangeNotifier {
   }
 
   void changeTheme(String value) {
-    if (!freeThemeCodesV022.contains(value) && !owned.contains('theme_$value') && !isAdmin) {
-      return;
-    }
     themeCode = value;
     _save();
     notifyListeners();
@@ -1329,61 +1176,25 @@ class AppController extends ChangeNotifier {
   }
 
   Future<bool> buy(StoreProduct product) async {
-    lastPurchaseErrorV022 = null;
-    if (!serverConnected) {
-      lastPurchaseErrorV022 = L.t(localeCode, 'purchaseNeedsServerV022');
-      notifyListeners();
-      return false;
-    }
-    final reusable = product.reusable || (durationFor(product) ?? 0) > 0;
-    if (!reusable && isOwnedActiveV176(product.id)) {
+    final reusable = product.category == 'pasha' || product.category == 'boost';
+    if (!reusable && owned.contains(product.id)) {
       activateProduct(product);
       return true;
     }
-
-    // Refresh the authoritative wallet before purchase so the UI reflects the server balance.
-    // The server still makes the final price and sufficiency decision.
-    try {
-      final walletData = await api.wallet();
-      final wallet = walletData['wallet'];
-      if (wallet is Map) {
-        coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
-      }
-    } catch (_) {}
-
-    final listedPrice = priceFor(product);
-    var chargedPrice = listedPrice;
-
-    // The server is the only authority for price and balance. Do not reject
-    // locally because a cached catalog can be older than the server catalog.
-    try {
-      final data = await api.purchase(product.id);
-      chargedPrice = int.tryParse(data['charged_price']?.toString() ?? '') ?? listedPrice;
-      final wallet = data['wallet'];
-      if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
-      final tickets = data['tickets'];
-      if (tickets is Map) {
-        competitionTickets
-          ..clear()
-          ..addAll(tickets.map((key, value) => MapEntry(int.tryParse(key.toString()) ?? 0, int.tryParse(value.toString()) ?? 0)));
-      }
-    } on ApiException catch (error) {
-      lastPurchaseErrorV022 = error.message;
+    if (coins < BigInt.from(priceFor(product))) return false;
+    if (serverConnected) {
       try {
-        final walletData = await api.wallet();
-        final wallet = walletData['wallet'];
+        final data = await api.purchase(product.id);
+        final wallet = data['wallet'];
         if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
-      } catch (_) {}
-      notifyListeners();
-      return false;
-    } catch (_) {
-      lastPurchaseErrorV022 = L.t(localeCode, 'purchaseRetryV022');
-      notifyListeners();
-      return false;
+      } on ApiException {
+        return false;
+      }
+    } else {
+      coins -= BigInt.from(priceFor(product));
     }
-
     if (!reusable) owned.add(product.id);
-    transactions.insert(0, TokenTransaction('شراء ${nameFor(product, 'ar')}', -chargedPrice, 'الآن'));
+    transactions.insert(0, TokenTransaction('شراء ${nameFor(product, 'ar')}', -priceFor(product), 'الآن'));
     activateProduct(product);
     AppSounds.fire('purchase');
     await _save();
@@ -1438,37 +1249,24 @@ class AppController extends ChangeNotifier {
         vipDays += durationFor(product) ?? 0;
         selectedBadge = 'badge_pasha';
         break;
-      case 'pasha_style':
-        selectedPashaStyle = 'red';
-        if (serverConnected) api.updateProfile({'pasha_style': 'red'}).catchError((_) => <String, dynamic>{});
-        break;
-      case 'competition_ticket':
-        final denomination = int.tryParse(product.value ?? '') ?? 0;
-        if (!serverConnected && denomination > 0) competitionTickets[denomination] = (competitionTickets[denomination] ?? 0) + 1;
-        break;
       case 'themes':
         if (product.value != null) themeCode = product.value!;
         break;
       case 'tables':
         selectedTable = product.id;
-        temporaryTableExpiresAtV173 = expiryForProductV176(product.id);
         break;
       case 'cards':
         selectedCardBack = product.id;
         break;
       case 'names':
         selectedNameColor = product.value ?? selectedNameColor;
-        final nameExpiry = expiryForProductV176(product.id);
-        final nameHours = product.durationHours;
         final nameDays = durationFor(product);
-        nameColorExpiresAt = nameExpiry ?? (nameHours != null && nameHours > 0 ? DateTime.now().add(Duration(hours: nameHours)) : nameDays == null || nameDays <= 0 ? null : DateTime.now().add(Duration(days: nameDays)));
+        nameColorExpiresAt = nameDays == null || nameDays <= 0 ? null : DateTime.now().add(Duration(days: nameDays));
         break;
       case 'chat_colors':
         selectedChatColor = product.value ?? selectedChatColor;
-        final chatExpiry = expiryForProductV176(product.id);
-        final chatHours = product.durationHours;
         final chatDays = durationFor(product);
-        chatColorExpiresAt = chatExpiry ?? (chatHours != null && chatHours > 0 ? DateTime.now().add(Duration(hours: chatHours)) : chatDays == null || chatDays <= 0 ? null : DateTime.now().add(Duration(days: chatDays)));
+        chatColorExpiresAt = chatDays == null || chatDays <= 0 ? null : DateTime.now().add(Duration(days: chatDays));
         break;
       case 'badges':
         selectedBadge = product.id;
@@ -1485,7 +1283,6 @@ class AppController extends ChangeNotifier {
         break;
       case 'boost':
         activeXpMultiplier = product.multiplier ?? 1.0;
-        boosterExpiresAtV173 = expiryForProductV176(product.id) ?? (product.durationHours != null ? DateTime.now().add(Duration(hours: product.durationHours!)) : null);
         break;
     }
     _save();
@@ -1568,119 +1365,30 @@ class AppController extends ChangeNotifier {
   double get winRate => gamesPlayed <= 0 ? 0 : (wins / gamesPlayed) * 100;
   int get losses => math.max(0, gamesPlayed - wins);
 
-  Future<void> _applyPreferredOrientationV174() async {
+  Future<void> toggleOrientationMode() async {
+    landscapeMode = !landscapeMode;
     try {
       await SystemChrome.setPreferredOrientations(
         landscapeMode
             ? <DeviceOrientation>[DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]
-            : <DeviceOrientation>[DeviceOrientation.portraitUp],
+            : <DeviceOrientation>[DeviceOrientation.portraitUp, DeviceOrientation.portraitDown],
       );
     } catch (_) {}
-  }
-
-  Future<void> toggleOrientationMode() async {
-    landscapeMode = !landscapeMode;
-    await _applyPreferredOrientationV174();
     await _save();
-    refreshUi();
+    notifyListeners();
   }
 
   Future<void> setLandscapeMode(bool value) async {
-    if (landscapeMode == value) return;
     landscapeMode = value;
-    await _applyPreferredOrientationV174();
-    await _save();
-    refreshUi();
-  }
-
-  void queueNavigationRoute(String route) {
-    final normalized = route.trim();
-    if (normalized.isEmpty) return;
-    _queuedNavigationRouteV175 = normalized.startsWith('room:')
-        ? '/room/${normalized.substring('room:'.length).split(':').first.trim().toUpperCase()}'
-        : normalized;
-    unawaited(_save());
-    if (_openingNavigationRouteV175) {
-      final navigator = warqnaNavigatorKey.currentState;
-      if (navigator != null && navigator.canPop()) navigator.pop(true);
-    }
-    unawaited(openPendingNavigationRoute());
-  }
-
-  Future<void> _prepareDirectInviteTransfer(String nextCode) async {
-    final previousCode = activeRoomCode;
-    if (previousCode != null && previousCode.isNotEmpty && previousCode != nextCode && serverConnected) {
-      try {
-        await api.leaveGame(previousCode);
-      } catch (_) {}
-    }
-    if (previousCode != nextCode) {
-      activeGame = null;
-      activeRoomCode = null;
-      activeRoomName = null;
-    }
-  }
-
-  Future<void> openPendingNavigationRoute() async {
-    if (!isAuthenticated || _openingNavigationRouteV175) return;
-    final route = _queuedNavigationRouteV175;
-    if (route == null || route.isEmpty) return;
-    final match = RegExp(r'(?:/room/|room:)([A-Za-z0-9_-]+)').firstMatch(route);
-    if (match == null) {
-      _queuedNavigationRouteV175 = null;
-      await _save();
-      return;
-    }
-    final normalized = (match.group(1) ?? '').trim().toUpperCase();
-    if (normalized.isEmpty) return;
-    if (warqnaNavigatorKey.currentContext == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(openPendingNavigationRoute()));
-      return;
-    }
-    _openingNavigationRouteV175 = true;
     try {
-      var gameId = activeGame ?? 'tarneeb';
-      var voice = activeRoomVoice;
-      var roomName = activeRoomName ?? 'غرفة ورقنا';
-      var visibility = activeRoomVisibility;
-      var turnSeconds = activeRoomTurnSeconds;
-      if (serverConnected) {
-        try {
-          final data = await api.gameSession(normalized);
-          final roomData = data['room'];
-          if (roomData is Map) {
-            gameId = roomData['game']?.toString() ?? gameId;
-            voice = roomData['voice_enabled'] == true || roomData['voice_enabled'] == 1;
-            roomName = roomData['room_name']?.toString() ?? roomName;
-            visibility = roomData['visibility']?.toString() ?? visibility;
-            turnSeconds = int.tryParse(roomData['turn_seconds']?.toString() ?? '') ?? turnSeconds;
-          }
-        } catch (_) {}
-      }
-      await _prepareDirectInviteTransfer(normalized);
-      final game = gamesCatalog.firstWhere((item) => item.id == gameId, orElse: () => gamesCatalog.first);
-      final options = RoomLaunchOptions(roomCode: normalized, roomName: roomName, voiceEnabled: voice, visibility: visibility, turnSeconds: turnSeconds);
-      activeRoomCode = normalized;
-      activeRoomName = roomName;
-      _pendingRoomCodeV174 = null;
-      _queuedNavigationRouteV175 = null;
-      await _save();
-      final navigationContext = warqnaNavigatorKey.currentContext;
-      if (navigationContext == null || !navigationContext.mounted) {
-        _queuedNavigationRouteV175 = '/room/$normalized';
-        WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(openPendingNavigationRoute()));
-        return;
-      }
-      await openGameRoom(navigationContext, this, game, options: options);
-    } finally {
-      _openingNavigationRouteV175 = false;
-      if (_queuedNavigationRouteV175 != null) unawaited(openPendingNavigationRoute());
-    }
-  }
-
-  Future<void> openRoomFromNotificationV174(String code) async {
-    _pendingRoomCodeV174 = code.trim().toUpperCase();
-    queueNavigationRoute('/room/${_pendingRoomCodeV174!}');
+      await SystemChrome.setPreferredOrientations(
+        value
+            ? <DeviceOrientation>[DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]
+            : <DeviceOrientation>[DeviceOrientation.portraitUp, DeviceOrientation.portraitDown],
+      );
+    } catch (_) {}
+    await _save();
+    notifyListeners();
   }
 
   int exitsForGame(String gameId) => gameExitCounts[gameId] ?? 0;
@@ -1717,7 +1425,6 @@ class AppController extends ChangeNotifier {
   }
 
   bool joinChallenge(String id) {
-    if (!serverConnected) return false;
     if (activeChallenge != null && activeChallenge != id) return false;
     activeChallenge = id;
     _save();
@@ -1813,7 +1520,6 @@ class AppController extends ChangeNotifier {
     giftRoadProgress = (giftRoadProgress + 1).clamp(0, 30).toInt();
     transactions.insert(0, TokenTransaction('مكافأة فوز', baseReward, 'الآن'));
     notices.insert(0, AppNotice(storeProductById(selectedEffect)?.icon ?? '🏆', 'فوز جديد', 'حصلت على $baseReward توكن و$xpReward XP مع تفعيل مؤثر الفوز.'));
-    awardLocalPrizeBoxV02(gameId);
     activeChallenge = null;
     _save();
     notifyListeners();
@@ -1846,11 +1552,6 @@ class AppController extends ChangeNotifier {
   }
 
   Future<bool> claimDaily() async {
-    if (!serverConnected) {
-      notices.insert(0, AppNotice('📡', 'المكافأة اليومية', 'يلزم اتصال فعّال بالخادم لاستلام المكافأة.'));
-      notifyListeners();
-      return false;
-    }
     final now = DateTime.now();
     final today = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     if (lastDailyClaimDate == today) {
@@ -1858,25 +1559,30 @@ class AppController extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-    try {
-      final data = await api.claimDaily();
-      final wallet = data['wallet'];
-      if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
-      final profile = data['profile'];
-      if (profile is Map) {
-        level = int.tryParse(profile['level']?.toString() ?? '') ?? level;
-        final totalXp = int.tryParse(profile['xp']?.toString() ?? '');
-        if (totalXp != null) xp = xpProgressFromTotal(totalXp, level);
-        xpNext = xpNeededForLevel(level);
+    var granted = false;
+    if (serverConnected) {
+      try {
+        final data = await api.claimDaily();
+        final wallet = data['wallet'];
+        if (wallet is Map) coins = BigInt.tryParse(wallet['tokens']?.toString() ?? '') ?? coins;
+        granted = true;
+      } catch (_) {
+        granted = false;
       }
-    } catch (_) {
+    } else {
+      coins += BigInt.from(100);
+      transactions.insert(0, const TokenTransaction('مكافأة يومية', 100, 'الآن'));
+      granted = true;
+    }
+    if (!granted) {
       notices.insert(0, AppNotice('⚠️', 'المكافأة اليومية', 'تعذر استلام المكافأة من الخادم. حاول مرة أخرى.'));
       notifyListeners();
       return false;
     }
     lastDailyClaimDate = today;
-    transactions.insert(0, const TokenTransaction('مكافأة يومية', 100, 'الآن'));
-    notices.insert(0, AppNotice('🎁', 'المكافأة اليومية', 'اعتمد الخادم 100 توكن و20 XP.'));
+    xp += 20;
+    _recalculateLevel();
+    notices.insert(0, AppNotice('🎁', 'مكافأة يومية', 'تمت إضافة 100 توكن و20 XP.'));
     await _save();
     notifyListeners();
     return true;
@@ -1955,7 +1661,41 @@ class AppController extends ChangeNotifier {
   }
 
   Future<String?> transferLocal(String receiver, int amount) async {
-    return 'تحويل التوكنز متاح عبر الخادم فقط في النسخة V173.';
+    if (amount <= 0) return 'أدخل قيمة صحيحة.';
+    if (receiver.trim().toLowerCase() == username.trim().toLowerCase()) return 'لا يمكنك التحويل إلى حسابك نفسه.';
+    final fee = (amount * .10).ceil();
+    final total = BigInt.from(amount + fee);
+    if (coins < total) return 'الرصيد غير كافٍ لتغطية المبلغ وعمولة الإدارة 10%.';
+    final prefs = await SharedPreferences.getInstance();
+    final receiverKey = receiver.trim().toLowerCase();
+    final receiverPrefix = 'warqna.account.$receiverKey.';
+    final demo = demoAccounts[receiverKey];
+    if (!(prefs.getBool('${receiverPrefix}initialized') ?? false) && demo == null) return 'الحساب المستلم غير موجود محلياً.';
+    final receiverBalance = BigInt.tryParse(prefs.getString('${receiverPrefix}coins') ?? demo?['coins']?.toString() ?? '0') ?? BigInt.zero;
+    const adminKey = 'adnan';
+    const adminPrefix = 'warqna.account.adnan.';
+    final senderKey = username.trim().toLowerCase();
+    coins -= total;
+
+    var receiverCredit = BigInt.from(amount);
+    if (receiverKey == adminKey && senderKey != adminKey) receiverCredit += BigInt.from(fee);
+    await prefs.setBool('${receiverPrefix}initialized', true);
+    await prefs.setString('${receiverPrefix}coins', (receiverBalance + receiverCredit).toString());
+
+    if (senderKey == adminKey) {
+      coins += BigInt.from(fee);
+    } else if (receiverKey != adminKey) {
+      final adminDefault = demoAccounts[adminKey]?['coins']?.toString() ?? '1000000000000000000';
+      final adminBalance = BigInt.tryParse(prefs.getString('${adminPrefix}coins') ?? adminDefault) ?? BigInt.parse(adminDefault);
+      await prefs.setBool('${adminPrefix}initialized', true);
+      await prefs.setString('${adminPrefix}coins', (adminBalance + BigInt.from(fee)).toString());
+    }
+
+    transactions.insert(0, TokenTransaction('تحويل إلى $receiver', -amount, 'الآن'));
+    transactions.insert(1, TokenTransaction('عمولة تحويل 10%', -fee, 'الآن'));
+    await _save();
+    notifyListeners();
+    return null;
   }
 }
 
@@ -1996,9 +1736,6 @@ class LocalFriend {
   final int clubPoints;
   final String nameColor;
   final String? badge;
-  final String? clubName;
-  final String? clubLogo;
-  final int clubLevel;
 
   const LocalFriend(
     this.id,
@@ -2019,9 +1756,6 @@ class LocalFriend {
     this.clubPoints = 0,
     this.nameColor = '#facc15',
     this.badge,
-    this.clubName,
-    this.clubLogo,
-    this.clubLevel = 0,
   });
 }
 
@@ -2057,20 +1791,6 @@ class AppPalette {
 
   static AppPalette fromCode(String code) {
     switch (code) {
-      case 'light':
-        return const AppPalette(Color(0xfff4f7fb), Color(0xffffffff), Color(0xffe8eef7), Color(0xffb7791f), Color(0xff059669), Color(0xff64748b), Color(0xff101828), Color(0xff667085));
-      case 'blue':
-        return const AppPalette(Color(0xff071a38), Color(0xff0d2a54), Color(0xff123a71), Color(0xffffcf67), Color(0xff10b981), Color(0xff2563eb), Colors.white, Color(0xffa8bad5));
-      case 'sky':
-        return const AppPalette(Color(0xff062938), Color(0xff0a4058), Color(0xff0f5877), Color(0xffffd166), Color(0xff4ade80), Color(0xff38bdf8), Colors.white, Color(0xffb9e5f2));
-      case 'green':
-        return const AppPalette(Color(0xff061f18), Color(0xff0b3528), Color(0xff104a37), Color(0xffffd166), Color(0xff10b981), Color(0xff059669), Colors.white, Color(0xffb0d7c8));
-      case 'light_green':
-        return const AppPalette(Color(0xff17230a), Color(0xff293b11), Color(0xff3b5419), Color(0xffffd166), Color(0xff84cc16), Color(0xffa3e635), Colors.white, Color(0xffd8eab4));
-      case 'gold':
-        return const AppPalette(Color(0xff241905), Color(0xff3b2909), Color(0xff543a0d), Color(0xffffd166), Color(0xff65a30d), Color(0xffd4a72c), Colors.white, Color(0xffead9aa));
-      case 'light_pink':
-        return const AppPalette(Color(0xff331322), Color(0xff542039), Color(0xff702c4d), Color(0xffffd166), Color(0xff34d399), Color(0xfff9a8d4), Colors.white, Color(0xfff6d9e6));
       case 'royal':
         return const AppPalette(
           Color(0xff07142d),
@@ -2710,10 +2430,6 @@ class L {
 
   static const Map<String, Map<String, String>> extra = {
     'ar': {
-      'customizeGamesV022': 'تخصيص',
-      'purchaseNeedsServerV022': 'الشراء يحتاج اتصالاً بالخادم.',
-      'insufficientBalanceV022': 'الرصيد غير كافٍ حسب رصيد الخادم الحالي.',
-      'purchaseRetryV022': 'تعذر إكمال الشراء. حدّث الاتصال وحاول مجددًا.',
       'login': 'تسجيل الدخول', 'register': 'إنشاء حساب', 'username': 'اسم المستخدم', 'email': 'البريد الإلكتروني', 'password': 'كلمة المرور',
       'guest': 'الدخول كضيف', 'profile': 'الملف الشخصي', 'logout': 'تسجيل الخروج', 'deleteAccount': 'إلغاء الحساب', 'appearance': 'المظهر',
       'beginner': 'مبتدئ', 'professional': 'محترف', 'legendary': 'أسطوري', 'covers': 'أغلفة البروفايل', 'bots': 'اللاعبون الآليون',
@@ -2723,10 +2439,6 @@ class L {
       'socialLoginNote': 'يتطلب مفاتيح مزود الخدمة', 'cropAvatar': 'معاينة وقص الصورة', 'save': 'حفظ', 'cancel': 'إلغاء', 'activate': 'تفعيل',
     },
     'en': {
-      'customizeGamesV022': 'Customize',
-      'purchaseNeedsServerV022': 'Purchases require a server connection.',
-      'insufficientBalanceV022': 'The current server balance is insufficient.',
-      'purchaseRetryV022': 'Purchase could not be completed. Refresh and try again.',
       'login': 'Sign in', 'register': 'Create account', 'username': 'Username', 'email': 'Email', 'password': 'Password',
       'guest': 'Continue as guest', 'profile': 'Profile', 'logout': 'Sign out', 'deleteAccount': 'Cancel account', 'appearance': 'Appearance',
       'beginner': 'Beginner', 'professional': 'Professional', 'legendary': 'Legendary', 'covers': 'Profile Covers', 'bots': 'AI Players',
@@ -2736,10 +2448,6 @@ class L {
       'socialLoginNote': 'Provider credentials required', 'cropAvatar': 'Preview and crop image', 'save': 'Save', 'cancel': 'Cancel', 'activate': 'Activate',
     },
     'de': {
-      'customizeGamesV022': 'Anpassen',
-      'purchaseNeedsServerV022': 'Käufe benötigen eine Serververbindung.',
-      'insufficientBalanceV022': 'Das aktuelle Serverguthaben reicht nicht aus.',
-      'purchaseRetryV022': 'Kauf konnte nicht abgeschlossen werden.',
       'login': 'Anmelden', 'register': 'Konto erstellen', 'username': 'Benutzername', 'email': 'E-Mail', 'password': 'Passwort',
       'guest': 'Als Gast fortfahren', 'profile': 'Profil', 'logout': 'Abmelden', 'deleteAccount': 'Konto deaktivieren', 'appearance': 'Darstellung',
       'beginner': 'Anfänger', 'professional': 'Profi', 'legendary': 'Legendär', 'covers': 'Profil-Cover', 'bots': 'KI-Spieler',
@@ -2749,10 +2457,6 @@ class L {
       'socialLoginNote': 'Anbieter-Zugangsdaten erforderlich', 'cropAvatar': 'Bild ansehen und zuschneiden', 'save': 'Speichern', 'cancel': 'Abbrechen', 'activate': 'Aktivieren',
     },
     'tr': {
-      'customizeGamesV022': 'Özelleştir',
-      'purchaseNeedsServerV022': 'Satın alma için sunucu bağlantısı gerekir.',
-      'insufficientBalanceV022': 'Sunucu bakiyesi yetersiz.',
-      'purchaseRetryV022': 'Satın alma tamamlanamadı.',
       'login': 'Giriş yap', 'register': 'Hesap oluştur', 'username': 'Kullanıcı adı', 'email': 'E-posta', 'password': 'Şifre',
       'guest': 'Misafir olarak devam et', 'profile': 'Profil', 'logout': 'Çıkış yap', 'deleteAccount': 'Hesabı iptal et', 'appearance': 'Görünüm',
       'beginner': 'Başlangıç', 'professional': 'Profesyonel', 'legendary': 'Efsanevi', 'covers': 'Profil Kapakları', 'bots': 'Yapay Zekâ Oyuncuları',
@@ -2762,10 +2466,6 @@ class L {
       'socialLoginNote': 'Sağlayıcı bilgileri gerekli', 'cropAvatar': 'Resmi önizle ve kırp', 'save': 'Kaydet', 'cancel': 'İptal', 'activate': 'Etkinleştir',
     },
     'fr': {
-      'customizeGamesV022': 'Personnaliser',
-      'purchaseNeedsServerV022': 'Les achats nécessitent une connexion au serveur.',
-      'insufficientBalanceV022': 'Le solde serveur est insuffisant.',
-      'purchaseRetryV022': 'Achat impossible. Réessayez.',
       'login': 'Connexion', 'register': 'Créer un compte', 'username': "Nom d'utilisateur", 'email': 'E-mail', 'password': 'Mot de passe',
       'guest': 'Continuer comme invité', 'profile': 'Profil', 'logout': 'Déconnexion', 'deleteAccount': 'Annuler le compte', 'appearance': 'Apparence',
       'beginner': 'Débutant', 'professional': 'Professionnel', 'legendary': 'Légendaire', 'covers': 'Couvertures de profil', 'bots': 'Joueurs IA',
@@ -2775,10 +2475,6 @@ class L {
       'socialLoginNote': 'Identifiants du fournisseur requis', 'cropAvatar': "Prévisualiser et recadrer l'image", 'save': 'Enregistrer', 'cancel': 'Annuler', 'activate': 'Activer',
     },
     'es': {
-      'customizeGamesV022': 'Personalizar',
-      'purchaseNeedsServerV022': 'Las compras requieren conexión al servidor.',
-      'insufficientBalanceV022': 'El saldo del servidor es insuficiente.',
-      'purchaseRetryV022': 'No se pudo completar la compra.',
       'login': 'Iniciar sesión', 'register': 'Crear cuenta', 'username': 'Usuario', 'email': 'Correo', 'password': 'Contraseña',
       'guest': 'Continuar como invitado', 'profile': 'Perfil', 'logout': 'Cerrar sesión', 'deleteAccount': 'Cancelar cuenta', 'appearance': 'Apariencia',
       'beginner': 'Principiante', 'professional': 'Profesional', 'legendary': 'Legendario', 'covers': 'Portadas de perfil', 'bots': 'Jugadores IA',
@@ -2827,7 +2523,6 @@ class StoreProduct {
   final String descriptionEn;
   final int price;
   final int? durationDays;
-  final int? durationHours;
   final String? value;
   final double? multiplier;
   final Color? previewColor1;
@@ -2845,7 +2540,6 @@ class StoreProduct {
     required this.descriptionEn,
     required this.price,
     this.durationDays,
-    this.durationHours,
     this.value,
     this.multiplier,
     this.previewColor1,
@@ -2856,7 +2550,7 @@ class StoreProduct {
 
   String name(String lang) => localizeStoreProductNameV151(this, lang);
   String description(String lang) => localizeStoreProductDescriptionV151(this, lang);
-  bool get reusable => category == 'pasha' || category == 'boost' || category == 'competition_ticket';
+  bool get reusable => category == 'pasha' || category == 'boost';
   String get tier {
     final days = durationDays ?? 0;
     if (days >= 30 || price >= 25000 || id.contains('legend')) return 'legendary';
@@ -2925,16 +2619,12 @@ List<StoreProduct> buildTimedColorProducts() {
 
 
 final List<StoreProduct> products = <StoreProduct>[
-  StoreProduct(id: 'daily_pack_name_gold_24h_v176', category: 'names', icon: '🎨', nameAr: 'صندوق الجوائز: لون لاعب ذهبي', nameEn: 'Prize Box: Golden Player Color', descriptionAr: 'لون لاعب ذهبي مؤقت من صندوق الجوائز اليومي، يظهر في مقتنياتك حتى انتهاء الصلاحية.', descriptionEn: 'A temporary golden player color awarded by the daily prize box.', price: 0, durationHours: 24, value: '#facc15', previewColor1: Color(0xfffacc15), previewColor2: Color(0xff422006), collection: 'daily_pack_v176'),
-  StoreProduct(id: 'daily_pack_chat_cyan_24h_v176', category: 'chat_colors', icon: '💬', nameAr: 'صندوق الجوائز: لون كتابة سماوي', nameEn: 'Prize Box: Cyan Writing Color', descriptionAr: 'لون كتابة سماوي مؤقت من صندوق الجوائز اليومي، يظهر في مقتنياتك حتى انتهاء الصلاحية.', descriptionEn: 'A temporary cyan writing color awarded by the daily prize box.', price: 0, durationHours: 24, value: '#22d3ee', previewColor1: Color(0xff22d3ee), previewColor2: Color(0xff083344), collection: 'daily_pack_v176'),
-  StoreProduct(id: 'daily_pack_xp_15x_6h_v176', category: 'boost', icon: '⚡', nameAr: 'صندوق الجوائز: مسرّع XP ×1.5', nameEn: 'Prize Box: XP Booster ×1.5', descriptionAr: 'مسرّع خبرة مؤقت لمدة 6 ساعات من صندوق الجوائز اليومي، يُضاف إلى مقتنيات المتجر مباشرة.', descriptionEn: 'A six-hour XP booster awarded by the daily prize box.', price: 0, durationHours: 6, multiplier: 1.5, previewColor1: Color(0xfff59e0b), previewColor2: Color(0xff7c2d12), collection: 'daily_pack_v176'),
-  StoreProduct(id: 'daily_prize_cover_v02', category: 'covers', icon: '🖼️', nameAr: 'صندوق الجوائز: غلاف ملكي', nameEn: 'Prize Box: Royal Profile Cover', descriptionAr: 'غلاف شخصي ملكي مؤقت لمدة 3 أيام من صندوق الجوائز اليومي.', descriptionEn: 'A royal profile cover active for three days from the daily prize box.', price: 0, durationHours: 72, value: 'cover_v02_royal', previewColor1: Color(0xff581c87), previewColor2: Color(0xfffacc15), collection: 'daily_pack_v176'),
-  StoreProduct(id: "pasha_1_day_v132", category: "pasha", icon: "👑", nameAr: "باشا يوم واحد", nameEn: "Pasha 1 Day", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 1700, durationDays: 1, value: "pasha"),
-  StoreProduct(id: "pasha_3_days_v132", category: "pasha", icon: "👑", nameAr: "باشا 3 أيام", nameEn: "Pasha 3 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 5000, durationDays: 3, value: "pasha"),
-  StoreProduct(id: "pasha_7_days_v128", category: "pasha", icon: "👑", nameAr: "باشا 7 أيام", nameEn: "Pasha 7 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 10000, durationDays: 7, value: "pasha"),
-  StoreProduct(id: "pasha_30_days_v128", category: "pasha", icon: "👑", nameAr: "باشا 30 يوم", nameEn: "Pasha 30 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 38000, durationDays: 30, value: "pasha"),
-  StoreProduct(id: "pasha_90_days_v132", category: "pasha", icon: "👑", nameAr: "باشا 90 يوم", nameEn: "Pasha 90 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 105000, durationDays: 90, value: "pasha"),
-  StoreProduct(id: "pasha_365_days_v128", category: "pasha", icon: "👑", nameAr: "باشا سنة كاملة", nameEn: "Pasha 365 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 300000, durationDays: 365, value: "pasha"),
+  StoreProduct(id: "pasha_1_day_v132", category: "pasha", icon: "🎩", nameAr: "باشا يوم واحد", nameEn: "Pasha 1 Day", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 1700, durationDays: 1, value: "pasha"),
+  StoreProduct(id: "pasha_3_days_v132", category: "pasha", icon: "🎩", nameAr: "باشا 3 أيام", nameEn: "Pasha 3 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 5000, durationDays: 3, value: "pasha"),
+  StoreProduct(id: "pasha_7_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا 7 أيام", nameEn: "Pasha 7 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 10000, durationDays: 7, value: "pasha"),
+  StoreProduct(id: "pasha_30_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا 30 يوم", nameEn: "Pasha 30 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 38000, durationDays: 30, value: "pasha"),
+  StoreProduct(id: "pasha_90_days_v132", category: "pasha", icon: "🎩", nameAr: "باشا 90 يوم", nameEn: "Pasha 90 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 105000, durationDays: 90, value: "pasha"),
+  StoreProduct(id: "pasha_365_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا سنة كاملة", nameEn: "Pasha 365 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 300000, durationDays: 365, value: "pasha"),
   StoreProduct(id: "theme_dark_premium", category: "themes", icon: "🎨", nameAr: "داكن فاخر", nameEn: "Premium Dark", descriptionAr: "ثيم كامل يغيّر الخلفيات والبطاقات والأزرار والطاولات.", descriptionEn: "A complete theme for backgrounds, panels, buttons and tables.", price: 0, value: "dark", previewColor1: Color(0xff07111f), previewColor2: Color(0xffd6aa59)),
   StoreProduct(id: "theme_crimson_legend", category: "themes", icon: "🌹", nameAr: "قرمزي أسطوري", nameEn: "Legendary Crimson", descriptionAr: "ثيم قرمزي داكن مع وهج ذهبي وبطاقات احترافية.", descriptionEn: "Deep crimson theme with gold glow and premium panels.", price: 34000, value: "crimson", previewColor1: Color(0xff21070d), previewColor2: Color(0xffef334f)),
   StoreProduct(id: "theme_midnight_elite", category: "themes", icon: "🌌", nameAr: "منتصف الليل النخبوي", nameEn: "Elite Midnight", descriptionAr: "ثيم أزرق ليلي احترافي للغرف والمتجر والملف الشخصي.", descriptionEn: "Premium midnight-blue theme for rooms, store and profile.", price: 42000, value: "midnight", previewColor1: Color(0xff020617), previewColor2: Color(0xff4f86ff)),
@@ -2988,11 +2678,11 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "table_premium_38", category: "tables", icon: "VIP", nameAr: "طاولة VIP أسود", nameEn: "Premium Table 38", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 27200, previewColor1: Color(0xfff8fafc), previewColor2: Color(0xff94a3b8)),
   StoreProduct(id: "table_premium_39", category: "tables", icon: "♚", nameAr: "طاولة رويال ماستر", nameEn: "Premium Table 39", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 27850, previewColor1: Color(0xff422006), previewColor2: Color(0xffb45309)),
   StoreProduct(id: "table_premium_40", category: "tables", icon: "🦁", nameAr: "طاولة حلبة الأساطير", nameEn: "Premium Table 40", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 28500, previewColor1: Color(0xff1f3b24), previewColor2: Color(0xff84cc16)),
-  StoreProduct(id: "table_premium_41", category: "tables", icon: "👑", nameAr: "طاولة مخمل VIP", nameEn: "Premium Table 41", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 29150, previewColor1: Color(0xff064e3b), previewColor2: Color(0xff10b981)),
+  StoreProduct(id: "table_premium_41", category: "tables", icon: "🎩", nameAr: "طاولة مخمل VIP", nameEn: "Premium Table 41", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 29150, previewColor1: Color(0xff064e3b), previewColor2: Color(0xff10b981)),
   StoreProduct(id: "table_premium_42", category: "tables", icon: "✺", nameAr: "طاولة أندلس ذهب", nameEn: "Premium Table 42", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 29800, previewColor1: Color(0xff020617), previewColor2: Color(0xfff5c542)),
   StoreProduct(id: "table_premium_43", category: "tables", icon: "✦", nameAr: "طاولة دمشق أزرق", nameEn: "Premium Table 43", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 30450, previewColor1: Color(0xff7c2d12), previewColor2: Color(0xfffbbf24)),
   StoreProduct(id: "table_premium_44", category: "tables", icon: "☪", nameAr: "طاولة قدس زيتوني", nameEn: "Premium Table 44", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 31100, previewColor1: Color(0xff0c4a6e), previewColor2: Color(0xff38bdf8)),
-  StoreProduct(id: "table_premium_45", category: "tables", icon: "👑", nameAr: "طاولة طربوش باشا", nameEn: "Premium Table 45", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 31750, previewColor1: Color(0xff7f1d1d), previewColor2: Color(0xfff87171)),
+  StoreProduct(id: "table_premium_45", category: "tables", icon: "🎩", nameAr: "طاولة طربوش باشا", nameEn: "Premium Table 45", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 31750, previewColor1: Color(0xff7f1d1d), previewColor2: Color(0xfff87171)),
   StoreProduct(id: "table_premium_46", category: "tables", icon: "◆", nameAr: "طاولة نيون أحمر", nameEn: "Premium Table 46", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 32400, previewColor1: Color(0xff581c87), previewColor2: Color(0xffc084fc)),
   StoreProduct(id: "table_premium_47", category: "tables", icon: "⬢", nameAr: "طاولة نيون أخضر", nameEn: "Premium Table 47", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 33050, previewColor1: Color(0xff0a0a0a), previewColor2: Color(0xffa3a3a3)),
   StoreProduct(id: "table_premium_48", category: "tables", icon: "💠", nameAr: "طاولة كريستال محيط", nameEn: "Premium Table 48", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 33700, previewColor1: Color(0xfff8fafc), previewColor2: Color(0xff94a3b8)),
@@ -3078,18 +2768,6 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "cardback_38", category: "cards", icon: "✦", nameAr: "ظهر ورق أرابيسك خاص", nameEn: "Card Back 38", descriptionAr: "ظهر ورق فاخر يظهر كما هو داخل يد اللاعب وعلى الطاولة.", descriptionEn: "Premium card back applied to the player hand and game table.", price: 21560, previewColor1: Color(0xff581c87), previewColor2: Color(0xffd8b4fe)),
   StoreProduct(id: "cardback_39", category: "cards", icon: "👑", nameAr: "ظهر ورق ماستر", nameEn: "Card Back 39", descriptionAr: "ظهر ورق فاخر يظهر كما هو داخل يد اللاعب وعلى الطاولة.", descriptionEn: "Premium card back applied to the player hand and game table.", price: 22080, previewColor1: Color(0xff065f46), previewColor2: Color(0xff34d399)),
   StoreProduct(id: "cardback_40", category: "cards", icon: "💎", nameAr: "ظهر ورق أسطورة", nameEn: "Card Back 40", descriptionAr: "ظهر ورق فاخر يظهر كما هو داخل يد اللاعب وعلى الطاولة.", descriptionEn: "Premium card back applied to the player hand and game table.", price: 22600, previewColor1: Color(0xff881337), previewColor2: Color(0xfffb7185)),
-  StoreProduct(id: "cardback_v021_lion", category: "cards", icon: "🦁", nameAr: "ظهر الأسد الملكي", nameEn: "Royal Lion Card Back", descriptionAr: "ظهر ورق أسطوري مستوحى من طاولة الأسد الملكي الأخيرة، بتفاصيل ذهبية وصورة واضحة داخل اللعب.", descriptionEn: "Legendary card back inspired by the latest royal lion table, with crisp gold detailing in game.", price: 32000, previewColor1: Color(0xff111827), previewColor2: Color(0xffd6aa59), imageAsset: "assets/images/cardbacks/v021/cardback_v021_lion.png", collection: "v021_table_cardbacks"),
-  StoreProduct(id: "cardback_v021_white_tiger", category: "cards", icon: "🐯", nameAr: "ظهر النمر الأبيض", nameEn: "White Tiger Card Back", descriptionAr: "ظهر ورق أسطوري مستوحى من طاولة النمر الأبيض ذات العيون الزرقاء.", descriptionEn: "Legendary card back inspired by the blue-eyed white tiger table.", price: 34000, previewColor1: Color(0xffe5e7eb), previewColor2: Color(0xff38bdf8), imageAsset: "assets/images/cardbacks/v021/cardback_v021_white_tiger.png", collection: "v021_table_cardbacks"),
-  StoreProduct(id: "cardback_v021_black_horse", category: "cards", icon: "🐎", nameAr: "ظهر الحصان الأسود", nameEn: "Black Horse Card Back", descriptionAr: "ظهر ورق فاخر مستوحى من طاولة الحصان الأسود والذهب.", descriptionEn: "Premium card back inspired by the black horse and gold table.", price: 33000, previewColor1: Color(0xff111111), previewColor2: Color(0xffd6aa59), imageAsset: "assets/images/cardbacks/v021/cardback_v021_black_horse.png", collection: "v021_table_cardbacks"),
-  StoreProduct(id: "cardback_v021_eagle", category: "cards", icon: "🦅", nameAr: "ظهر النسر الذهبي", nameEn: "Golden Eagle Card Back", descriptionAr: "ظهر ورق أسطوري مستوحى من طاولة النسر المحلق.", descriptionEn: "Legendary card back inspired by the soaring eagle table.", price: 35000, previewColor1: Color(0xff3f2a18), previewColor2: Color(0xffeab308), imageAsset: "assets/images/cardbacks/v021/cardback_v021_eagle.png", collection: "v021_table_cardbacks"),
-  StoreProduct(id: "cardback_v021_tiger", category: "cards", icon: "🐅", nameAr: "ظهر النمر الناري", nameEn: "Fire Tiger Card Back", descriptionAr: "ظهر ورق أسطوري مستوحى من طاولة النمر الناري.", descriptionEn: "Legendary card back inspired by the fiery tiger table.", price: 31000, previewColor1: Color(0xff431407), previewColor2: Color(0xfff97316), imageAsset: "assets/images/cardbacks/v021/cardback_v021_tiger.png", collection: "v021_table_cardbacks"),
-  StoreProduct(id: "cardback_v021_whale", category: "cards", icon: "🐋", nameAr: "ظهر الحوت الأزرق", nameEn: "Blue Whale Card Back", descriptionAr: "ظهر ورق فاخر مستوحى من طاولة الحوت في أعماق المحيط.", descriptionEn: "Premium card back inspired by the deep-ocean whale table.", price: 30000, previewColor1: Color(0xff082f49), previewColor2: Color(0xff38bdf8), imageAsset: "assets/images/cardbacks/v021/cardback_v021_whale.png", collection: "v021_table_cardbacks"),
-  StoreProduct(id: "cardback_v021_black_panther", category: "cards", icon: "🐈‍⬛", nameAr: "ظهر الفهد الأسود", nameEn: "Black Panther Card Back", descriptionAr: "ظهر ورق أسطوري داكن مستوحى من طاولة الفهد الأسود.", descriptionEn: "Dark legendary card back inspired by the black panther table.", price: 36000, previewColor1: Color(0xff020617), previewColor2: Color(0xff3b82f6), imageAsset: "assets/images/cardbacks/v021/cardback_v021_black_panther.png", collection: "v021_table_cardbacks"),
-  StoreProduct(id: "cardback_v021_owl", category: "cards", icon: "🦉", nameAr: "ظهر بومة الليل", nameEn: "Night Owl Card Back", descriptionAr: "ظهر ورق أسطوري مستوحى من طاولة بومة الليل والقمر.", descriptionEn: "Legendary card back inspired by the moonlit owl table.", price: 34500, previewColor1: Color(0xff0f172a), previewColor2: Color(0xff94a3b8), imageAsset: "assets/images/cardbacks/v021/cardback_v021_owl.png", collection: "v021_table_cardbacks"),
-  StoreProduct(id: "cardback_v021_white_wolf", category: "cards", icon: "🐺", nameAr: "ظهر الذئب الأبيض", nameEn: "White Wolf Card Back", descriptionAr: "ظهر ورق أسطوري مستوحى من طاولة الذئب الأبيض والجبال الثلجية.", descriptionEn: "Legendary card back inspired by the white wolf and snowy mountains table.", price: 36500, previewColor1: Color(0xffe2e8f0), previewColor2: Color(0xff60a5fa), imageAsset: "assets/images/cardbacks/v021/cardback_v021_white_wolf.png", collection: "v021_table_cardbacks"),
-  StoreProduct(id: "cardback_v021_fire_dragon", category: "cards", icon: "🐉", nameAr: "ظهر التنين الناري", nameEn: "Fire Dragon Card Back", descriptionAr: "ظهر ورق أسطوري فائق مستوحى من طاولة التنين الناري.", descriptionEn: "Ultra-legendary card back inspired by the fire dragon table.", price: 42000, previewColor1: Color(0xff450a0a), previewColor2: Color(0xffef4444), imageAsset: "assets/images/cardbacks/v021/cardback_v021_fire_dragon.png", collection: "v021_table_cardbacks"),
-  StoreProduct(id: "cardback_v021_gold_dragon", category: "cards", icon: "🐲", nameAr: "ظهر التنين الذهبي", nameEn: "Golden Dragon Card Back", descriptionAr: "ظهر ورق أسطوري فائق مستوحى من طاولة التنين الذهبي.", descriptionEn: "Ultra-legendary card back inspired by the golden dragon table.", price: 45000, previewColor1: Color(0xff1c1917), previewColor2: Color(0xfffacc15), imageAsset: "assets/images/cardbacks/v021/cardback_v021_gold_dragon.png", collection: "v021_table_cardbacks"),
-  StoreProduct(id: "cardback_v021_phoenix", category: "cards", icon: "🔥", nameAr: "ظهر العنقاء الأسطورية", nameEn: "Legendary Phoenix Card Back", descriptionAr: "أفخم ظهر ورق في المجموعة، مستوحى من طاولة العنقاء المتوهجة.", descriptionEn: "The collection's most prestigious card back, inspired by the glowing phoenix table.", price: 48000, previewColor1: Color(0xff3f0d0d), previewColor2: Color(0xffff6b00), imageAsset: "assets/images/cardbacks/v021/cardback_v021_phoenix.png", collection: "v021_table_cardbacks"),
   StoreProduct(id: "emoji_free_basic", category: "emoji", icon: "😀😄😂👍👏👋", nameAr: "إيموجي مجانية", nameEn: "Free Emojis", descriptionAr: "حزمة ردود سريعة كبيرة مع مؤثرات وصوت داخل الدردشة واللعبة.", descriptionEn: "Large quick reactions with animation and sound.", price: 0),
   StoreProduct(id: "emoji_beginner_fun", category: "emoji", icon: "😊😉😎🤩🥳", nameAr: "إيموجي مبتدئ مرحة", nameEn: "Beginner Fun", descriptionAr: "حزمة ردود سريعة كبيرة مع مؤثرات وصوت داخل الدردشة واللعبة.", descriptionEn: "Large quick reactions with animation and sound.", price: 1000),
   StoreProduct(id: "emoji_medium_react", category: "emoji", icon: "😡😢😭😱🤔☕", nameAr: "إيموجي تفاعل متوسط", nameEn: "Medium Reactions", descriptionAr: "حزمة ردود سريعة كبيرة مع مؤثرات وصوت داخل الدردشة واللعبة.", descriptionEn: "Large quick reactions with animation and sound.", price: 5000),
@@ -3145,7 +2823,7 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "cover_rose", category: "covers", icon: "🌹", nameAr: "غلاف روز غولد", nameEn: "Rose Gold Cover", descriptionAr: "خلفية أنيقة بدرجات الوردي والذهبي.", descriptionEn: "Elegant rose and gold profile cover.", price: 12500, value: "cover_rose", previewColor1: Color(0xff4c0519), previewColor2: Color(0xfffb7185)),
   StoreProduct(id: "cover_desert", category: "covers", icon: "🏜️", nameAr: "غلاف رمال الصحراء", nameEn: "Desert Sand Cover", descriptionAr: "خلفية دافئة بطابع عربي فاخر.", descriptionEn: "Warm premium cover with an Arab-inspired look.", price: 14500, value: "cover_desert", previewColor1: Color(0xff422006), previewColor2: Color(0xffd97706)),
   StoreProduct(id: "cover_obsidian", category: "covers", icon: "🖤", nameAr: "غلاف الأوبسيديان", nameEn: "Obsidian Cover", descriptionAr: "غلاف أسود معدني للنخبة.", descriptionEn: "Metallic black elite profile cover.", price: 18000, value: "cover_obsidian", previewColor1: Color(0xff030712), previewColor2: Color(0xff374151)),
-  StoreProduct(id: "cover_pasha", category: "covers", icon: "👑", nameAr: "غلاف قصر الباشا", nameEn: "Pasha Palace Cover", descriptionAr: "غلاف أحمر وذهبي مع هوية الطربوش.", descriptionEn: "Red and gold cover featuring the Pasha identity.", price: 24000, value: "cover_pasha", previewColor1: Color(0xff3f0a0a), previewColor2: Color(0xfff59e0b)),
+  StoreProduct(id: "cover_pasha", category: "covers", icon: "🎩", nameAr: "غلاف قصر الباشا", nameEn: "Pasha Palace Cover", descriptionAr: "غلاف أحمر وذهبي مع هوية الطربوش.", descriptionEn: "Red and gold cover featuring the Pasha identity.", price: 24000, value: "cover_pasha", previewColor1: Color(0xff3f0a0a), previewColor2: Color(0xfff59e0b)),
   StoreProduct(id: "cover_cosmic", category: "covers", icon: "🪐", nameAr: "غلاف المجرة", nameEn: "Cosmic Cover", descriptionAr: "غلاف كوني أسطوري بإضاءات متحركة هادئة.", descriptionEn: "Legendary cosmic cover with subtle moving lights.", price: 32000, value: "cover_cosmic", previewColor1: Color(0xff12033a), previewColor2: Color(0xff06b6d4)),
   StoreProduct(id: "cover_elite", category: "covers", icon: "🛡️", nameAr: "غلاف النخبة البيضاء", nameEn: "White Elite Cover", descriptionAr: "غلاف فضي نظيف لأعلى المستويات.", descriptionEn: "Clean silver cover for top-level players.", price: 40000, value: "cover_elite", previewColor1: Color(0xff334155), previewColor2: Color(0xffe2e8f0)),
   StoreProduct(id: "cover_phoenix", category: "covers", icon: "🔥", nameAr: "غلاف العنقاء الذهبية", nameEn: "Golden Phoenix Cover", descriptionAr: "غلاف ناري ذهبي بانسيابية هادئة.", descriptionEn: "Golden fire cover with subtle motion.", price: 44000, value: "cover_phoenix", previewColor1: Color(0xff3b0a08), previewColor2: Color(0xffffd166)),
@@ -3157,7 +2835,7 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "cover_tiger", category: "covers", icon: "🐯", nameAr: "غلاف هيبة النمر", nameEn: "Tiger Prestige Cover", descriptionAr: "هوية نمرية ذهبية قوية.", descriptionEn: "Strong golden tiger identity.", price: 36000, value: "cover_tiger", previewColor1: Color(0xff1c1005), previewColor2: Color(0xffffd166)),
   StoreProduct(id: "cover_eagle", category: "covers", icon: "🦅", nameAr: "غلاف جناح النسر", nameEn: "Eagle Wing Cover", descriptionAr: "غلاف فضي داكن للنخبة.", descriptionEn: "Dark silver elite cover.", price: 38000, value: "cover_eagle", previewColor1: Color(0xff0f172a), previewColor2: Color(0xfff8fafc)),
   StoreProduct(id: "cover_lava", category: "covers", icon: "🌋", nameAr: "غلاف الحمم الأسطورية", nameEn: "Legendary Lava Cover", descriptionAr: "حمم قرمزية متحركة بهدوء.", descriptionEn: "Subtle animated crimson lava.", price: 47000, value: "cover_lava", previewColor1: Color(0xff260303), previewColor2: Color(0xffff6b00)),
-  StoreProduct(id: "cover_pearl", category: "covers", icon: "🦪", nameAr: "غلاف لؤلؤة القصر", nameEn: "Palace Pearl Cover", descriptionAr: "لؤلؤ بنفسجي أبيض أنيق.", descriptionEn: "Elegant purple-white pearl.", price: 52000, value: "cover_pearl", previewColor1: Color(0xff312e3b), previewColor2: Color(0xfffffbeb)),  ...buildV173StoreProducts(),
+  StoreProduct(id: "cover_pearl", category: "covers", icon: "🦪", nameAr: "غلاف لؤلؤة القصر", nameEn: "Palace Pearl Cover", descriptionAr: "لؤلؤ بنفسجي أبيض أنيق.", descriptionEn: "Elegant purple-white pearl.", price: 52000, value: "cover_pearl", previewColor1: Color(0xff312e3b), previewColor2: Color(0xfffffbeb)),
 ];
 
 StoreProduct? storeProductById(String id) {
@@ -3222,9 +2900,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> submit({bool offline = false}) async {
     setState(() { busy = true; error = null; });
     final result = registerMode
-        ? offline
-            ? await widget.controller.registerOffline(loginController.text, emailController.text, passwordController.text)
-            : await widget.controller.register(loginController.text, emailController.text, passwordController.text)
+        ? await widget.controller.register(loginController.text, emailController.text, passwordController.text)
         : await widget.controller.login(loginController.text, passwordController.text, offline: offline);
     if (!mounted) return;
     setState(() { busy = false; error = result; });
@@ -3412,21 +3088,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child: Text(error!, style: const TextStyle(color: Color(0xffff9a9a), fontSize: 12, height: 1.5)),
                               ),
                             ],
-                            const SizedBox(height: 10),
-                            const Text('🌐 تسجيل ودخول مرن: أونلاين أو أوفلاين', textAlign: TextAlign.center, style: TextStyle(color: Colors.lightGreenAccent, fontWeight: FontWeight.w900, fontSize: 11)),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 17),
                             FilledButton.icon(
                               onPressed: busy ? null : () => submit(),
                               icon: busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(registerMode ? Icons.person_add_alt_1 : Icons.login_rounded),
                               label: Text(registerMode ? authTextV151(lang, 'create') : authTextV151(lang, 'secure')),
                               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                            ),
-                            const SizedBox(height: 8),
-                            OutlinedButton.icon(
-                              onPressed: busy ? null : () => submit(offline: true),
-                              icon: const Icon(Icons.cloud_off_rounded),
-                              label: Text(registerMode ? 'إنشاء حساب محلي أوفلاين' : 'دخول أوفلاين بالحساب المحفوظ'),
-                              style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                             ),
                             if (!registerMode) ...[
                               const SizedBox(height: 10),
@@ -3447,7 +3114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Expanded(child: OutlinedButton.icon(onPressed: busy ? null : () => socialLogin('facebook'), icon: const Text('f', style: TextStyle(fontWeight: FontWeight.w900)), label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Facebook', maxLines: 1, softWrap: false, style: TextStyle(fontSize: 9))))),
                               ]),
                               const SizedBox(height: 7),
-                              FilledButton.tonalIcon(onPressed: busy ? null : widget.controller.loginAsGuest, icon: const Icon(Icons.person_outline_rounded), label: Text(authTextV151(lang, 'guest'))) ,
+                              FilledButton.tonalIcon(onPressed: busy || warqnaProductionMode ? null : widget.controller.loginAsGuest, icon: const Icon(Icons.person_outline_rounded), label: Text(authTextV151(lang, 'guest'))) ,
                               const SizedBox(height: 5),
                               Text(authTextV151(lang, 'providerNote'), textAlign: TextAlign.center, style: TextStyle(color: palette.gold.withValues(alpha: .9), fontSize: 9, height: 1.5)),
                             ],
@@ -3460,7 +3127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text(warqnaProductionMode ? 'حسابات خادم حقيقية • جلسات آمنة • حماية واستعادة للحساب' : 'حساب محلي آمن للعب أوفلاين • مزامنة الخادم عند توفر الإنترنت', textAlign: TextAlign.center, style: TextStyle(color: Colors.white30, fontSize: 9)),
+                      Text(warqnaProductionMode ? 'حسابات خادم حقيقية • جلسات آمنة • حماية واستعادة للحساب' : 'حسابات مستقلة • حفظ محلي آمن للتجربة • مزامنة عند ربط الخادم', textAlign: TextAlign.center, style: TextStyle(color: Colors.white30, fontSize: 9)),
                     ],
                   ),
                 ),
@@ -3525,7 +3192,7 @@ class _HomeShellState extends State<HomeShell> {
         selectedIndex: index,
         onDestinationSelected: (value) => setState(() => index = value),
         destinations: [
-          NavigationDestination(icon: const Tooltip(message: 'المتجر', child: Icon(Icons.redeem)), label: L.t(widget.controller.localeCode, 'store')),
+          NavigationDestination(icon: const Icon(Icons.redeem), label: L.t(widget.controller.localeCode, 'store')),
           NavigationDestination(icon: const Icon(Icons.style), label: L.t(widget.controller.localeCode, 'games')),
           NavigationDestination(icon: const Icon(Icons.home_rounded), label: L.t(widget.controller.localeCode, 'home')),
           NavigationDestination(icon: const Icon(Icons.shield), label: L.t(widget.controller.localeCode, 'clubs')),
@@ -3562,32 +3229,26 @@ class HomePage extends StatelessWidget {
           onJoin: () => showCompetitions(context, controller),
         ),
         const SizedBox(height: 13),
-        PrizeBoxesHomeCardV02(
-          controller: controller,
-          onOpen: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => PrizeBoxesPageV02(controller: controller))),
-        ),
-        const SizedBox(height: 13),
         GiftRoad(controller: controller),
         const SizedBox(height: 16),
-        SectionTitle(title: L.t(lang, 'featured'), action: L.t(lang, 'customizeGamesV022'), onTap: () => showHomeGamePickerV022(context, controller)),
+        SectionTitle(title: L.t(lang, 'featured'), action: 'عرض الكل', onTap: () => onTab(1)),
         const SizedBox(height: 9),
         LayoutBuilder(builder: (context, constraints) {
-          final featuredGames = homeGamesV022(controller);
-          final columns = constraints.maxWidth < 430 ? math.min(2, featuredGames.length) : math.min(4, featuredGames.length);
+          final columns = constraints.maxWidth < 430 ? 2 : 3;
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: math.max(1, columns),
+              crossAxisCount: columns,
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
-              childAspectRatio: columns <= 2 ? .92 : .86,
+              childAspectRatio: columns == 2 ? .92 : .86,
             ),
-            itemCount: featuredGames.length,
+            itemCount: 3,
             itemBuilder: (_, i) => GameCard(
-              game: featuredGames[i],
+              game: gamesCatalog[i],
               lang: lang,
-              onTap: () => showGameLobby(context, controller, featuredGames[i]),
+              onTap: () => showGameLobby(context, controller, gamesCatalog[i]),
             ),
           );
         }),
@@ -3680,7 +3341,7 @@ class _GamesPageState extends State<GamesPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              QuickButton(icon: '📊', label: L.t(lang, 'leaderboard'), onTap: () => showLeaderboard(context, widget.controller)),
+              QuickButton(icon: '📊', label: L.t(lang, 'leaderboard'), onTap: () => showLeaderboard(context)),
               QuickButton(icon: '📖', label: L.t(lang, 'rules'), onTap: () => showRules(context, lang, 'tarneeb')),
               QuickButton(icon: '🏆', label: L.t(lang, 'competitions'), onTap: () => showCompetitions(context, widget.controller)),
               QuickButton(icon: '👥', label: L.t(lang, 'friends'), onTap: () => showFriends(context, widget.controller)),
@@ -3713,32 +3374,24 @@ class _StorePageState extends State<StorePage> {
   String category = 'all';
   String tier = 'all';
   String tableCollection = 'all';
-  String themeCollection = 'all';
   String query = '';
 
   @override
   Widget build(BuildContext context) {
     final lang = widget.controller.localeCode;
-    widget.controller.purgeExpiredPackInventoryV176(DateTime.now());
     final visible = products.where((p) {
-      if (p.category == 'pasha_style') return false;
       if (!widget.controller.isStoreProductVisible(p)) return false;
-      final activeOwned = widget.controller.isOwnedActiveV176(p.id);
-      if (p.collection == 'daily_pack_v176' && !activeOwned) return false;
-      final categoryMatch = category == 'inventory' ? activeOwned : category == 'all' || p.category == category;
+      final categoryMatch = category == 'all' || p.category == category;
       final tierMatch = tier == 'all' || p.tier == tier;
       final tableCollectionMatch = category != 'tables' ||
           tableCollection == 'all' ||
           (tableCollection == 'legacy' ? p.collection == null : p.collection == tableCollection);
-      final themeCollectionMatch = category != 'themes' || themeCollection == 'all' || themeCategoryV022(p) == themeCollection;
       final text = '${p.name(lang)} ${p.description(lang)}'.toLowerCase();
-      return categoryMatch && tierMatch && tableCollectionMatch && themeCollectionMatch && text.contains(query.toLowerCase());
+      return categoryMatch && tierMatch && tableCollectionMatch && text.contains(query.toLowerCase());
     }).toList();
     const categories = [
       ('all', 'الكل'),
-      ('inventory', 'مقتنياتي'),
       ('pasha', 'الباشا'),
-      ('competition_ticket', 'تذاكر المنافسات'),
       ('themes', 'الثيمات'),
       ('tables', 'الطاولات'),
       ('cards', 'ظهر الورق'),
@@ -3757,11 +3410,12 @@ class _StorePageState extends State<StorePage> {
           children: [
             Image.asset('assets/images/brand/warqna_logo.png', width: 56, height: 56, fit: BoxFit.contain),
             const SizedBox(width: 8),
-            const Spacer(),
-            ActionChip(
-              avatar: const Text('🪙'),
-              label: Text(formatNumber(widget.controller.coins), style: const TextStyle(fontWeight: FontWeight.w900)),
-              onPressed: () => showWallet(context, widget.controller),
+            Expanded(
+              child: SectionTitle(
+                title: L.t(lang, 'store'),
+                action: '🪙 ${formatNumber(widget.controller.coins)}',
+                onTap: () => showWallet(context, widget.controller),
+              ),
             ),
             buildMainFileFriendsButton(context, widget.controller),
           ],
@@ -3789,7 +3443,7 @@ class _StorePageState extends State<StorePage> {
                 Text('${products.length} عنصر فاخر', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                 Text('طاولات ${products.where((p) => p.category == 'tables').length} • أظهر ورق ${products.where((p) => p.category == 'cards').length} • شراء بتأكيد ومعاينة مباشرة', style: const TextStyle(color: Colors.white60, fontSize: 9, height: 1.4)),
               ])),
-              Chip(label: Text('${widget.controller.activeOwnedCountV176} مملوك')),
+              Chip(label: Text('${widget.controller.owned.length} مملوك')),
             ]),
           ),
         ),
@@ -3815,13 +3469,6 @@ class _StorePageState extends State<StorePage> {
             },
           ),
         ),
-        if (category == 'themes') ...[
-          const SizedBox(height: 8),
-          StoreSubcategoryTabsV022(
-            selected: themeCollection,
-            onChanged: (value) => setState(() => themeCollection = value),
-          ),
-        ],
         if (category == 'tables') ...[
           const SizedBox(height: 8),
           PremiumPanel(
@@ -3842,8 +3489,6 @@ class _StorePageState extends State<StorePage> {
                         ('reference_2', 'الجديدة 11–20'),
                         ('reference_3', 'الجديدة 21–30'),
                         ('reference_4', 'الجديدة 31–40'),
-                        ('v173_royal', 'مجموعة V173 الملكية'),
-                        ('v173_showcase', 'حيوانات وسيارات V173'),
                         ('legacy', 'الطاولات السابقة'),
                       ])
                         ChoiceChip(
@@ -3957,28 +3602,20 @@ class ClubsPage extends StatelessWidget {
                   ]),
                   const SizedBox(height: 12),
                   Row(children: [
-                    Expanded(child: FilledButton.icon(onPressed: () => showClubChallenges(context, controller, current.$3), icon: const Icon(Icons.emoji_events_outlined), label: const FittedBox(child: Text('تحديات النادي')))),
+                    Expanded(child: FilledButton.icon(onPressed: () => showClubChallenges(context, controller, current.$3), icon: const Icon(Icons.emoji_events_outlined), label: const Text('تحديات المجموعة'))),
                     const SizedBox(width: 8),
-                    Expanded(child: FilledButton.tonalIcon(onPressed: controller.leaveClub, icon: const Icon(Icons.logout), label: FittedBox(child: Text(L.t(lang, 'leaveClub'))))),
+                    Expanded(child: FilledButton.tonalIcon(onPressed: controller.leaveClub, icon: const Icon(Icons.logout), label: Text(L.t(lang, 'leaveClub')))),
                   ]),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: () => showClubManagementV022(context, controller),
-                    icon: const Icon(Icons.admin_panel_settings_outlined),
-                    label: const Text('إدارة الأعضاء والصلاحيات وسجل النادي'),
-                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                  ),
                 ],
               ),
             ),
           ),
         const SizedBox(height: 12),
-        // Legacy v170 contract symbol retained: GroupInnovationHubV170
-        GroupCommandCenterV173(controller: controller),
+        GroupInnovationHubV170(controller: controller),
         const SizedBox(height: 14),
         Row(children: [
           const Expanded(child: SectionTitle(title: 'المجموعات المقترحة')),
-          FilledButton.tonalIcon(onPressed: controller.vipDays > 0 ? () => showCreateGroupV151(context, controller) : () => showPashaBenefits(context, controller), icon: PashaHatV173(controller: controller, width: 30, height: 22), label: Text(controller.vipDays > 0 ? 'إنشاء مجموعة' : 'يتطلب باشا')),
+          FilledButton.tonalIcon(onPressed: controller.vipDays > 0 ? () => showCreateGroupV151(context, controller) : () => showPashaBenefits(context, controller), icon: Image.asset('assets/images/pasha.png', width: 22, height: 22), label: Text(controller.vipDays > 0 ? 'إنشاء مجموعة' : 'يتطلب باشا')),
         ]),
         const SizedBox(height: 8),
         ...clubs.map((club) => Padding(
@@ -4061,7 +3698,7 @@ class EventsPage extends StatelessWidget {
           const Expanded(child: Text('المنافسات النشطة', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900))),
           FilledButton.tonalIcon(
             onPressed: controller.vipDays > 0 ? () => showCreateCompetitionV151(context, controller) : () => showPashaBenefits(context, controller),
-            icon: PashaHatV173(controller: controller, width: 30, height: 22),
+            icon: Image.asset('assets/images/pasha.png', width: 22, height: 22),
             label: Text(controller.vipDays > 0 ? 'إنشاء منافسة' : 'يتطلب باشا'),
           ),
         ]),
@@ -4284,7 +3921,7 @@ class _CompactProductPreview extends StatelessWidget {
     if (product.category == 'pasha') {
       return Stack(alignment: Alignment.center, children: [
         Container(width: 92, height: 92, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [c2.withValues(alpha: .34), Colors.transparent]), boxShadow: [BoxShadow(color: c2.withValues(alpha: .32), blurRadius: 22)])),
-        PashaHatV173(controller: controller, width: 114, height: 78),
+        Image.asset('assets/images/pasha.png', width: 78, height: 78, fit: BoxFit.contain),
       ]);
     }
     if (product.category == 'covers') {
@@ -4339,30 +3976,8 @@ class _CompactProductPreview extends StatelessWidget {
         ),
       );
     }
-    if (product.category == 'competition_ticket' && product.value != null) {
-      return Padding(
-        padding: const EdgeInsets.all(4),
-        child: Image.asset(ticketAssetV02(product.value!), fit: BoxFit.contain, filterQuality: FilterQuality.high),
-      );
-    }
     if (product.category == 'cards') {
-      return Container(
-        width: 62,
-        height: 88,
-        padding: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(11),
-          gradient: product.imageAsset == null ? LinearGradient(colors: [c1, c2]) : null,
-          border: Border.all(color: Colors.white70, width: 2),
-          boxShadow: [BoxShadow(color: c2.withValues(alpha: .28), blurRadius: 12)],
-        ),
-        child: product.imageAsset == null
-            ? Center(child: Text(product.icon, style: const TextStyle(fontSize: 30)))
-            : ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(product.imageAsset!, fit: BoxFit.cover, filterQuality: FilterQuality.high),
-              ),
-      );
+      return Container(width: 58, height: 82, decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), gradient: LinearGradient(colors: [c1, c2]), border: Border.all(color: Colors.white70, width: 2)), child: Center(child: Text(product.icon, style: const TextStyle(fontSize: 30))));
     }
     return FittedBox(fit: BoxFit.scaleDown, child: Text(product.icon, textAlign: TextAlign.center, style: const TextStyle(fontSize: 66)));
   }
@@ -4433,7 +4048,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
   String? selectedCode;
   bool reactionsOpen = false;
   ReactionItem? floatingReaction;
-  bool chatOpen = false;
+  bool chatOpen = true;
   bool botsActing = false;
   bool rewardGranted = false;
   bool autoNextRoundScheduled = false;
@@ -4561,9 +4176,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
     _maybeAwardRoundProgress();
     if (rewardGranted || engine.phase != TarneebPhase.gameOver) return;
     rewardGranted = true;
-    final wonChallengeMatch = engine.winnerTeam == 0 && !awayMode;
-    unawaited(widget.controller.reportChallengeRoadResultV03(wonChallengeMatch));
-    if (wonChallengeMatch) {
+    if (engine.winnerTeam == 0 && !awayMode) {
       widget.controller.rewardGameWin('tarneeb');
       if (mounted) showToast(context, 'فوز رائع! تمت إضافة مكافأة الفوز وXP وطريق الهدايا.');
     }
@@ -4673,7 +4286,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
 
   @override
   Widget build(BuildContext context) {
-    final landscape = widget.controller.landscapeMode;
+    final landscape = widget.controller.landscapeMode || MediaQuery.orientationOf(context) == Orientation.landscape;
     final body = landscape
         ? Row(
             children: [
@@ -4688,7 +4301,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
         : Column(
             children: [
               Expanded(child: _gameArea(context, landscape: false)),
-              if (chatOpen) SizedBox(height: (145 * widget.controller.uiChatScale).clamp(118.0, 168.0).toDouble(), child: _chatPanel(context)) else _collapsedChatButton(),
+              if (chatOpen) SizedBox(height: 185 * widget.controller.uiChatScale, child: _chatPanel(context)) else _collapsedChatButton(),
             ],
           );
 
@@ -4762,10 +4375,10 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
                   Positioned(top: compact ? 38 : 51, left: 0, right: 0, child: Center(child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, controller: widget.controller))),
                   Positioned(left: landscape ? 90 : 47, top: constraints.maxHeight * .41, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
                   Positioned(right: landscape ? 90 : 47, top: constraints.maxHeight * .41, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
-                  Positioned(top: 0, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[2], letter: 'ل', botProfile: botProfiles[2], bid: _seatBid(2), onProfileTap: () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(botProfiles[2], widget.controller.localeCode)))),
-                  Positioned(left: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[1], letter: 'س', botProfile: botProfiles[3], bid: _seatBid(1), vertical: true, onProfileTap: () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(botProfiles[3], widget.controller.localeCode)))),
-                  Positioned(right: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[3], letter: 'ج', botProfile: botProfiles[1], bid: _seatBid(3), vertical: true, onProfileTap: () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(botProfiles[1], widget.controller.localeCode)))),
-                  Positioned(bottom: compact ? 64 : 78, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[0], letter: widget.controller.displayName.isEmpty ? '?' : widget.controller.displayName.substring(0, 1), bid: _seatBid(0), nameColor: colorFromHex(widget.controller.selectedNameColor), badge: storeProductById(widget.controller.selectedBadge)?.icon, avatarEmoji: widget.controller.avatarEmoji, onProfileTap: () => showProfile(context, widget.controller))),
+                  Positioned(top: 0, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[2], letter: 'ل', botProfile: botProfiles[2], bid: _seatBid(2))),
+                  Positioned(left: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[1], letter: 'س', botProfile: botProfiles[3], bid: _seatBid(1), vertical: true)),
+                  Positioned(right: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[3], letter: 'ج', botProfile: botProfiles[1], bid: _seatBid(3), vertical: true)),
+                  Positioned(bottom: compact ? 64 : 78, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[0], letter: widget.controller.displayName.isEmpty ? '?' : widget.controller.displayName.substring(0, 1), bid: _seatBid(0), nameColor: colorFromHex(widget.controller.selectedNameColor), badge: storeProductById(widget.controller.selectedBadge)?.icon, avatarEmoji: widget.controller.avatarEmoji)),
                   Positioned(
                     right: landscape ? 92 : 48,
                     bottom: compact ? 92 : 112,
@@ -4859,46 +4472,39 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
   Widget _handWidget(BuildContext context, {required double maxWidth, required bool compact}) {
     final hand = engine.humanHand;
     if (hand.isEmpty) return const SizedBox(height: 8);
+    final cardWidth = compact ? 48.0 : 56.0;
+    final cardHeight = cardWidth * 1.52;
     final legal = engine.phase == TarneebPhase.playing && engine.currentSeat == 0
         ? engine.legalCards(0).map((card) => card.code).toSet()
         : hand.map((card) => card.code).toSet();
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final available = math.min(maxWidth, constraints.maxWidth);
-        final cardWidth = visibleCardWidthV021(available, hand.length, preferred: compact ? 48 : 56, gap: 2);
-        final cardHeight = cardWidth * 1.52;
-        return SizedBox(
-          height: cardHeight + 22,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var index = 0; index < hand.length; index++)
-                  Padding(
-                    padding: EdgeInsets.only(right: index == hand.length - 1 ? 0 : 2),
-                    child: Transform.translate(
-                      offset: Offset(0, selectedCode == hand[index].code ? -7 : 0),
-                      child: GestureDetector(
-                        onTap: legal.contains(hand[index].code) && engine.phase == TarneebPhase.playing && engine.currentSeat == 0
-                            ? () => setState(() => selectedCode = selectedCode == hand[index].code ? null : hand[index].code)
-                            : null,
-                        onDoubleTap: legal.contains(hand[index].code) ? () => _playLocalCard(hand[index].code) : null,
-                        onVerticalDragEnd: legal.contains(hand[index].code)
-                            ? (details) { if ((details.primaryVelocity ?? 0) < -180) _playLocalCard(hand[index].code); }
-                            : null,
-                        child: Opacity(
-                          opacity: engine.phase == TarneebPhase.playing && engine.currentSeat == 0 && !legal.contains(hand[index].code) ? .42 : 1,
-                          child: PlayingCard(label: hand[index].label, width: cardWidth, height: cardHeight, selected: selectedCode == hand[index].code),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+    return SizedBox(
+      height: cardHeight + 22,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+        itemCount: hand.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 3),
+        itemBuilder: (context, index) {
+          final card = hand[index];
+          final selected = selectedCode == card.code;
+          return Transform.translate(
+            offset: Offset(0, selected ? -7 : 0),
+            child: GestureDetector(
+              onTap: legal.contains(card.code) && engine.phase == TarneebPhase.playing && engine.currentSeat == 0
+                  ? () => setState(() => selectedCode = selected ? null : card.code)
+                  : null,
+              onDoubleTap: legal.contains(card.code) ? () => _playLocalCard(card.code) : null,
+              onVerticalDragEnd: legal.contains(card.code)
+                  ? (details) { if ((details.primaryVelocity ?? 0) < -180) _playLocalCard(card.code); }
+                  : null,
+              child: Opacity(
+                opacity: engine.phase == TarneebPhase.playing && engine.currentSeat == 0 && !legal.contains(card.code) ? .42 : 1,
+                child: PlayingCard(label: card.label, width: cardWidth, height: cardHeight, selected: selected),
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -5110,34 +4716,24 @@ class PremiumCardBack extends StatelessWidget {
     final c1 = product?.previewColor1 ?? const Color(0xff111827);
     final c2 = product?.previewColor2 ?? const Color(0xfffacc15);
     final customBytes = decodeDataImage(controller?.customCardBackData);
-    final asset = customBytes == null ? product?.imageAsset : null;
     return Container(
       width: width,
       height: height,
       alignment: Alignment.center,
-      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(width * .18),
-        gradient: customBytes == null && asset == null
-            ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c1, Color.lerp(c1, Colors.black, .35)!])
-            : null,
-        image: customBytes != null
-            ? DecorationImage(image: MemoryImage(customBytes), fit: BoxFit.cover)
-            : asset == null
-                ? null
-                : DecorationImage(image: AssetImage(asset), fit: BoxFit.cover, filterQuality: FilterQuality.high),
+        gradient: customBytes == null ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c1, Color.lerp(c1, Colors.black, .35)!]) : null,
+        image: customBytes == null ? null : DecorationImage(image: MemoryImage(customBytes), fit: BoxFit.cover),
         border: Border.all(color: c2, width: 1.4),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .35), blurRadius: 5, offset: const Offset(0, 3))],
       ),
-      child: asset == null && customBytes == null
-          ? Container(
-              width: width * .62,
-              height: height * .67,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(width * .12), border: Border.all(color: c2.withValues(alpha: .7))),
-              child: Text(product?.icon ?? 'W', style: TextStyle(color: c2, fontSize: width * .34, fontWeight: FontWeight.w900)),
-            )
-          : null,
+      child: Container(
+        width: width * .62,
+        height: height * .67,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(width * .12), border: Border.all(color: c2.withValues(alpha: .7))),
+        child: Text(product?.icon ?? 'W', style: TextStyle(color: c2, fontSize: width * .34, fontWeight: FontWeight.w900)),
+      ),
     );
   }
 }
@@ -5225,57 +4821,6 @@ class _TablePatternPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class RoundXpNoticeV174 {
-  final String name;
-  final String avatar;
-  final int earnedXp;
-  final int roundPoints;
-  final int level;
-  const RoundXpNoticeV174({required this.name, required this.avatar, required this.earnedXp, required this.roundPoints, required this.level});
-}
-
-class RoundXpBannerV174 extends StatelessWidget {
-  final List<RoundXpNoticeV174> notices;
-  const RoundXpBannerV174({super.key, required this.notices});
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: Container(
-          key: ValueKey(notices.map((item) => '${item.name}:${item.earnedXp}').join('|')),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: const Color(0xee08111f),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.amberAccent.withValues(alpha: .75), width: 1.5),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .45), blurRadius: 18, offset: const Offset(0, 8))],
-          ),
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 6,
-            children: notices.map((item) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: .07), borderRadius: BorderRadius.circular(14)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(item.avatar, style: const TextStyle(fontSize: 18)),
-                const SizedBox(width: 5),
-                Text(item.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 11)),
-                const SizedBox(width: 7),
-                Text('+${item.earnedXp} XP', style: const TextStyle(color: Colors.lightGreenAccent, fontWeight: FontWeight.w900, fontSize: 12)),
-                if (item.roundPoints > 0) Text('  •  +${item.roundPoints} نقطة', style: const TextStyle(color: Colors.amberAccent, fontSize: 10)),
-                Text('  •  Lv.${item.level}', style: const TextStyle(color: Colors.white70, fontSize: 10)),
-              ]),
-            )).toList(),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class ServerEngineRoomPage extends StatefulWidget {
   final AppController controller;
   final GameInfo game;
@@ -5296,7 +4841,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
   bool sending = false;
   bool reactionsOpen = false;
   ReactionItem? floatingReaction;
-  bool chatOpen = false;
+  bool chatOpen = true;
   int chatSection = 0;
   bool awayMode = false;
   int autoPlayedTurns = 0;
@@ -5312,9 +4857,6 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
   bool voicePanelExpanded = true;
   Timer? serverAutoNextRoundTimer;
   bool serverAutoNextRoundScheduled = false;
-  List<RoundXpNoticeV174> roundXpNoticesV174 = <RoundXpNoticeV174>[];
-  String? lastProgressionFingerprintV174;
-  Timer? roundXpNoticeTimerV174;
 
   @override
   void initState() {
@@ -5340,7 +4882,6 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
     WidgetsBinding.instance.removeObserver(this);
     timer?.cancel();
     serverAutoNextRoundTimer?.cancel();
-    roundXpNoticeTimerV174?.cancel();
     voiceRoom?.removeListener(_onVoiceChanged);
     voiceRoom?.dispose();
     serverChatController.dispose();
@@ -5363,7 +4904,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
   }
 
   Future<void> _openLocalRoom([String? reason]) async {
-    localSession = LocalGameSession(gameId: widget.game.id, humanName: widget.controller.displayName, difficulty: widget.controller.botDifficultyCode, localeCode: widget.controller.localeCode, playerCount: widget.options.playerCount);
+    localSession = LocalGameSession(gameId: widget.game.id, humanName: widget.controller.displayName, difficulty: widget.controller.botDifficultyCode, playerCount: widget.options.playerCount);
     if (!mounted) return;
     setState(() {
       room = localSession!.room();
@@ -5404,10 +4945,8 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
               playerCount: widget.options.playerCount,
             );
       if (!mounted) return;
-      final updatedRoom = Map<String, dynamic>.from(data['room'] as Map);
-      _consumeProgressionPopupV174(updatedRoom);
       setState(() {
-        room = updatedRoom;
+        room = Map<String, dynamic>.from(data['room'] as Map);
         loading = false;
         error = null;
         seconds = int.tryParse(room?['turn_seconds']?.toString() ?? '') ?? widget.options.turnSeconds;
@@ -5495,60 +5034,16 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
     if (seconds <= 0) _timeout();
   }
 
-  void _consumeProgressionPopupV174(Map<String, dynamic> updated) {
-    final rawState = updated['state'];
-    if (rawState is! Map) return;
-    final rawPopup = rawState['progression_popup'];
-    if (rawPopup is! Map || rawPopup.isEmpty) return;
-    final fingerprint = jsonEncode(rawPopup);
-    if (fingerprint == lastProgressionFingerprintV174) return;
-    lastProgressionFingerprintV174 = fingerprint;
-    final players = updated['players'] is List ? updated['players'] as List : const [];
-    final byKey = <String, Map<String, dynamic>>{
-      for (final item in players.whereType<Map>())
-        if (item['key'] != null) item['key'].toString(): Map<String, dynamic>.from(item),
-    };
-    final notices = <RoundXpNoticeV174>[];
-    for (final entry in rawPopup.entries) {
-      final key = entry.key.toString();
-      final player = byKey[key];
-      if (player == null || player['bot'] == true) continue;
-      final result = entry.value is Map ? Map<String, dynamic>.from(entry.value as Map) : <String, dynamic>{};
-      final earned = int.tryParse((result['xp'] ?? result['awarded_xp'] ?? result['earned_xp'] ?? 0).toString()) ?? 0;
-      if (earned <= 0) continue;
-      notices.add(RoundXpNoticeV174(
-        name: player['name']?.toString() ?? 'لاعب',
-        avatar: player['avatar']?.toString() ?? '👤',
-        earnedXp: earned,
-        roundPoints: int.tryParse((result['round_points'] ?? 0).toString()) ?? 0,
-        level: int.tryParse((result['profile'] is Map ? (result['profile'] as Map)['level'] : player['level']).toString()) ?? 1,
-      ));
-      if (key == 'user:${result['user_id'] ?? ''}' || player['name']?.toString() == widget.controller.displayName) {
-        widget.controller.applyServerRoundProgressV174(result);
-      }
-    }
-    if (notices.isEmpty) return;
-    roundXpNoticeTimerV174?.cancel();
-    roundXpNoticesV174 = notices;
-    roundXpNoticeTimerV174 = Timer(const Duration(seconds: 6), () {
-      if (mounted) setState(() => roundXpNoticesV174 = <RoundXpNoticeV174>[]);
-    });
-  }
-
   Future<void> _timeout() async {
     if (roomCode.isEmpty || sending) return;
     sending = true;
     try {
-      final beforeRoom = room == null ? <String, dynamic>{} : Map<String, dynamic>.from(room!);
       if (localSession != null) {
         final updated = localSession!.timeout();
-        _awardLocalProgressionTransition(beforeRoom, updated);
         if (mounted) setState(() { room = Map<String, dynamic>.from(updated); seconds = turnDuration; selectedCard = null; });
       } else {
         final data = await widget.controller.api.gameTimeout(roomCode);
-        final updated = Map<String, dynamic>.from(data['room'] as Map);
-        _consumeProgressionPopupV174(updated);
-        if (mounted) setState(() { room = updated; seconds = turnDuration; selectedCard = null; });
+        if (mounted) setState(() { room = Map<String, dynamic>.from(data['room'] as Map); seconds = turnDuration; selectedCard = null; });
       }
       if (awayMode) {
         autoPlayedTurns += 1;
@@ -5589,19 +5084,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
       mode: tournament ? 'tournament' : 'normal',
       stage: (afterPhase == 'finished' || afterPhase == 'game_over') && won ? 'champion' : 'round',
     );
-    if (report != null) {
-      roundXpNoticeTimerV174?.cancel();
-      roundXpNoticesV174 = <RoundXpNoticeV174>[
-        RoundXpNoticeV174(name: widget.controller.displayName, avatar: widget.controller.avatarEmoji, earnedXp: report.xp, roundPoints: report.roundPoints, level: widget.controller.level),
-      ];
-      roundXpNoticeTimerV174 = Timer(const Duration(seconds: 6), () {
-        if (mounted) setState(() => roundXpNoticesV174 = <RoundXpNoticeV174>[]);
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) showRoundRewardReport(context, widget.controller, report); });
-    }
-    if ((afterPhase == 'finished' || afterPhase == 'game_over')) {
-      unawaited(widget.controller.reportChallengeRoadResultV03(won, roomCode: roomCode.isEmpty ? null : roomCode));
-    }
+    if (report != null) WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) showRoundRewardReport(context, widget.controller, report); });
     if (won) {
       final product = storeProductById(widget.controller.selectedEffect);
       floatingReaction = ReactionItem('local_victory_$marker', product?.icon ?? '🏆', 'victory', product?.nameAr ?? 'مؤثر الفوز', product?.nameEn ?? 'Victory effect', animated: true);
@@ -5624,11 +5107,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
         updated = Map<String, dynamic>.from(data['room'] as Map);
       }
       if (!mounted) return;
-      if (localSession != null) {
-        _awardLocalProgressionTransition(beforeRoom, updated);
-      } else {
-        _consumeProgressionPopupV174(updated);
-      }
+      _awardLocalProgressionTransition(beforeRoom, updated);
       AppSounds.fire({'play_card','discard','play_tile'}.contains(action) ? 'card_play' : 'button');
       setState(() {
         room = updated;
@@ -5639,7 +5118,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
       });
       _scheduleServerAutoNextRound();
       final currentState = state;
-      if (localSession != null && currentState['game_over'] == true && currentState['winner']?.toString() == 'user:0' && !awayMode) {
+      if (currentState['game_over'] == true && currentState['winner']?.toString() == 'user:0' && !awayMode) {
         widget.controller.rewardGameWin(widget.game.id);
       }
     } on ApiException catch (e) {
@@ -5757,11 +5236,11 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
                     children: [
                       if (isVoiceRoom) _voicePanel(context),
                       Expanded(
-                        child: OrientationBuilder(builder: (context, _) {
-                          final landscape = widget.controller.landscapeMode;
+                        child: OrientationBuilder(builder: (context, orientation) {
+                          final landscape = widget.controller.landscapeMode || orientation == Orientation.landscape;
                           return landscape
                               ? Row(children: [Expanded(flex: 7, child: _engineBoard(context)), if (chatOpen) SizedBox(width: 285 * widget.controller.uiChatScale, child: _engineChat())])
-                              : Column(children: [Expanded(child: _engineBoard(context)), if (chatOpen) SizedBox(height: (138 * widget.controller.uiChatScale).clamp(112.0, 158.0).toDouble(), child: _engineChat())]);
+                              : Column(children: [Expanded(child: _engineBoard(context)), if (chatOpen) SizedBox(height: 165 * widget.controller.uiChatScale, child: _engineChat())]);
                         }),
                       ),
                     ],
@@ -5837,16 +5316,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
                         : (participant.name.trim().isEmpty ? '?' : participant.name.trim().substring(0, 1));
                     return InkWell(
                       borderRadius: BorderRadius.circular(13),
-                      onTap: () => openPlayerProfileV021(
-                        context,
-                        widget.controller,
-                        userId: participant.userId,
-                        name: participant.name,
-                        avatar: participant.avatar,
-                        online: participant.online,
-                        activity: participant.self ? 'أنت • الغرفة الصوتية' : 'الغرفة الصوتية',
-                      ),
-                      onLongPress: participant.self || service == null ? null : () => service.togglePeerMute(participant.userId),
+                      onTap: participant.self || service == null ? null : () => service.togglePeerMute(participant.userId),
                       child: Container(
                         width: 118,
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
@@ -5938,13 +5408,6 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
                 bottom: 190,
                 child: Center(child: _stateSummary()),
               ),
-              if (roundXpNoticesV174.isNotEmpty)
-                Positioned(
-                  top: 8,
-                  left: 12,
-                  right: 12,
-                  child: RoundXpBannerV174(notices: roundXpNoticesV174),
-                ),
               if (floatingReaction != null)
                 Positioned.fill(
                   child: Center(
@@ -6019,9 +5482,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
     try {
       final data = await widget.controller.api.gameSession(roomCode);
       if (mounted && data['room'] is Map) {
-        final updated = Map<String, dynamic>.from(data['room'] as Map);
-        _consumeProgressionPopupV174(updated);
-        setState(() => room = updated);
+        setState(() => room = Map<String, dynamic>.from(data['room'] as Map));
         _scheduleServerAutoNextRound();
       }
     } catch (_) {}
@@ -6073,18 +5534,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
                   icon: bot ? '🤖' : (player['flag']?.toString() ?? '👤'),
                   title: player['name']?.toString() ?? 'لاعب',
                   subtitle: bot ? 'لاعب آلي احترافي' : 'LV.${player['level'] ?? 1} • ${player['connected'] == true ? 'متصل' : 'غير متصل'}',
-                  onTap: () => openPlayerProfileV021(
-                    context,
-                    widget.controller,
-                    userId: bot ? null : int.tryParse(player['user_id']?.toString() ?? ''),
-                    name: player['name']?.toString() ?? 'لاعب',
-                    username: player['username']?.toString(),
-                    avatar: bot ? '🤖' : player['avatar']?.toString(),
-                    level: int.tryParse(player['level']?.toString() ?? '') ?? 1,
-                    countryCode: player['country_code']?.toString() ?? 'PS',
-                    online: player['connected'] == true,
-                    activity: bot ? 'لاعب آلي احترافي' : 'لاعب في الغرفة',
-                  ),
+                  onTap: bot ? null : () => showPublicPlayerProfileV170(context, widget.controller, _roomPlayerAsFriend(player)),
                   action: (!bot && !mine && room?['is_owner'] == true && room?['allow_owner_kick'] == true)
                       ? IconButton(onPressed: () => _kickRoomPlayer(player), icon: const Icon(Icons.person_remove_alt_1_rounded, color: Colors.redAccent))
                       : const SizedBox.shrink(),
@@ -6106,25 +5556,13 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
       bid: player['bot'] == true ? 'AI ${widget.controller.botDifficultyCode.toUpperCase()}' : 'LIVE',
       nameColor: index == 0 ? colorFromHex(widget.controller.selectedNameColor) : profile?.secondary ?? const Color(0xffe5e7eb),
       badge: index == 0 ? storeProductById(widget.controller.selectedBadge)?.icon : '🤖',
-      onProfileTap: player['bot'] == true
-          ? () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(profile!, widget.controller.localeCode))
-          : () => openPlayerProfileV021(
-                context,
-                widget.controller,
-                userId: int.tryParse(player['user_id']?.toString() ?? ''),
-                name: name,
-                username: player['username']?.toString(),
-                avatar: player['avatar']?.toString(),
-                level: int.tryParse(player['level']?.toString() ?? '') ?? 1,
-                countryCode: player['country_code']?.toString() ?? 'PS',
-                online: player['connected'] == true,
-              ),
     );
     final bot = player['bot'] == true;
     final mine = player['key']?.toString() == state['you']?.toString();
     final canKick = !bot && !mine && room?['is_owner'] == true && room?['allow_owner_kick'] == true;
     final interactiveSeat = GestureDetector(
       behavior: HitTestBehavior.opaque,
+      onTap: bot ? null : () => showPublicPlayerProfileV170(context, widget.controller, _roomPlayerAsFriend(player)),
       onLongPress: canKick ? () => _kickRoomPlayer(player) : null,
       child: seat,
     );
@@ -6381,38 +5819,32 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
 
   Widget _serverHand() {
     if (hand.isEmpty) return const SizedBox(height: 55, child: Center(child: Text('لا توجد أوراق ظاهرة في هذه المرحلة', style: TextStyle(color: Colors.white38, fontSize: 10))));
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cardWidth = visibleCardWidthV021(constraints.maxWidth, hand.length, preferred: 54, gap: 2);
-        final cardHeight = cardWidth * 1.5;
-        return SizedBox(
-          height: cardHeight + 23,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var index = 0; index < hand.length; index++)
-                  Padding(
-                    padding: EdgeInsets.only(right: index == hand.length - 1 ? 0 : 2),
-                    child: Transform.translate(
-                      offset: Offset(0, selectedCard == hand[index] ? -7 : 0),
-                      child: GestureDetector(
-                        onTap: () => setState(() => selectedCard = selectedCard == hand[index] ? null : hand[index]),
-                        onDoubleTap: () => _quickPlayCard(hand[index]),
-                        onVerticalDragEnd: (details) { if ((details.primaryVelocity ?? 0) < -180) _quickPlayCard(hand[index]); },
-                        child: Opacity(
-                          opacity: legal.isNotEmpty && !legal.contains(hand[index]) ? .42 : 1,
-                          child: PlayingCard(label: _cardLabel(hand[index]), width: cardWidth, height: cardHeight, selected: selectedCard == hand[index]),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+    const cardWidth = 54.0;
+    const cardHeight = 81.0;
+    return SizedBox(
+      height: 104,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        itemCount: hand.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 3),
+        itemBuilder: (context, index) {
+          final card = hand[index];
+          final selected = selectedCard == card;
+          return Transform.translate(
+            offset: Offset(0, selected ? -7 : 0),
+            child: GestureDetector(
+              onTap: () => setState(() => selectedCard = selected ? null : card),
+              onDoubleTap: () => _quickPlayCard(card),
+              onVerticalDragEnd: (details) { if ((details.primaryVelocity ?? 0) < -180) _quickPlayCard(card); },
+              child: Opacity(
+                opacity: legal.isNotEmpty && !legal.contains(card) ? .42 : 1,
+                child: PlayingCard(label: _cardLabel(card), width: cardWidth, height: cardHeight, selected: selected),
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -6482,25 +5914,9 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
     if (types.contains('organize')) {
       widgets.add(OutlinedButton.icon(onPressed: sending ? null : () => _action('organize'), icon: const Icon(Icons.auto_awesome, size: 17), label: const Text('ترتيب ذكي')));
     }
-    final openingBatches = availableActions.where((item) => item['type'] == 'meld_batch' && item['groups'] is List).toList();
-    if (openingBatches.isNotEmpty) {
-      widgets.add(FilledButton.icon(
-        onPressed: sending ? null : () => _chooseMeldBatch(openingBatches),
-        icon: const Icon(Icons.view_week_outlined, size: 17),
-        label: const Text('نزول 51 متعدد'),
-      ));
-    }
     final melds = availableActions.where((item) => item['type'] == 'meld' && item['cards'] is List).toList();
     if (melds.isNotEmpty) {
       widgets.add(FilledButton.tonalIcon(onPressed: sending ? null : () => _chooseMeld(melds), icon: const Icon(Icons.layers_outlined, size: 17), label: const Text('تنزيل مجموعة')));
-    }
-    final layOffs = availableActions.where((item) => item['type'] == 'lay_off' && item['cards'] is List).toList();
-    if (layOffs.isNotEmpty) {
-      widgets.add(OutlinedButton.icon(
-        onPressed: sending ? null : () => _chooseLayOff(layOffs),
-        icon: const Icon(Icons.add_link_rounded, size: 17),
-        label: const Text('تركيب ورقة'),
-      ));
     }
 
     if (widget.game.id == 'domino') {
@@ -6591,69 +6007,6 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
       content: Wrap(spacing: 6, runSpacing: 6, children: options.map((value) => FilledButton.tonal(onPressed: () => Navigator.pop(dialogContext, value), child: Text(labels[value] ?? value))).toList()),
     ));
     if (contract != null) _action('choose_contract', {'contract': contract});
-  }
-
-  Future<void> _chooseMeldBatch(List<Map<String, dynamic>> batches) async {
-    final selected = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('اعتماد نزول الافتتاح'),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480, maxHeight: 440),
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: batches.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (_, index) {
-              final rawGroups = batches[index]['groups'];
-              final groups = rawGroups is List ? rawGroups.whereType<List>().toList() : const <List>[];
-              final summary = groups.map((group) => group.map((card) => _cardLabel(card.toString())).join('  ')).join('\n');
-              return ListTile(
-                leading: const Icon(Icons.view_week_outlined, color: Colors.amber),
-                title: Text(summary, textDirection: TextDirection.ltr),
-                subtitle: const Text('تنفيذ ذري: لن تُحذف أي ورقة إلا إذا وصل مجموع الافتتاح إلى 51.'),
-                onTap: () => Navigator.pop(dialogContext, batches[index]),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-    if (selected != null) _action('meld_batch', {'groups': selected['groups']});
-  }
-
-  Future<void> _chooseLayOff(List<Map<String, dynamic>> options) async {
-    final selected = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('تركيب على مجموعة موجودة'),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440, maxHeight: 420),
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: options.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (_, index) {
-              final cards = (options[index]['cards'] as List).map((card) => _cardLabel(card.toString())).join('  ');
-              return ListTile(
-                leading: const Icon(Icons.add_link_rounded),
-                title: Text(cards, textDirection: TextDirection.ltr),
-                subtitle: Text('المجموعة ${int.tryParse(options[index]['meld_index']?.toString() ?? '') != null ? (int.parse(options[index]['meld_index'].toString()) + 1) : ''}'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.pop(dialogContext, options[index]),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-    if (selected != null) {
-      _action('lay_off', {
-        'owner': selected['owner'],
-        'meld_index': selected['meld_index'],
-        'cards': selected['cards'],
-      });
-    }
   }
 
   Future<void> _chooseMeld(List<Map<String, dynamic>> melds) async {
@@ -6842,24 +6195,11 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
                           final emojiOnly=!RegExp(r'[A-Za-z0-9\u0600-\u06FF]').hasMatch(message.body) && message.body.runes.length<=8;
                           return Align(
                             alignment: message.mine ? Alignment.centerRight : Alignment.centerLeft,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(13),
-                              onTap: () => openPlayerProfileV021(
-                                context,
-                                widget.controller,
-                                name: message.sender,
-                                avatar: message.mine ? widget.controller.avatarEmoji : null,
-                                level: message.mine ? widget.controller.level : 1,
-                                countryCode: message.mine ? widget.controller.countryCode : 'PS',
-                                online: true,
-                                activity: 'محادثة غرفة اللعب',
-                              ),
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 6),
-                                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-                                decoration: BoxDecoration(color: message.mine ? Theme.of(context).colorScheme.primary.withValues(alpha: .16) : Colors.white.withValues(alpha: .055), borderRadius: BorderRadius.circular(13)),
-                                child: Text(emojiOnly?message.body:'${message.sender}: ${message.body}', style: TextStyle(fontSize: emojiOnly?31*widget.controller.uiChatScale:12.5*widget.controller.uiChatScale, height: 1.35, fontWeight: message.mine ? FontWeight.w800 : FontWeight.w500, color: message.mine ? colorFromHex(widget.controller.selectedChatColor) : Colors.white)),
-                              ),
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                              decoration: BoxDecoration(color: message.mine ? Theme.of(context).colorScheme.primary.withValues(alpha: .16) : Colors.white.withValues(alpha: .055), borderRadius: BorderRadius.circular(13)),
+                              child: Text(emojiOnly?message.body:'${message.sender}: ${message.body}', style: TextStyle(fontSize: emojiOnly?31*widget.controller.uiChatScale:12.5*widget.controller.uiChatScale, height: 1.35, fontWeight: message.mine ? FontWeight.w800 : FontWeight.w500, color: message.mine ? colorFromHex(widget.controller.selectedChatColor) : Colors.white)),
                             ),
                           );
                         },
@@ -6876,28 +6216,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
                 ]),
               ),
             ] else ...[
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(8),
-                  itemCount: widget.controller.friends.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (_, index) {
-                    final friend = widget.controller.friends[index];
-                    return ListTile(
-                      dense: true,
-                      leading: Stack(children: [CircleAvatar(child: Text(friend.avatar?.isNotEmpty == true ? friend.avatar! : friend.name.substring(0, 1))), if (friend.online) const Positioned(right: 0, bottom: 0, child: CircleAvatar(radius: 5, backgroundColor: Colors.greenAccent))]),
-                      title: Text(friend.name, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13 * widget.controller.uiChatScale)),
-                      subtitle: Text(friend.activity, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10 * widget.controller.uiChatScale)),
-                      trailing: IconButton(
-                        tooltip: 'فتح المحادثة',
-                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PrivateChatPage(controller: widget.controller, friend: friend))),
-                        icon: const Icon(Icons.chat_bubble_outline, size: 19),
-                      ),
-                      onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend),
-                    );
-                  },
-                ),
-              ),
+              Expanded(child:ListView.separated(padding:const EdgeInsets.all(8),itemCount:widget.controller.friends.length,separatorBuilder:(_,__)=>const Divider(height:1),itemBuilder:(_,index){final friend=widget.controller.friends[index];return ListTile(dense:true,leading:Stack(children:[CircleAvatar(child:Text(friend.name.substring(0,1))),if(friend.online)const Positioned(right:0,bottom:0,child:CircleAvatar(radius:5,backgroundColor:Colors.greenAccent))]),title:Text(friend.name,style:TextStyle(fontWeight:FontWeight.w900,fontSize:13*widget.controller.uiChatScale)),subtitle:Text(friend.activity,maxLines:1,overflow:TextOverflow.ellipsis,style:TextStyle(fontSize:10*widget.controller.uiChatScale)),trailing:const Icon(Icons.chat_bubble_outline,size:19),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>PrivateChatPage(controller:widget.controller,friend:friend))));})),
             ],
           ],
         ),
@@ -6920,11 +6239,8 @@ class PlayingCard extends StatelessWidget {
     final rank = label.length > 1 ? label.substring(0, label.length - 1) : label;
     final red = suit == '♥' || suit == '♦';
     final ink = red ? const Color(0xffb42335) : const Color(0xff101419);
-    final compactCard = width < 34;
-    final cornerSize = math.max(compactCard ? 6.0 : 9.0, width * .25).toDouble();
-    final centerSize = math.max(compactCard ? 9.0 : 16.0, width * .48).toDouble();
-    final edgeInset = compactCard ? 1.5 : 3.5;
-    final verticalInset = compactCard ? 1.0 : 2.5;
+    final cornerSize = math.max(9.0, width * .25).toDouble();
+    final centerSize = math.max(16.0, width * .48).toDouble();
     return AnimatedContainer(
       duration: const Duration(milliseconds: 170),
       curve: Curves.easeOutCubic,
@@ -6943,9 +6259,9 @@ class PlayingCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(math.max(6.0, width * .16).toDouble()),
         child: Stack(
           children: [
-            Positioned(left: edgeInset, top: verticalInset, child: Column(mainAxisSize: MainAxisSize.min, children: [Text(rank, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize, height: .9)), Text(suit, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize * .85, height: .85))])),
+            Positioned(left: 3.5, top: 2.5, child: Column(mainAxisSize: MainAxisSize.min, children: [Text(rank, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize, height: .9)), Text(suit, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize * .85, height: .85))])),
             Center(child: Text(suit.isEmpty ? label : suit, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: centerSize, shadows: const [Shadow(color: Colors.white, blurRadius: 1)]))),
-            Positioned(right: edgeInset, bottom: verticalInset, child: Transform.rotate(angle: math.pi, child: Column(mainAxisSize: MainAxisSize.min, children: [Text(rank, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize, height: .9)), Text(suit, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize * .85, height: .85))]))),
+            Positioned(right: 3.5, bottom: 2.5, child: Transform.rotate(angle: math.pi, child: Column(mainAxisSize: MainAxisSize.min, children: [Text(rank, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize, height: .9)), Text(suit, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize * .85, height: .85))]))),
             if (selected) Positioned.fill(child: IgnorePointer(child: DecoratedBox(decoration: BoxDecoration(borderRadius: BorderRadius.circular(math.max(7, width * .18).toDouble()), gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Theme.of(context).colorScheme.primary.withValues(alpha: .18), Colors.transparent]))))),
           ],
         ),
@@ -6963,9 +6279,8 @@ class PlayerSeat extends StatelessWidget {
   final String? badge;
   final String? avatarEmoji;
   final BotProfile? botProfile;
-  final VoidCallback? onProfileTap;
 
-  const PlayerSeat({super.key, required this.name, required this.letter, required this.bid, this.vertical = false, this.nameColor, this.badge, this.avatarEmoji, this.botProfile, this.onProfileTap});
+  const PlayerSeat({super.key, required this.name, required this.letter, required this.bid, this.vertical = false, this.nameColor, this.badge, this.avatarEmoji, this.botProfile});
 
   @override
   Widget build(BuildContext context) {
@@ -6980,18 +6295,7 @@ class PlayerSeat extends StatelessWidget {
         child: Text('${badge ?? ''}${badge == null ? '' : ' '}$name • $bid', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: nameColor ?? Colors.white)),
       ),
     ];
-    final seat = vertical
-        ? Column(mainAxisSize: MainAxisSize.min, children: content)
-        : Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: content);
-    return Semantics(
-      button: onProfileTap != null,
-      label: 'فتح بروفايل $name',
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onProfileTap,
-        child: Padding(padding: const EdgeInsets.all(2), child: seat),
-      ),
-    );
+    return vertical ? Column(mainAxisSize: MainAxisSize.min, children: content) : Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: content);
   }
 }
 
@@ -7222,7 +6526,7 @@ class PremiumListTile extends StatelessWidget {
 }
 
 Future<void> showAvatarPicker(BuildContext context, AppController controller) async {
-  const avatars = <String>['🦁','🦅','🐺','🦊','🐯','🐼','🌙','⭐','👑','👑','🧠','🔥'];
+  const avatars = <String>['🦁','🦅','🐺','🦊','🐯','🐼','🌙','⭐','👑','🎩','🧠','🔥'];
   await showPremiumSheet(context, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
     const Text('تغيير الصورة الرمزية', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
     const SizedBox(height: 12),
@@ -7363,7 +6667,7 @@ void showProfile(BuildContext context, AppController controller) {
                         InkWell(onTap:()=>showCountryPicker(context,controller),borderRadius:BorderRadius.circular(12),child:Padding(padding:const EdgeInsets.symmetric(vertical:2),child:Row(mainAxisSize:MainAxisSize.min,children:[Text(controller.countryFlag,style:const TextStyle(fontSize:20)),const SizedBox(width:5),Flexible(child:Text(controller.countryName,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800,fontSize:10))),const SizedBox(width:4),const Icon(Icons.edit_location_alt_outlined,size:13,color:Colors.white60)]))),
                         const SizedBox(height: 6),
                         Row(children: [
-                          PashaHatV173(controller: controller, width: 35, height: 25),
+                          Image.asset('assets/images/pasha.png', width: 25, height: 25),
                           const SizedBox(width: 5),
                           Text('${controller.vipDays} ${L.t(controller.localeCode, 'days')}', style: const TextStyle(color: Color(0xffffd166), fontWeight: FontWeight.w900, fontSize: 10)),
                         ]),
@@ -7376,8 +6680,6 @@ void showProfile(BuildContext context, AppController controller) {
           ),
         ),
         const SizedBox(height: 12),
-        ClubIdentityV022(name: controller.clubNameV022, logo: controller.clubLogoV022, level: controller.clubLevelV022),
-        if (controller.clubNameV022 != null) const SizedBox(height: 10),
         Row(
           children: [
             Expanded(child: ProfileMetric(value: '${controller.winRate.toStringAsFixed(1)}%', label: L.t(controller.localeCode, 'winRate'))),
@@ -7411,7 +6713,7 @@ void showProfile(BuildContext context, AppController controller) {
           spacing: 6,
           runSpacing: 6,
           children: [
-            Chip(avatar: PashaHatV173(controller: controller, width: 30, height: 22), label: Text('${controller.vipDays} يوم باشا')),
+            Chip(avatar: Image.asset('assets/images/pasha.png', width: 22, height: 22), label: Text('${controller.vipDays} يوم باشا')),
             Chip(avatar: const Icon(Icons.table_restaurant_outlined, size: 16), label: Text(storeProductById(controller.selectedTable)?.name(controller.localeCode) ?? 'طاولة افتراضية')),
             Chip(avatar: const Icon(Icons.style_outlined, size: 16), label: Text(storeProductById(controller.selectedCardBack)?.name(controller.localeCode) ?? 'ظهر افتراضي')),
             Chip(avatar: const Icon(Icons.bolt, size: 16), label: Text('XP ×${controller.activeXpMultiplier.toStringAsFixed(2)}')),
@@ -7425,7 +6727,7 @@ void showProfile(BuildContext context, AppController controller) {
         PremiumPanel(child: Padding(padding: const EdgeInsets.all(12), child: Wrap(spacing: 7, runSpacing: 7, children: [
           _AchievementChip(icon: '🏆', label: controller.wins >= 500 ? 'أسطورة الانتصارات' : 'محترف الانتصارات', unlocked: controller.wins >= 100),
           _AchievementChip(icon: '🔥', label: 'سلسلة ${controller.consecutiveLoginDays} أيام', unlocked: controller.consecutiveLoginDays >= 3),
-          _AchievementChip(icon: '👑', label: 'عضو الباشا', unlocked: controller.vipDays > 0),
+          _AchievementChip(icon: '🎩', label: 'عضو الباشا', unlocked: controller.vipDays > 0),
           _AchievementChip(icon: '🧠', label: 'خبير المحركات', unlocked: controller.level >= 50),
         ]))),
         const SizedBox(height: 10),
@@ -7547,7 +6849,7 @@ void showWallet(BuildContext context, AppController controller) {
         Row(
           children: [
             Expanded(child: Text(L.t(controller.localeCode, 'transactions'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900))),
-            FilledButton.icon(onPressed: () async { final ok = await controller.reconnectV173(); if (!context.mounted) return; Navigator.pop(context); showToast(context, ok ? 'تم تحديث الرصيد من الخادم.' : 'تعذر تحديث الرصيد.'); }, icon: const Icon(Icons.refresh_rounded), label: const Text('تحديث')),
+            FilledButton(onPressed: () { controller.addCoins(200, 'شحن تجريبي'); Navigator.pop(context); showWallet(context, controller); }, child: const Text('+ 200')),
           ],
         ),
         const SizedBox(height: 10),
@@ -7569,10 +6871,6 @@ void showWallet(BuildContext context, AppController controller) {
 }
 
 Future<void> watchRewardedAd(BuildContext context, AppController controller) async {
-  if (!controller.serverConnected) {
-    showToast(context, 'يلزم اتصال فعّال بالخادم لعرض الإعلان واعتماد المكافأة.');
-    return;
-  }
   if (controller.rewardedAdsRemaining <= 0) {
     showToast(context, 'وصلت إلى الحد اليومي للإعلانات المكافِئة.');
     return;
@@ -7700,8 +6998,7 @@ void showSettings(BuildContext context, AppController controller) {
               ],
             ),
           ),
-          if (controller.username.trim().toLowerCase() == 'adnan')
-            ListTile(leading: const Icon(Icons.tune_rounded), title: Text(v03Text(controller.localeCode, 'noCodeDesigner')), subtitle: const Text('تحكم شامل بدون كود مع معاينة فورية'), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(context); showNoCodeDesignerSheet(context, controller); }),
+          ListTile(leading: const Icon(Icons.tune_rounded), title: Text(L.t(controller.localeCode, 'noCode')), subtitle: const Text('حجم الأزرار والخط والحواف والمؤثرات مع معاينة فورية'), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(context); showNoCodeDesignerSheet(context, controller); }),
           ListTile(leading: const Icon(Icons.install_mobile_rounded), title: const Text('تثبيت التطبيق على الهاتف'), subtitle: const Text('استخدم زر التثبيت أو إضافة إلى الشاشة الرئيسية من المتصفح.')),
           ListTile(leading: const Icon(Icons.security_rounded, color: Colors.lightBlueAccent), title: Text(v153Text(controller.localeCode, 'productionCenter')), subtitle: Text(v153Text(controller.localeCode, 'productionCenterHint')), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(context); openProductionCenterV153(context, controller); }),
           const ListTile(leading: Icon(Icons.restore_rounded), title: Text('مهلة استعادة الحساب'), subtitle: Text('بعد إلغاء الحساب يمكنك استعادته بمجرد تسجيل الدخول خلال 30 يوماً؛ لا تُحذف الحسابات العادية بسبب عدم النشاط.')),
@@ -7802,13 +7099,12 @@ void showGiftRoadSheet(BuildContext context, AppController controller) {
 void showPashaBenefits(BuildContext context, AppController controller) {
   final pasha = products.where((p) => p.category == 'pasha').toList();
   showPremiumSheet(context, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    Center(child: PashaHatV173(controller: controller, width: 160, height: 104)),
+    Center(child: Image.asset('assets/images/pasha.png', width: 104, height: 104, fit: BoxFit.contain)),
     const Text('مزايا الباشا', textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
     const SizedBox(height: 8),
     const Text('شارة ذهبية • 20 XP لكل جولة • إنشاء مجموعات ومنافسات • صلاحية إدارة الغرفة • أولوية دخول وملف شخصي فاخر.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white60, height: 1.6)),
     const SizedBox(height: 12),
-    const SizedBox(height: 10),
-    SizedBox(height: 118, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: pasha.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) { final product = pasha[i]; return SizedBox(width: 148, child: FilledButton.tonal(onPressed: () => showProductPreview(context, controller, product), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [PashaHatV173(controller: controller, width: 48, height: 34), const SizedBox(height: 3), Text('${controller.durationFor(product) ?? 0} يوم', style: const TextStyle(fontWeight: FontWeight.w900)), Text('🪙 ${formatNumber(controller.priceFor(product))}', style: const TextStyle(fontSize: 9))]))); })),
+    SizedBox(height: 118, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: pasha.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) { final product = pasha[i]; return SizedBox(width: 148, child: FilledButton.tonal(onPressed: () => showProductPreview(context, controller, product), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Image.asset('assets/images/pasha.png', width: 34, height: 34), const SizedBox(height: 3), Text('${controller.durationFor(product) ?? 0} يوم', style: const TextStyle(fontWeight: FontWeight.w900)), Text('🪙 ${formatNumber(controller.priceFor(product))}', style: const TextStyle(fontSize: 9))]))); })),
   ]));
 }
 
@@ -7831,23 +7127,41 @@ Future<void> openGameRoom(BuildContext context, AppController controller, GameIn
     showToast(context, 'أنت داخل لعبة أخرى. غادر اللعبة الحالية قبل بدء لعبة جديدة.');
     return;
   }
-  final leftRoom = await Navigator.of(context, rootNavigator: true).push<bool>(
-    MaterialPageRoute(builder: (_) => GameRoomPage(controller: controller, game: game, options: options)),
-  );
+  final previousLandscape = controller.landscapeMode;
+  await controller.setLandscapeMode(true);
+  if (!context.mounted) return;
+  final leftRoom = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => GameRoomPage(controller: controller, game: game, options: options)));
   if (leftRoom == true) {
     controller.leaveGame(game.id);
   } else {
     controller.rememberActiveRoom(game.id, code: controller.activeRoomCode, options: options);
   }
+  if (!previousLandscape) await controller.setLandscapeMode(false);
 }
 
 void showChallenges(BuildContext context, AppController controller) {
-  // Legacy v170 contract symbol retained: showChallengesV170
-  openChallengeRoadV03(context, controller);
+  unawaited(showChallengesV170(context, controller));
 }
 
 void showCompetitions(BuildContext context, AppController controller) {
-  showCompetitionsV173(context, controller);
+  final competitions = <(String, String, String, int, String)>[
+    ('champions', '🏆', 'بطولة الأبطال', 200, 'tarneeb'),
+    ('weekend', '🎉', 'تحدي نهاية الأسبوع', 100, 'trix'),
+    ('rummy_cup', '🎴', 'كأس الهاند والبناكل', 200, 'hand'),
+  ];
+  showPremiumSheet(
+    context,
+    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text(L.t(controller.localeCode, 'competitions'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 10),
+      ...competitions.map((entry) {
+        final active = controller.activeCompetition == entry.$1;
+        return Padding(padding: const EdgeInsets.only(bottom: 9), child: PremiumListTile(icon: entry.$2, title: entry.$3, subtitle: 'مكافأة الفوز ${formatNumber(entry.$4)} توكن • دخول مجاني', action: FilledButton(onPressed: () { if (active) { controller.leaveCompetition(); showToast(context, 'تمت مغادرة المنافسة.'); } else { final ok = controller.joinCompetition(entry.$1); showToast(context, ok ? 'تم تسجيلك في ${entry.$3}.' : 'غادر المنافسة الحالية قبل الانضمام لأخرى.'); } }, child: Text(active ? 'مغادرة' : L.t(controller.localeCode, 'join')))));
+      }),
+      const SizedBox(height: 4),
+      FilledButton.tonalIcon(onPressed: () { Navigator.pop(context); showChallenges(context, controller); }, icon: const Icon(Icons.bolt_rounded), label: const Text('تحديات فورية بين اللاعبين')),
+    ]),
+  );
 }
 
 void showGameLobby(BuildContext context, AppController controller, GameInfo game) {
@@ -7877,10 +7191,11 @@ void showGameLobby(BuildContext context, AppController controller, GameInfo game
             runSpacing: 6,
             children: [
               QuickButton(icon: '📖', label: L.t(controller.localeCode, 'rules'), onTap: () => showRules(context, controller.localeCode, game.id)),
-              QuickButton(icon: '📊', label: L.t(controller.localeCode, 'leaderboard'), onTap: () => showLeaderboard(context, controller)),
+              QuickButton(icon: '📊', label: L.t(controller.localeCode, 'leaderboard'), onTap: () => showLeaderboard(context)),
               QuickButton(icon: '➕', label: L.t(controller.localeCode, 'createRoom'), onTap: () => showCreateRoom(context, controller, game)),
               QuickButton(icon: '🌐', label: L.t(controller.localeCode, 'openRooms'), onTap: () => showAvailableRooms(context, controller, game)),
               QuickButton(icon: '🔑', label: L.t(controller.localeCode, 'joinByCode'), onTap: () => showJoinRoomByCode(context, controller, game)),
+              QuickButton(icon: '👥', label: L.t(controller.localeCode, 'friends'), onTap: () => showFriends(context, controller)),
             ],
           ),
         ),
@@ -7921,11 +7236,8 @@ Future<void> showAvailableRooms(BuildContext context, AppController controller, 
                   game: game,
                   room: room,
                   onJoin: code.isEmpty ? null : () async {
-                    final navigationContext = warqnaNavigatorKey.currentContext;
                     Navigator.pop(context);
-                    if (navigationContext != null) {
-                      await openGameRoom(navigationContext, controller, game, options: RoomLaunchOptions(roomCode: code, voiceEnabled: voice));
-                    }
+                    await openGameRoom(context, controller, game, options: RoomLaunchOptions(roomCode: code, voiceEnabled: voice));
                   },
                 ),
               );
@@ -7963,11 +7275,8 @@ void showJoinRoomByCode(BuildContext context, AppController controller, GameInfo
               showToast(context, L.t(controller.localeCode, 'enterRoomCode'));
               return;
             }
-            final navigationContext = warqnaNavigatorKey.currentContext;
             Navigator.pop(context);
-            if (navigationContext != null) {
-              await openGameRoom(navigationContext, controller, game, options: RoomLaunchOptions(roomCode: code, password: passwordController.text.trim()));
-            }
+            await openGameRoom(context, controller, game, options: RoomLaunchOptions(roomCode: code, password: passwordController.text.trim()));
           },
           icon: const Icon(Icons.login_rounded),
           label: Text(L.t(controller.localeCode, 'joinRoom')),
@@ -8102,6 +7411,7 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
             decoration: InputDecoration(labelText: L.t(controller.localeCode, 'roomVisibility'), prefixIcon: const Icon(Icons.public_rounded)),
             items: [
               DropdownMenuItem(value: 'public', child: Text(L.t(controller.localeCode, 'publicRoom'))),
+              DropdownMenuItem(value: 'friends', child: Text(L.t(controller.localeCode, 'friendsRoom'))),
               DropdownMenuItem(value: 'private', child: Text(L.t(controller.localeCode, 'privateRoom'))),
             ],
             onChanged: (value) => setLocalState(() => visibility = value ?? 'public'),
@@ -8165,11 +7475,8 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
                 allowOwnerKick: allowOwnerKick,
                 playerCount: playerCount,
               );
-              final navigationContext = warqnaNavigatorKey.currentContext;
               Navigator.pop(context);
-              if (navigationContext != null) {
-                await openGameRoom(navigationContext, controller, game, options: options);
-              }
+              await openGameRoom(context, controller, game, options: options);
             },
             icon: Icon(voiceEnabled ? Icons.mic_rounded : Icons.play_arrow_rounded),
             label: Text(voiceEnabled ? L.t(controller.localeCode, 'createVoiceRoom') : L.t(controller.localeCode, 'createNormalRoom')),
@@ -8197,16 +7504,15 @@ Future<void> showProductPreview(BuildContext context, AppController controller, 
           children: [
             Expanded(child: _StoreFact(icon: '🪙', label: 'السعر', value: formatNumber(controller.priceFor(product)))),
             const SizedBox(width: 8),
-            Expanded(child: _StoreFact(icon: '🛡️', label: 'الحالة', value: controller.isOwnedActiveV176(product.id) && !product.reusable ? 'مملوك' : product.reusable ? 'قابل للتجديد' : 'متاح')),
+            Expanded(child: _StoreFact(icon: '🛡️', label: 'الحالة', value: controller.owned.contains(product.id) && !product.reusable ? 'مملوك' : product.reusable ? 'قابل للتجديد' : 'متاح')),
             const SizedBox(width: 8),
             Expanded(child: _StoreFact(icon: '⭐', label: 'الفئة', value: product.tierLabel(controller.localeCode))),
           ],
         ),
-        if (controller.productDurationLabelV176(product) != null) ...[const SizedBox(height: 8), _StoreFact(icon: '⏳', label: 'المدة', value: controller.productDurationLabelV176(product)!)],
-        if (controller.expiryForProductV176(product.id) != null) ...[const SizedBox(height: 8), _StoreFact(icon: '⌛', label: 'الصلاحية', value: controller.remainingForProductV176(product.id))],
+        if (controller.durationFor(product) != null) ...[const SizedBox(height: 8), _StoreFact(icon: '⏳', label: 'المدة', value: '${controller.durationFor(product)} أيام')],
         const SizedBox(height: 13),
         FilledButton.icon(
-          onPressed: controller.isOwnedActiveV176(product.id) && !product.reusable
+          onPressed: controller.owned.contains(product.id) && !product.reusable
               ? () {
                   controller.activateProduct(product);
                   Navigator.pop(context);
@@ -8228,10 +7534,10 @@ Future<void> showProductPreview(BuildContext context, AppController controller, 
                   final ok = await controller.buy(product);
                   if (!context.mounted) return;
                   Navigator.pop(context);
-                  showToast(context, ok ? 'تم الشراء وإضافة العنصر إلى مقتنياتك.' : (controller.lastPurchaseErrorV022 ?? 'تعذر إكمال الشراء.'));
+                  showToast(context, ok ? 'تم الشراء وإضافة العنصر إلى مقتنياتك.' : 'تعذر الشراء أو الرصيد غير كافٍ.');
                 },
           icon: const Icon(Icons.shopping_bag_outlined),
-          label: Text(controller.isOwnedActiveV176(product.id) && !product.reusable ? 'تفعيل العنصر' : '${L.t(controller.localeCode, 'buy')} • ${formatNumber(controller.priceFor(product))} 🪙'),
+          label: Text(controller.owned.contains(product.id) && !product.reusable ? 'تفعيل العنصر' : '${L.t(controller.localeCode, 'buy')} • ${formatNumber(controller.priceFor(product))} 🪙'),
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
         ),
       ],
@@ -8285,12 +7591,6 @@ class _ProductLivePreview extends StatelessWidget {
           ],
         ),
       );
-    } else if (product.category == 'competition_ticket' && product.value != null) {
-      preview = SizedBox(
-        width: 390,
-        height: 245,
-        child: Image.asset(ticketAssetV02(product.value!), fit: BoxFit.contain, filterQuality: FilterQuality.high),
-      );
     } else if (product.category == 'cards') {
       preview = Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -8301,20 +7601,13 @@ class _ProductLivePreview extends StatelessWidget {
             child: Container(
               width: 78,
               height: 114,
-              padding: const EdgeInsets.all(2),
-              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(13),
-                gradient: product.imageAsset == null ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c1, c2]) : null,
+                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c1, c2]),
                 border: Border.all(color: Colors.white.withValues(alpha: .55), width: 2),
                 boxShadow: [BoxShadow(color: c2.withValues(alpha: .35), blurRadius: 18)],
               ),
-              child: product.imageAsset == null
-                  ? Center(child: Text(product.icon, style: const TextStyle(fontSize: 38)))
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(product.imageAsset!, fit: BoxFit.cover, filterQuality: FilterQuality.high),
-                    ),
+              child: Center(child: Text(product.icon, style: const TextStyle(fontSize: 38))),
             ),
           ),
         ],
@@ -8356,7 +7649,7 @@ class _ProductLivePreview extends StatelessWidget {
       );
     } else if (product.category == 'pasha') {
       preview = Column(mainAxisSize: MainAxisSize.min, children: [
-        PashaHatV173(controller: controller, width: 170, height: 116),
+        Image.asset('assets/images/pasha.png', width: 116, height: 116, fit: BoxFit.contain),
         const Text('تحكم بالغرفة • شارة خاصة • XP إضافي', style: TextStyle(color: Colors.white60, fontSize: 11)),
       ]);
     } else if (product.category == 'covers') {
@@ -8475,8 +7768,19 @@ class _RuleSection extends StatelessWidget {
       );
 }
 
-void showLeaderboard(BuildContext context, AppController controller) {
-  showLeaderboardV022(context, controller);
+void showLeaderboard(BuildContext context) {
+  const entries = [('🥇','ياسر','18,420 XP'),('🥈','ليلى','17,980 XP'),('🥉','سامر','16,800 XP'),('4','أحمد','15,120 XP')];
+  showPremiumSheet(
+    context,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('لوحة الصدارة', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 10),
+        ...entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 8), child: PremiumListTile(icon: e.$1, title: e.$2, subtitle: e.$3, action: const SizedBox(width: 1)))),
+      ],
+    ),
+  );
 }
 
 class SocialHubPage extends StatefulWidget {
@@ -8589,7 +7893,7 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
             child: Row(children: [
               const Icon(Icons.security_rounded, color: Colors.greenAccent),
               const SizedBox(width: 9),
-              const Expanded(child: Text('الدردشة والتحويل متاحان للأصدقاء المقبولين فقط. تُحتسب رسوم تحويل ثابتة بنسبة 10%.', style: TextStyle(color: Colors.white60, fontSize: 10, height: 1.5))),
+              const Expanded(child: Text('الدردشة والتحويل متاحان للأصدقاء المقبولين فقط. عمولة تحويل التوكنز 10% تذهب للإدارة.', style: TextStyle(color: Colors.white60, fontSize: 10, height: 1.5))),
               Text(widget.controller.serverConnected ? 'LIVE' : 'LOCAL', style: TextStyle(color: widget.controller.serverConnected ? Colors.greenAccent : Colors.amber, fontWeight: FontWeight.w900, fontSize: 9)),
             ]),
           ),
@@ -8663,7 +7967,7 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
         if (widget.controller.outgoingRequests.isEmpty) const Text('لا توجد طلبات معلقة.', style: TextStyle(color: Colors.white54)),
         ...widget.controller.outgoingRequests.map((friend) => Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: PremiumListTile(onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend), icon: friend.name.substring(0, 1), title: friend.name, subtitle: 'بانتظار القبول', action: TextButton(onPressed: () { widget.controller.cancelFriendRequest(friend); setState(() {}); }, child: const Text('إلغاء'))),
+          child: PremiumListTile(icon: friend.name.substring(0, 1), title: friend.name, subtitle: 'بانتظار القبول', action: TextButton(onPressed: () { widget.controller.cancelFriendRequest(friend); setState(() {}); }, child: const Text('إلغاء'))),
         )),
       ],
     );
@@ -8713,7 +8017,6 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
         ...widget.controller.blocked.map((friend) => Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: PremiumListTile(
-            onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend),
             icon: friend.name.substring(0, 1),
             title: friend.name,
             subtitle: '@${friend.username}',
@@ -8738,15 +8041,14 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
       builder: (dialogContext) => AlertDialog(
         title: Text('إرسال توكنز إلى ${friend.name}'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: amountController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'المبلغ (الحد الأدنى 10)', prefixIcon: Icon(Icons.toll_rounded))),
+          TextField(controller: amountController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'المبلغ', prefixIcon: Icon(Icons.toll_rounded))),
           const SizedBox(height: 9),
-          const Text('سيُخصم المبلغ من رصيدك بالإضافة إلى رسوم تحويل 10%. يصل المبلغ كاملاً إلى المستلم.', style: TextStyle(color: Colors.white60, fontSize: 10, height: 1.5)),
+          const Text('سيُخصم المبلغ من رصيدك بالإضافة إلى عمولة إدارة 10%. يصل المبلغ كاملاً إلى المستلم.', style: TextStyle(color: Colors.white60, fontSize: 10, height: 1.5)),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
           FilledButton(onPressed: () async {
             final amount = int.tryParse(amountController.text) ?? 0;
-            if (amount < 10) { showToast(dialogContext, 'الحد الأدنى للتحويل 10 توكنز.'); return; }
             String? result;
             if (widget.controller.serverConnected) {
               try {
@@ -8755,12 +8057,12 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
                 result = e.message;
               }
             } else {
-              result = 'تحويل التوكنز يتطلب اتصالاً فعّالاً بالخادم.';
+              result = await widget.controller.transferLocal(friend.username, amount);
             }
             if (!dialogContext.mounted) return;
             if (result == null) {
               Navigator.pop(dialogContext);
-              if (mounted) messenger.showSnackBar(const SnackBar(content: Text('تم التحويل وخصم رسوم تحويل 10%.')));
+              if (mounted) messenger.showSnackBar(const SnackBar(content: Text('تم التحويل وخصم عمولة الإدارة 10%.')));
             } else {
               showToast(dialogContext, result);
             }
@@ -8810,32 +8112,11 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     final messages = widget.controller.privateChats[widget.friend.id] ?? const <ChatMessage>[];
     return Scaffold(
       appBar: AppBar(
-        title: PlayerIdentityTapV021(
-          controller: widget.controller,
-          userId: widget.friend.id,
-          name: widget.friend.name,
-          username: widget.friend.username,
-          avatar: widget.friend.avatar,
-          level: widget.friend.level,
-          countryCode: widget.friend.countryCode,
-          online: widget.friend.online,
-          activity: widget.friend.activity,
-          pashaDays: widget.friend.pashaDays,
-          gamesPlayed: widget.friend.gamesPlayed,
-          wins: widget.friend.wins,
-          xp: widget.friend.xp,
-          xpNext: widget.friend.xpNext,
-          roundPoints: widget.friend.roundPoints,
-          tournamentPoints: widget.friend.tournamentPoints,
-          clubPoints: widget.friend.clubPoints,
-          nameColor: widget.friend.nameColor,
-          badge: widget.friend.badge,
-          child: Row(children: [
-            PremiumAvatar(text: widget.friend.avatar?.isNotEmpty == true ? widget.friend.avatar! : widget.friend.name.substring(0, 1), size: 38),
-            const SizedBox(width: 9),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(widget.friend.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)), Text(widget.friend.online ? 'متصل الآن' : widget.friend.activity, style: TextStyle(color: widget.friend.online ? Colors.greenAccent : Colors.white54, fontSize: 8))]),
-          ]),
-        ),
+        title: Row(children: [
+          PremiumAvatar(text: widget.friend.name.substring(0, 1), size: 38),
+          const SizedBox(width: 9),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(widget.friend.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)), Text(widget.friend.online ? 'متصل الآن' : widget.friend.activity, style: TextStyle(color: widget.friend.online ? Colors.greenAccent : Colors.white54, fontSize: 8))]),
+        ]),
         actions: [IconButton(onPressed: () => showToast(context, 'تم إرسال دعوة لعبة.'), icon: const Icon(Icons.sports_esports_outlined))],
       ),
       body: Column(children: [
@@ -8893,7 +8174,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
   @override
   void initState() {
     super.initState();
-    tabs = TabController(length: widget.controller.username.trim().toLowerCase() == 'adnan' ? 7 : 6, vsync: this);
+    tabs = TabController(length: 6, vsync: this);
     _load();
   }
 
@@ -8921,25 +8202,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
       appBar: AppBar(
         title: const Text('لوحة إدارة Warqna', style: TextStyle(fontWeight: FontWeight.w900)),
         actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))],
-        bottom: TabBar(
-          controller: tabs,
-          isScrollable: true,
-          tabs: [
-            const Tab(text:'نظرة عامة'), const Tab(text:'الألعاب'), const Tab(text:'المتجر'),
-            const Tab(text:'اللاعبون'), const Tab(text:'الصلاحيات'),
-            if (widget.controller.username.trim().toLowerCase() == 'adnan') const Tab(text:'مصمم بدون كود'),
-            const Tab(text:'النظام'),
-          ],
-        ),
+        bottom: TabBar(controller: tabs, isScrollable: true, tabs: const [Tab(text:'نظرة عامة'),Tab(text:'الألعاب'),Tab(text:'المتجر'),Tab(text:'اللاعبون'),Tab(text:'مصمم بدون كود'),Tab(text:'النظام')]),
       ),
-      body: loading ? const Center(child: CircularProgressIndicator()) : TabBarView(
-        controller: tabs,
-        children: [
-          _overview(), _games(), _store(), _users(), AdminDelegationsV022(controller: widget.controller),
-          if (widget.controller.username.trim().toLowerCase() == 'adnan') _designer(),
-          _system(),
-        ],
-      ),
+      body: loading ? const Center(child: CircularProgressIndicator()) : TabBarView(controller: tabs, children: [_overview(), _games(), _store(), _users(), _designer(), _system()]),
     );
   }
 
@@ -8965,7 +8230,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
   Widget _games() => ListView(
     padding: const EdgeInsets.all(12),
     children: [
-      const _AdminInfo(text:'كل الألعاب في V173 تعمل عبر الإنترنت فقط، ويقوم Laravel بالتحقق السلطوي من الجلسات والحركات والتوكنز والمنافسات.'),
+      const _AdminInfo(text:'كل الألعاب الظاهرة تعمل بمحرك محلي داخل PWA عند غياب الخادم، وتنتقل تلقائياً إلى Laravel عند الاتصال للتحقق السلطوي من الحركات.'),
       const SizedBox(height: 10),
       ...gamesCatalog.map((game) => Padding(padding: const EdgeInsets.only(bottom: 8), child: PremiumListTile(icon:game.icon,title:L.t(widget.controller.localeCode,game.id),subtitle:'محرك فعال • لعب مجاني • تحقق من الحركات',action:Switch(value:true,onChanged:(_)=>showToast(context,'يتم حفظ التفعيل من API الإدارة عند الاتصال.'))))),
     ],
@@ -8973,64 +8238,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
 
   Widget _store() => AdminStoreStudioV151(controller: widget.controller);
 
-  Future<void> _adminUserCommand(LocalFriend friend, String action) async {
-    if (!widget.controller.serverConnected || friend.id <= 0) {
-      showToast(context, 'يجب الاتصال بالخادم واختيار لاعب حقيقي.');
-      return;
-    }
-    try {
-      if (action == 'grant') {
-        final field = TextEditingController(text: '200');
-        final amount = await showDialog<int>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: Text('إرسال توكنز إلى ${friend.name}'),
-            content: TextField(controller: field, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'عدد التوكنز')),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
-              FilledButton(onPressed: () => Navigator.pop(dialogContext, int.tryParse(field.text.trim())), child: const Text('إرسال')),
-            ],
-          ),
-        );
-        field.dispose();
-        if (amount == null || amount < 1) return;
-        await widget.controller.api.adminSendTokensV03(friend.id, amount);
-        if (mounted) showToast(context, 'تم إرسال $amount توكن إلى ${friend.name}.');
-      } else if (action == 'friend') {
-        await widget.controller.api.adminFriendRequestV03(friend.id);
-        if (mounted) showToast(context, 'تم إرسال طلب صداقة إلى ${friend.name}.');
-      } else if (action == 'ban') {
-        await widget.controller.api.adminUserAction(friend.id, 'ban');
-        if (mounted) showToast(context, 'تم حظر الحساب.');
-      }
-      await _load();
-    } catch (error) {
-      if (mounted) showToast(context, friendlyErrorMessage(error, widget.controller.localeCode));
-    }
-  }
-
   Widget _users() => ListView(
     padding: const EdgeInsets.all(12),
     children: [
-      PremiumListTile(onTap: () => showProfile(context, widget.controller), icon:'A',title:'Adnan',subtitle:'مدير رئيسي • صلاحية كاملة • ${formatNumber(widget.controller.coins)} توكن',action:const Chip(label:Text('SUPER ADMIN'))),
+      PremiumListTile(icon:'A',title:'Adnan',subtitle:'مدير • ${formatNumber(widget.controller.coins)} توكن',action:const Chip(label:Text('ADMIN'))),
       const SizedBox(height:8),
-      ...widget.controller.friends.map((friend)=>Padding(
-        padding:const EdgeInsets.only(bottom:8),
-        child:PremiumListTile(
-          onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend),
-          icon:friend.name.isEmpty ? '؟' : friend.name.substring(0,1),
-          title:friend.name,
-          subtitle:'@${friend.username} • ${friend.activity} • LV ${friend.level}',
-          action:PopupMenuButton<String>(
-            itemBuilder:(_)=>const [
-              PopupMenuItem(value:'grant',child:Text('إرسال توكنز')),
-              PopupMenuItem(value:'friend',child:Text('إرسال طلب صداقة')),
-              PopupMenuItem(value:'ban',child:Text('حظر الحساب')),
-            ],
-            onSelected:(value)=>_adminUserCommand(friend,value),
-          ),
-        ),
-      )),
+      ...widget.controller.friends.map((friend)=>Padding(padding:const EdgeInsets.only(bottom:8),child:PremiumListTile(icon:friend.name.substring(0,1),title:friend.name,subtitle:'@${friend.username} • ${friend.activity}',action:PopupMenuButton<String>(itemBuilder:(_)=>const [PopupMenuItem(value:'grant',child:Text('منح 200 توكن')),PopupMenuItem(value:'ban',child:Text('حظر الحساب'))],onSelected:(value)=>showToast(context,value=='grant'?'تم تسجيل عملية المنح.':'تم تحديث حالة الحساب.'))))),
     ],
   );
 
@@ -9038,8 +8251,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
     padding: const EdgeInsets.all(12),
     children: [
       const _AdminInfo(text:'استوديو مرئي لإدارة الشكل العام بدون كتابة كود. المعاينة تُطبق فوراً على الأزرار والخطوط والحواف والطاولات.'),
-      const SizedBox(height: 10),
-      UniversalDesignerV173(controller: widget.controller),
       const SizedBox(height: 10),
       PremiumPanel(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
         const Text('رفع صور المصمم الشامل',style:TextStyle(fontWeight:FontWeight.w900,fontSize:16)),const SizedBox(height:8),
@@ -9075,7 +8286,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
   Widget _system() => ListView(
     padding: const EdgeInsets.all(12),
     children: [
-      _AdminInfo(text:'حالة الاتصال: ${widget.controller.serverConnected ? 'متصل بـ Laravel API' : 'غير متصل — اللعب متوقف'}.\nAPI: ${widget.controller.api.baseUrl}'),
+      _AdminInfo(text:'حالة الاتصال: ${widget.controller.serverConnected ? 'متصل بـ Laravel API' : 'وضع محلي'}.\nAPI: ${widget.controller.api.baseUrl}'),
       const SizedBox(height:10),
       SwitchListTile(value:widget.controller.soundEnabled,onChanged:widget.controller.toggleSound,title:const Text('الأصوات'),subtitle:const Text('أصوات اللعب والإيموجي والتنبيهات')),
       ListTile(leading:const Icon(Icons.language),title:const Text('اللغة'),trailing:Text(widget.controller.localeCode.toUpperCase())),

@@ -59,13 +59,14 @@ class MobileGameController extends Controller
         if (!$game) return response()->json(['ok' => true, 'rooms' => []]);
 
         $rooms = Room::query()
-            ->with(['players.user.profile', 'game', 'owner.profile'])
+            ->with(['players.user.profile', 'game'])
             ->where('game_id', $game->id)
             ->whereIn('status', ['waiting', 'bidding', 'playing'])
             ->where('visibility', '!=', 'private')
             ->latest('updated_at')
             ->limit(30)
             ->get()
+            ->filter(fn (Room $room) => $room->players->where('is_bot', false)->where('connected', true)->count() > 0)
             ->map(function (Room $room) {
                 $state = $room->state ?: [];
                 $realPlayers = $room->players->where('is_bot', false)->count();
@@ -80,23 +81,13 @@ class MobileGameController extends Controller
                     'min_level' => (int) ($room->min_level ?? 1),
                     'game' => $room->game?->key,
                     'owner' => $room->owner?->username,
-                    'avatars' => $room->players->where('is_bot', false)->take(6)->map(fn ($player) => [
+                    'avatars' => $room->players->where('is_bot', false)->take(4)->map(fn ($player) => [
                         'id' => $player->user_id,
                         'name' => $player->user?->profile?->display_name ?: $player->user?->username,
-                        'username' => $player->user?->username,
                         'avatar' => $player->user?->profile?->avatar,
                         'name_color' => $player->user?->profile?->name_color ?: '#facc15',
                         'country_code' => $player->user?->profile?->country_code ?: 'PS',
-                        'connected' => (bool)$player->connected,
-                        'seat' => (int)$player->seat,
                     ])->values()->all(),
-                    'empty_seats' => max(0, (int)$room->max_players - $realPlayers),
-                    'status_label' => match($room->status) {
-                        'waiting' => 'بانتظار اللاعبين',
-                        'bidding' => 'مرحلة الطلب',
-                        'playing' => 'اللعبة جارية',
-                        default => $room->status,
-                    },
                 ];
             })->values();
 
@@ -134,10 +125,7 @@ class MobileGameController extends Controller
 
         $existing = $room->players()->where('user_id', $user->id)->first();
         if ($existing) {
-            abort_if((bool)($existing->rejoin_blocked ?? false), 403, 'لا يمكنك العودة إلى المباراة بعد الخروج الاختياري ثلاث مرات.');
-            $state = $this->setPlayerPresenceV03($room->state ?: [], 'user:'.$user->id, true, false);
-            $existing->update(['connected' => true, 'missed_turns' => 0, 'away_since'=>null]);
-            $room->update(['state'=>$state]);
+            $existing->update(['connected' => true, 'missed_turns' => 0]);
             return response()->json(['ok' => true, 'message' => 'عدت إلى مقعدك.', 'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $user->id)]);
         }
 
@@ -402,11 +390,6 @@ class MobileGameController extends Controller
         $progressionPopup = $this->awardProgressionTransition($progression, $room, $before, $state);
         if ($progressionPopup !== []) $state['progression_popup'] = $progressionPopup;
         $room->update(['state' => $state, 'status' => $this->roomStatus((string) ($state['phase'] ?? 'playing'))]);
-        $timedOut=$room->players()->where('user_id',$request->user()->id)->first();
-        if($timedOut){
-            $missed=min(3,(int)$timedOut->missed_turns+1);
-            $timedOut->update(['missed_turns'=>$missed,'connected'=>$missed<3,'away_since'=>$missed>=3?now():null]);
-        }
         return response()->json(['ok' => true, 'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $request->user()->id)]);
     }
 
@@ -414,14 +397,8 @@ class MobileGameController extends Controller
     {
         $player = $room->players()->where('user_id', $request->user()->id)->first();
         abort_unless($player, 403, 'أنت لست داخل هذه الغرفة');
-        $count=(int)($player->voluntary_leave_count ?? 0)+1;
-        $blocked=$count>=3;
-        $state=$this->setPlayerPresenceV03($room->state ?: [], 'user:'.$request->user()->id, false, true, $count, $blocked);
-        DB::transaction(function() use($player,$room,$state,$count,$blocked){
-            $player->update(['connected'=>false,'away_since'=>now(),'voluntary_leave_count'=>$count,'rejoin_blocked'=>$blocked]);
-            $room->update(['state'=>$state]);
-        });
-        return response()->json(['ok'=>true,'message'=>$blocked?'تمت المغادرة. لن تتمكن من العودة إلى هذه المباراة بعد ثلاث مغادرات اختيارية.':'تمت مغادرة الغرفة ويمكنك العودة لاحقاً.','leave_count'=>$count,'rejoin_blocked'=>$blocked]);
+        $player->update(['connected' => false]);
+        return response()->json(['ok' => true, 'message' => 'تمت مغادرة الغرفة دون خصم توكنز.']);
     }
 
     public function chat(Request $request, Room $room)
@@ -539,11 +516,7 @@ class MobileGameController extends Controller
                     'flag' => (string)(config('countries.'.safe_country_code($player->user?->profile?->country_code ?? 'PS').'.flag') ?? '🇵🇸'),
                     'flag_url' => flag_url($player->user?->profile?->country_code ?? 'PS'),
                     'level' => (int)($player->user?->profile?->level ?? 1),
-                    'xp' => (int)($player->user?->profile?->xp ?? 0),
-                    'xp_next' => app(\App\Services\Leveling\XpService::class)->requiredXp((int)($player->user?->profile?->level ?? 1)),
                     'round_points' => (int)($player->user?->profile?->round_points ?? 0),
-                    'tournament_points' => (int)($player->user?->profile?->tournament_points ?? 0),
-                    'club_points' => (int)($player->user?->profile?->club_points ?? 0),
                 ];
             })->values(),
             'state' => $state,
@@ -578,10 +551,7 @@ class MobileGameController extends Controller
                 'room_id'=>$room->id,'event_type'=>$eventType,'mode'=>$mode,'won'=>$won,
                 'stage'=>(string)($after['tournament_stage'] ?? ($won && $afterPhase === 'finished' ? 'champion' : 'round')),
                 'game'=>$room->game?->key,'round'=>$afterRound,
-            ]) + [
-                'player_key'=>$key,
-                'player_name'=>$player->user->profile?->display_name ?: $player->user->username,
-            ];
+            ]);
         }
         return $popups;
     }
@@ -743,24 +713,6 @@ class MobileGameController extends Controller
     {
         abort_unless($room->players()->where('user_id', $request->user()->id)->exists(), 403, 'لا تملك صلاحية هذه الغرفة');
         $room->loadMissing('game');
-    }
-
-    private function setPlayerPresenceV03(array $state,string $playerKey,bool $connected,bool $away,int $leaveCount=0,bool $blocked=false): array
-    {
-        foreach(['players'] as $key){
-            if(!isset($state[$key])||!is_array($state[$key]))continue;
-            foreach($state[$key] as &$player){
-                if(is_array($player)&&(string)($player['id']??'')===$playerKey){
-                    $player['connected']=$connected;$player['away']=$away;$player['missedTurns']=$connected?0:(int)($player['missedTurns']??0);
-                    $player['voluntaryLeaves']=max((int)($player['voluntaryLeaves']??0),$leaveCount);$player['rejoinBlocked']=$blocked;
-                }
-            }
-        }
-        if(isset($state['_global_engine'])&&is_array($state['_global_engine'])){
-            $state['_global_engine']=$this->setPlayerPresenceV03($state['_global_engine'],$playerKey,$connected,$away,$leaveCount,$blocked);
-        }
-        $state['messages'][]=$connected?'↩️ عاد اللاعب إلى مقعده.':'🚪 غادر اللاعب وسيتم تشغيل مقعده تلقائياً عند الحاجة.';
-        return $state;
     }
 
     private function uniqueCode(): string

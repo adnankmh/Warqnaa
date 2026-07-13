@@ -1,10 +1,8 @@
 {
-  "version": "0.3.0",
-  "build": 179,
-  "full": "0.3.0+179",
-  "release": "v179",
-  "display_release": "V0.3",
-  "name": "Warqna V0.3 Global Premium Release",
-  "build_number": 179,
-  "display_version": "V0.3"
+  "version": "1.72.0",
+  "build": 172,
+  "full": "1.72.0+172",
+  "release": "v172",
+  "channel": "production",
+  "codename": "brand-and-40-table-collection"
 }

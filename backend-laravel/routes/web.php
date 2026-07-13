@@ -96,8 +96,6 @@ Route::middleware('auth')->group(function(){
     Route::post('/users/{user}',[AdminController::class,'userAction'])->name('admin.users.action');
     Route::post('/site',[AdminController::class,'saveSite'])->name('admin.site.save');
     Route::post('/design',[AdminController::class,'saveDesign'])->name('admin.design.save');
-    Route::post('/designer-entities',[AdminController::class,'saveDesignerEntity'])->name('admin.designer.entity.save');
-    Route::post('/designer-entities/{entity}/delete',[AdminController::class,'deleteDesignerEntity'])->name('admin.designer.entity.delete');
     Route::post('/games',[AdminController::class,'createGame'])->name('admin.games.create');
     Route::post('/games/{game}',[AdminController::class,'updateGame'])->name('admin.games.update');
     Route::post('/rooms/{room}',[AdminController::class,'updateRoom'])->name('admin.rooms.update');

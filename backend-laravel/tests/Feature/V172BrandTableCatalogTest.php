@@ -12,8 +12,8 @@ class V172BrandTableCatalogTest extends TestCase
         $tables = app(StoreCatalogService::class)->tableSkins();
         $keys = array_column($tables, 'key');
 
-        $this->assertCount(140, $tables);
-        $this->assertCount(140, array_unique($keys));
+        $this->assertCount(90, $tables);
+        $this->assertCount(90, array_unique($keys));
         $this->assertContains('table_premium_01', $keys);
         $this->assertContains('table_premium_50', $keys);
         $this->assertContains('table_reference_01', $keys);

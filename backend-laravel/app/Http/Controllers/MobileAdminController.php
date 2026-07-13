@@ -2,26 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{AdminAuditLog,AdminDelegation,AdminDesignerEntity,AppRelease,FeatureFlag,Friendship,Game,Room,StoreItem,User,UserReport};
+use App\Models\{AdminAuditLog,AppRelease,FeatureFlag,Game,Room,StoreItem,User,UserReport};
 use App\Services\GameEngine\EngineRegistry;
 use App\Services\Platform\{AdminAuditService,ProductionConfigService};
 use Illuminate\Http\Request;
 
 class MobileAdminController extends Controller
 {
-    private function guard(Request $request, string $permission = 'dashboard.view'): void
+    private function guard(Request $request): void
     {
-        $user = $request->user();
-        abort_unless($user, 401);
-        if ((bool)$user->is_admin || strtolower((string)$user->username) === 'adnan') return;
-        $delegation = $user->adminDelegation()->where('active', true)->first();
-        abort_unless($delegation?->allows($permission) || $delegation?->allows('dashboard.view'), 403, 'ليست لديك الصلاحية الإدارية المطلوبة.');
-    }
-
-    private function ownerGuard(Request $request): void
-    {
-        $user = $request->user();
-        abort_unless($user && strtolower((string)$user->username) === 'adnan', 403, 'هذه العملية متاحة للمدير الرئيسي Adnan فقط.');
+        abort_unless((bool) $request->user()?->is_admin, 403, 'هذه الصفحة للإدارة فقط');
     }
 
     public function dashboard(Request $request)
@@ -54,14 +44,12 @@ class MobileAdminController extends Controller
             'app_releases' => AppRelease::latest('build_number')->limit(30)->get(),
             'moderation_reports' => UserReport::with(['reporter.profile','reportedUser.profile'])->latest()->limit(30)->get(),
             'audit_logs' => AdminAuditLog::with('admin.profile')->latest()->limit(50)->get(),
-            'designer_entities' => AdminDesignerEntity::orderBy('entity_type')->orderBy('sort_order')->orderBy('key')->get(),
-            'delegations' => AdminDelegation::with('user.profile')->latest()->get(),
         ]);
     }
 
     public function updateGame(Request $request, Game $game, AdminAuditService $audit)
     {
-        $this->guard($request, 'games.manage');
+        $this->guard($request);
         $data = $request->validate([
             'active' => 'nullable|boolean',
             'min_players' => 'nullable|integer|min:1|max:8',
@@ -78,7 +66,7 @@ class MobileAdminController extends Controller
 
     public function updateStore(Request $request, StoreItem $item, AdminAuditService $audit)
     {
-        $this->guard($request, 'store.manage');
+        $this->guard($request);
         $data = $request->validate([
             'price' => 'nullable|integer|min:0|max:9000000000000000000',
             'active' => 'nullable|boolean',
@@ -94,7 +82,7 @@ class MobileAdminController extends Controller
 
     public function userAction(Request $request, User $user, AdminAuditService $audit)
     {
-        $this->guard($request, 'users.moderate');
+        $this->guard($request);
         $data = $request->validate([
             'action' => 'required|in:ban,unban,grant_tokens,set_level',
             'amount' => 'nullable|integer|min:0|max:1000000000000',
@@ -111,35 +99,9 @@ class MobileAdminController extends Controller
         return response()->json(['ok' => true, 'message' => 'تم تنفيذ الإجراء']);
     }
 
-    public function sendTokens(Request $request, User $user, AdminAuditService $audit)
-    {
-        $this->guard($request,'users.moderate');
-        $data=$request->validate(['amount'=>'required|integer|min:1|max:1000000000000']);
-        $before=$user->wallet?->tokens ?? 0;
-        $wallet=$user->wallet()->firstOrCreate(['user_id'=>$user->id],['tokens'=>50,'gems'=>0]);
-        $wallet->increment('tokens',(int)$data['amount']);
-        $audit->record($request,'admin.tokens.send',$user,['tokens'=>$before],['tokens'=>$wallet->fresh()->tokens,'amount'=>(int)$data['amount']]);
-        return response()->json(['ok'=>true,'message'=>'تم إرسال التوكنز للاعب','wallet'=>$wallet->fresh()]);
-    }
-
-    public function sendFriendRequest(Request $request, User $user, AdminAuditService $audit)
-    {
-        $this->guard($request,'users.moderate');
-        abort_if((int)$user->id===(int)$request->user()->id,422,'لا يمكنك إرسال طلب صداقة لنفسك.');
-        $friendship=Friendship::where(function($q) use($request,$user){
-            $q->where('requester_id',$request->user()->id)->where('addressee_id',$user->id);
-        })->orWhere(function($q) use($request,$user){
-            $q->where('requester_id',$user->id)->where('addressee_id',$request->user()->id);
-        })->first();
-        if(!$friendship){$friendship=Friendship::create(['requester_id'=>$request->user()->id,'addressee_id'=>$user->id,'status'=>'pending']);}
-        elseif($friendship->status!=='accepted'){$friendship->update(['requester_id'=>$request->user()->id,'addressee_id'=>$user->id,'status'=>'pending']);}
-        $audit->record($request,'admin.friend.request',$friendship,null,$friendship->toArray());
-        return response()->json(['ok'=>true,'message'=>'تم إرسال طلب الصداقة','friendship'=>$friendship]);
-    }
-
     public function updateFeatureFlag(Request $request, FeatureFlag $flag, AdminAuditService $audit, ProductionConfigService $config)
     {
-        $this->guard($request, 'features.manage');
+        $this->guard($request);
         $data = $request->validate([
             'enabled' => 'required|boolean',
             'payload' => 'nullable|array',
@@ -152,88 +114,9 @@ class MobileAdminController extends Controller
         return response()->json(['ok'=>true,'message'=>'تم تحديث ميزة المنصة','flag'=>$flag->fresh()]);
     }
 
-
-    public function designerIndex(Request $request)
-    {
-        $this->ownerGuard($request);
-        return response()->json([
-            'ok' => true,
-            'entities' => AdminDesignerEntity::orderBy('entity_type')->orderBy('sort_order')->orderBy('key')->get(),
-        ]);
-    }
-
-    public function upsertDesigner(Request $request, string $entityType, string $key, AdminAuditService $audit)
-    {
-        $this->ownerGuard($request);
-        abort_unless((bool) preg_match('/^[a-z0-9_-]{2,80}$/i', $entityType), 422, 'نوع العنصر غير صحيح.');
-        abort_unless((bool) preg_match('/^[a-z0-9_.:-]{2,150}$/i', $key), 422, 'مفتاح العنصر غير صحيح.');
-        $data = $request->validate([
-            'locale' => 'nullable|string|max:10',
-            'payload' => 'required|array',
-            'sort_order' => 'nullable|integer|min:0|max:1000000',
-            'active' => 'nullable|boolean',
-        ]);
-        $locale = (string) ($data['locale'] ?? 'all');
-        $entity = AdminDesignerEntity::firstOrNew([
-            'entity_type' => strtolower($entityType),
-            'key' => $key,
-            'locale' => $locale,
-        ]);
-        $before = $entity->exists ? $entity->toArray() : null;
-        $entity->payload = $data['payload'];
-        $entity->sort_order = (int) ($data['sort_order'] ?? $entity->sort_order ?? 0);
-        $entity->active = array_key_exists('active', $data) ? (bool) $data['active'] : true;
-        $entity->revision = max(1, (int) ($entity->revision ?? 0) + 1);
-        $entity->updated_by = $request->user()->id;
-        $entity->save();
-        $audit->record($request, 'admin.designer.upsert', $entity, $before, $entity->fresh()->toArray());
-        return response()->json(['ok'=>true,'message'=>'تم حفظ العنصر ونشره','entity'=>$entity->fresh()]);
-    }
-
-    public function deleteDesigner(Request $request, AdminDesignerEntity $entity, AdminAuditService $audit)
-    {
-        $this->ownerGuard($request);
-        $before = $entity->toArray();
-        $audit->record($request, 'admin.designer.delete', $entity, $before, null);
-        $entity->delete();
-        return response()->json(['ok'=>true,'message'=>'تم حذف العنصر من المصمم الشامل']);
-    }
-
-    public function delegations(Request $request)
-    {
-        $this->ownerGuard($request);
-        return response()->json(['ok'=>true,'delegations'=>AdminDelegation::with('user.profile')->latest()->get()]);
-    }
-
-    public function updateDelegation(Request $request, User $user, AdminAuditService $audit)
-    {
-        $this->ownerGuard($request);
-        abort_if(strtolower((string)$user->username) === 'adnan', 422, 'المدير الرئيسي يملك كل الصلاحيات تلقائياً.');
-        $allowed = ['store.manage','games.manage','clubs.manage','competitions.manage','designer.manage','users.moderate','reports.manage','features.manage','dashboard.view'];
-        $data = $request->validate(['permissions'=>'required|array|max:20','permissions.*'=>'string|in:'.implode(',', $allowed)]);
-        $delegation = AdminDelegation::updateOrCreate(
-            ['user_id'=>$user->id],
-            ['granted_by'=>$request->user()->id,'permissions'=>array_values(array_unique($data['permissions'])),'active'=>true]
-        );
-        $audit->record($request, 'admin.delegation.update', $delegation, null, $delegation->toArray());
-        return response()->json(['ok'=>true,'message'=>'تم حفظ الصلاحيات','delegation'=>$delegation->load('user.profile')]);
-    }
-
-    public function deleteDelegation(Request $request, User $user, AdminAuditService $audit)
-    {
-        $this->ownerGuard($request);
-        $delegation = AdminDelegation::where('user_id',$user->id)->first();
-        if ($delegation) {
-            $before=$delegation->toArray();
-            $audit->record($request, 'admin.delegation.delete', $delegation, $before, null);
-            $delegation->delete();
-        }
-        return response()->json(['ok'=>true,'message'=>'تم إلغاء التفويض']);
-    }
-
     public function createRelease(Request $request, AdminAuditService $audit)
     {
-        $this->guard($request, 'features.manage');
+        $this->guard($request);
         $data = $request->validate([
             'platform'=>'required|in:web,android,ios',
             'version'=>'required|string|max:40',
