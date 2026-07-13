@@ -399,10 +399,7 @@ class _PashaColorAvatarV170 extends StatelessWidget {
             Positioned(
               top: -8,
               right: -5,
-              child: ColorFiltered(
-                colorFilter: ColorFilter.mode(color, BlendMode.modulate),
-                child: Image.asset('assets/images/pasha.png', width: size * .75, height: size * .55, fit: BoxFit.contain),
-              ),
+              child: Image.asset('assets/images/pasha.png', width: size * .75, height: size * .55, fit: BoxFit.contain),
             ),
         ]),
       );
@@ -453,7 +450,7 @@ Future<void> showPublicPlayerProfileV170(BuildContext context, AppController con
           border: Border.all(color: color.withValues(alpha: .55)),
         ),
         child: Column(children: [
-          _PashaColorAvatarV170(name: visible.name, emoji: visible.name.characters.first, bytes: null, color: color, pasha: visible.pashaDays > 0, size: 104),
+          _PashaColorAvatarV170(name: visible.name, emoji: visible.avatar?.isNotEmpty == true ? visible.avatar! : visible.name.characters.first, bytes: null, color: color, pasha: visible.pashaDays > 0, size: 104),
           const SizedBox(height: 12),
           Text(visible.name, textAlign: TextAlign.center, style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: color, shadows: [Shadow(color: color, blurRadius: 12)])),
           Text('@${visible.username}', style: const TextStyle(color: Colors.white60)),

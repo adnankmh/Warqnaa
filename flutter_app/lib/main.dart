@@ -32,6 +32,7 @@ part 'v173_global.dart';
 part 'v175_release.dart';
 part 'v176_release.dart';
 part 'v02_release.dart';
+part 'v021_patch.dart';
 
 final GlobalKey<NavigatorState> warqnaNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -194,6 +195,7 @@ class AppController extends ChangeNotifier {
   bool ready = false;
   bool isAuthenticated = false;
   bool isAdmin = false;
+  int? currentUserId;
   bool serverConnected = false;
   bool soundEnabled = true;
   bool landscapeMode = false;
@@ -695,7 +697,7 @@ class AppController extends ChangeNotifier {
       username = storedUsername.trim();
       displayName = prefs.getString('displayName') ?? username;
       email = prefs.getString('email') ?? email;
-      isAdmin = prefs.getBool('isAdmin') ?? username.toLowerCase() == 'adnan';
+      isAdmin = (prefs.getBool('isAdmin') ?? false) || username.trim().toLowerCase() == 'adnan' || displayName.trim().toLowerCase() == 'adnan';
     }
     if (authToken != null && authToken!.isNotEmpty) {
       api.token = authToken;
@@ -955,6 +957,7 @@ class AppController extends ChangeNotifier {
     final user = data['user'];
     final wallet = data['wallet'];
     if (user is Map) {
+      currentUserId = int.tryParse(user['id']?.toString() ?? '') ?? currentUserId;
       username = user['username']?.toString() ?? username;
       displayName = user['display_name']?.toString() ?? user['name']?.toString() ?? username;
       email = user['email']?.toString() ?? email;
@@ -970,7 +973,10 @@ class AppController extends ChangeNotifier {
       nameColorExpiresAt = DateTime.tryParse(user['name_color_expires_at']?.toString() ?? '');
       chatColorExpiresAt = DateTime.tryParse(user['chat_color_expires_at']?.toString() ?? '');
       consecutiveLoginDays = int.tryParse(user['login_streak']?.toString() ?? '') ?? consecutiveLoginDays;
-      isAdmin = user['is_admin'] == true || user['is_admin'] == 1;
+      isAdmin = user['is_admin'] == true ||
+          user['is_admin'] == 1 ||
+          username.trim().toLowerCase() == 'adnan' ||
+          displayName.trim().toLowerCase() == 'adnan';
       level = int.tryParse(user['level']?.toString() ?? '') ?? level;
       final serverTotalXp = int.tryParse(user['xp']?.toString() ?? '');
       if (serverTotalXp != null) xp = xpProgressFromTotal(serverTotalXp, level);
@@ -2949,6 +2955,18 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "cardback_38", category: "cards", icon: "✦", nameAr: "ظهر ورق أرابيسك خاص", nameEn: "Card Back 38", descriptionAr: "ظهر ورق فاخر يظهر كما هو داخل يد اللاعب وعلى الطاولة.", descriptionEn: "Premium card back applied to the player hand and game table.", price: 21560, previewColor1: Color(0xff581c87), previewColor2: Color(0xffd8b4fe)),
   StoreProduct(id: "cardback_39", category: "cards", icon: "👑", nameAr: "ظهر ورق ماستر", nameEn: "Card Back 39", descriptionAr: "ظهر ورق فاخر يظهر كما هو داخل يد اللاعب وعلى الطاولة.", descriptionEn: "Premium card back applied to the player hand and game table.", price: 22080, previewColor1: Color(0xff065f46), previewColor2: Color(0xff34d399)),
   StoreProduct(id: "cardback_40", category: "cards", icon: "💎", nameAr: "ظهر ورق أسطورة", nameEn: "Card Back 40", descriptionAr: "ظهر ورق فاخر يظهر كما هو داخل يد اللاعب وعلى الطاولة.", descriptionEn: "Premium card back applied to the player hand and game table.", price: 22600, previewColor1: Color(0xff881337), previewColor2: Color(0xfffb7185)),
+  StoreProduct(id: "cardback_v021_lion", category: "cards", icon: "🦁", nameAr: "ظهر الأسد الملكي", nameEn: "Royal Lion Card Back", descriptionAr: "ظهر ورق أسطوري مستوحى من طاولة الأسد الملكي الأخيرة، بتفاصيل ذهبية وصورة واضحة داخل اللعب.", descriptionEn: "Legendary card back inspired by the latest royal lion table, with crisp gold detailing in game.", price: 32000, previewColor1: Color(0xff111827), previewColor2: Color(0xffd6aa59), imageAsset: "assets/images/cardbacks/v021/cardback_v021_lion.png", collection: "v021_table_cardbacks"),
+  StoreProduct(id: "cardback_v021_white_tiger", category: "cards", icon: "🐯", nameAr: "ظهر النمر الأبيض", nameEn: "White Tiger Card Back", descriptionAr: "ظهر ورق أسطوري مستوحى من طاولة النمر الأبيض ذات العيون الزرقاء.", descriptionEn: "Legendary card back inspired by the blue-eyed white tiger table.", price: 34000, previewColor1: Color(0xffe5e7eb), previewColor2: Color(0xff38bdf8), imageAsset: "assets/images/cardbacks/v021/cardback_v021_white_tiger.png", collection: "v021_table_cardbacks"),
+  StoreProduct(id: "cardback_v021_black_horse", category: "cards", icon: "🐎", nameAr: "ظهر الحصان الأسود", nameEn: "Black Horse Card Back", descriptionAr: "ظهر ورق فاخر مستوحى من طاولة الحصان الأسود والذهب.", descriptionEn: "Premium card back inspired by the black horse and gold table.", price: 33000, previewColor1: Color(0xff111111), previewColor2: Color(0xffd6aa59), imageAsset: "assets/images/cardbacks/v021/cardback_v021_black_horse.png", collection: "v021_table_cardbacks"),
+  StoreProduct(id: "cardback_v021_eagle", category: "cards", icon: "🦅", nameAr: "ظهر النسر الذهبي", nameEn: "Golden Eagle Card Back", descriptionAr: "ظهر ورق أسطوري مستوحى من طاولة النسر المحلق.", descriptionEn: "Legendary card back inspired by the soaring eagle table.", price: 35000, previewColor1: Color(0xff3f2a18), previewColor2: Color(0xffeab308), imageAsset: "assets/images/cardbacks/v021/cardback_v021_eagle.png", collection: "v021_table_cardbacks"),
+  StoreProduct(id: "cardback_v021_tiger", category: "cards", icon: "🐅", nameAr: "ظهر النمر الناري", nameEn: "Fire Tiger Card Back", descriptionAr: "ظهر ورق أسطوري مستوحى من طاولة النمر الناري.", descriptionEn: "Legendary card back inspired by the fiery tiger table.", price: 31000, previewColor1: Color(0xff431407), previewColor2: Color(0xfff97316), imageAsset: "assets/images/cardbacks/v021/cardback_v021_tiger.png", collection: "v021_table_cardbacks"),
+  StoreProduct(id: "cardback_v021_whale", category: "cards", icon: "🐋", nameAr: "ظهر الحوت الأزرق", nameEn: "Blue Whale Card Back", descriptionAr: "ظهر ورق فاخر مستوحى من طاولة الحوت في أعماق المحيط.", descriptionEn: "Premium card back inspired by the deep-ocean whale table.", price: 30000, previewColor1: Color(0xff082f49), previewColor2: Color(0xff38bdf8), imageAsset: "assets/images/cardbacks/v021/cardback_v021_whale.png", collection: "v021_table_cardbacks"),
+  StoreProduct(id: "cardback_v021_black_panther", category: "cards", icon: "🐈‍⬛", nameAr: "ظهر الفهد الأسود", nameEn: "Black Panther Card Back", descriptionAr: "ظهر ورق أسطوري داكن مستوحى من طاولة الفهد الأسود.", descriptionEn: "Dark legendary card back inspired by the black panther table.", price: 36000, previewColor1: Color(0xff020617), previewColor2: Color(0xff3b82f6), imageAsset: "assets/images/cardbacks/v021/cardback_v021_black_panther.png", collection: "v021_table_cardbacks"),
+  StoreProduct(id: "cardback_v021_owl", category: "cards", icon: "🦉", nameAr: "ظهر بومة الليل", nameEn: "Night Owl Card Back", descriptionAr: "ظهر ورق أسطوري مستوحى من طاولة بومة الليل والقمر.", descriptionEn: "Legendary card back inspired by the moonlit owl table.", price: 34500, previewColor1: Color(0xff0f172a), previewColor2: Color(0xff94a3b8), imageAsset: "assets/images/cardbacks/v021/cardback_v021_owl.png", collection: "v021_table_cardbacks"),
+  StoreProduct(id: "cardback_v021_white_wolf", category: "cards", icon: "🐺", nameAr: "ظهر الذئب الأبيض", nameEn: "White Wolf Card Back", descriptionAr: "ظهر ورق أسطوري مستوحى من طاولة الذئب الأبيض والجبال الثلجية.", descriptionEn: "Legendary card back inspired by the white wolf and snowy mountains table.", price: 36500, previewColor1: Color(0xffe2e8f0), previewColor2: Color(0xff60a5fa), imageAsset: "assets/images/cardbacks/v021/cardback_v021_white_wolf.png", collection: "v021_table_cardbacks"),
+  StoreProduct(id: "cardback_v021_fire_dragon", category: "cards", icon: "🐉", nameAr: "ظهر التنين الناري", nameEn: "Fire Dragon Card Back", descriptionAr: "ظهر ورق أسطوري فائق مستوحى من طاولة التنين الناري.", descriptionEn: "Ultra-legendary card back inspired by the fire dragon table.", price: 42000, previewColor1: Color(0xff450a0a), previewColor2: Color(0xffef4444), imageAsset: "assets/images/cardbacks/v021/cardback_v021_fire_dragon.png", collection: "v021_table_cardbacks"),
+  StoreProduct(id: "cardback_v021_gold_dragon", category: "cards", icon: "🐲", nameAr: "ظهر التنين الذهبي", nameEn: "Golden Dragon Card Back", descriptionAr: "ظهر ورق أسطوري فائق مستوحى من طاولة التنين الذهبي.", descriptionEn: "Ultra-legendary card back inspired by the golden dragon table.", price: 45000, previewColor1: Color(0xff1c1917), previewColor2: Color(0xfffacc15), imageAsset: "assets/images/cardbacks/v021/cardback_v021_gold_dragon.png", collection: "v021_table_cardbacks"),
+  StoreProduct(id: "cardback_v021_phoenix", category: "cards", icon: "🔥", nameAr: "ظهر العنقاء الأسطورية", nameEn: "Legendary Phoenix Card Back", descriptionAr: "أفخم ظهر ورق في المجموعة، مستوحى من طاولة العنقاء المتوهجة.", descriptionEn: "The collection's most prestigious card back, inspired by the glowing phoenix table.", price: 48000, previewColor1: Color(0xff3f0d0d), previewColor2: Color(0xffff6b00), imageAsset: "assets/images/cardbacks/v021/cardback_v021_phoenix.png", collection: "v021_table_cardbacks"),
   StoreProduct(id: "emoji_free_basic", category: "emoji", icon: "😀😄😂👍👏👋", nameAr: "إيموجي مجانية", nameEn: "Free Emojis", descriptionAr: "حزمة ردود سريعة كبيرة مع مؤثرات وصوت داخل الدردشة واللعبة.", descriptionEn: "Large quick reactions with animation and sound.", price: 0),
   StoreProduct(id: "emoji_beginner_fun", category: "emoji", icon: "😊😉😎🤩🥳", nameAr: "إيموجي مبتدئ مرحة", nameEn: "Beginner Fun", descriptionAr: "حزمة ردود سريعة كبيرة مع مؤثرات وصوت داخل الدردشة واللعبة.", descriptionEn: "Large quick reactions with animation and sound.", price: 1000),
   StoreProduct(id: "emoji_medium_react", category: "emoji", icon: "😡😢😭😱🤔☕", nameAr: "إيموجي تفاعل متوسط", nameEn: "Medium Reactions", descriptionAr: "حزمة ردود سريعة كبيرة مع مؤثرات وصوت داخل الدردشة واللعبة.", descriptionEn: "Large quick reactions with animation and sound.", price: 5000),
@@ -3538,7 +3556,7 @@ class _GamesPageState extends State<GamesPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              QuickButton(icon: '📊', label: L.t(lang, 'leaderboard'), onTap: () => showLeaderboard(context)),
+              QuickButton(icon: '📊', label: L.t(lang, 'leaderboard'), onTap: () => showLeaderboard(context, widget.controller)),
               QuickButton(icon: '📖', label: L.t(lang, 'rules'), onTap: () => showRules(context, lang, 'tarneeb')),
               QuickButton(icon: '🏆', label: L.t(lang, 'competitions'), onTap: () => showCompetitions(context, widget.controller)),
               QuickButton(icon: '👥', label: L.t(lang, 'friends'), onTap: () => showFriends(context, widget.controller)),
@@ -4189,7 +4207,23 @@ class _CompactProductPreview extends StatelessWidget {
       );
     }
     if (product.category == 'cards') {
-      return Container(width: 58, height: 82, decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), gradient: LinearGradient(colors: [c1, c2]), border: Border.all(color: Colors.white70, width: 2)), child: Center(child: Text(product.icon, style: const TextStyle(fontSize: 30))));
+      return Container(
+        width: 62,
+        height: 88,
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(11),
+          gradient: product.imageAsset == null ? LinearGradient(colors: [c1, c2]) : null,
+          border: Border.all(color: Colors.white70, width: 2),
+          boxShadow: [BoxShadow(color: c2.withValues(alpha: .28), blurRadius: 12)],
+        ),
+        child: product.imageAsset == null
+            ? Center(child: Text(product.icon, style: const TextStyle(fontSize: 30)))
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(product.imageAsset!, fit: BoxFit.cover, filterQuality: FilterQuality.high),
+              ),
+      );
     }
     return FittedBox(fit: BoxFit.scaleDown, child: Text(product.icon, textAlign: TextAlign.center, style: const TextStyle(fontSize: 66)));
   }
@@ -4587,10 +4621,10 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
                   Positioned(top: compact ? 38 : 51, left: 0, right: 0, child: Center(child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, controller: widget.controller))),
                   Positioned(left: landscape ? 90 : 47, top: constraints.maxHeight * .41, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
                   Positioned(right: landscape ? 90 : 47, top: constraints.maxHeight * .41, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
-                  Positioned(top: 0, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[2], letter: 'ل', botProfile: botProfiles[2], bid: _seatBid(2))),
-                  Positioned(left: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[1], letter: 'س', botProfile: botProfiles[3], bid: _seatBid(1), vertical: true)),
-                  Positioned(right: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[3], letter: 'ج', botProfile: botProfiles[1], bid: _seatBid(3), vertical: true)),
-                  Positioned(bottom: compact ? 64 : 78, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[0], letter: widget.controller.displayName.isEmpty ? '?' : widget.controller.displayName.substring(0, 1), bid: _seatBid(0), nameColor: colorFromHex(widget.controller.selectedNameColor), badge: storeProductById(widget.controller.selectedBadge)?.icon, avatarEmoji: widget.controller.avatarEmoji)),
+                  Positioned(top: 0, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[2], letter: 'ل', botProfile: botProfiles[2], bid: _seatBid(2), onProfileTap: () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(botProfiles[2], widget.controller.localeCode)))),
+                  Positioned(left: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[1], letter: 'س', botProfile: botProfiles[3], bid: _seatBid(1), vertical: true, onProfileTap: () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(botProfiles[3], widget.controller.localeCode)))),
+                  Positioned(right: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[3], letter: 'ج', botProfile: botProfiles[1], bid: _seatBid(3), vertical: true, onProfileTap: () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(botProfiles[1], widget.controller.localeCode)))),
+                  Positioned(bottom: compact ? 64 : 78, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[0], letter: widget.controller.displayName.isEmpty ? '?' : widget.controller.displayName.substring(0, 1), bid: _seatBid(0), nameColor: colorFromHex(widget.controller.selectedNameColor), badge: storeProductById(widget.controller.selectedBadge)?.icon, avatarEmoji: widget.controller.avatarEmoji, onProfileTap: () => showProfile(context, widget.controller))),
                   Positioned(
                     right: landscape ? 92 : 48,
                     bottom: compact ? 92 : 112,
@@ -4684,39 +4718,46 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
   Widget _handWidget(BuildContext context, {required double maxWidth, required bool compact}) {
     final hand = engine.humanHand;
     if (hand.isEmpty) return const SizedBox(height: 8);
-    final cardWidth = compact ? 48.0 : 56.0;
-    final cardHeight = cardWidth * 1.52;
     final legal = engine.phase == TarneebPhase.playing && engine.currentSeat == 0
         ? engine.legalCards(0).map((card) => card.code).toSet()
         : hand.map((card) => card.code).toSet();
-    return SizedBox(
-      height: cardHeight + 22,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
-        itemCount: hand.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 3),
-        itemBuilder: (context, index) {
-          final card = hand[index];
-          final selected = selectedCode == card.code;
-          return Transform.translate(
-            offset: Offset(0, selected ? -7 : 0),
-            child: GestureDetector(
-              onTap: legal.contains(card.code) && engine.phase == TarneebPhase.playing && engine.currentSeat == 0
-                  ? () => setState(() => selectedCode = selected ? null : card.code)
-                  : null,
-              onDoubleTap: legal.contains(card.code) ? () => _playLocalCard(card.code) : null,
-              onVerticalDragEnd: legal.contains(card.code)
-                  ? (details) { if ((details.primaryVelocity ?? 0) < -180) _playLocalCard(card.code); }
-                  : null,
-              child: Opacity(
-                opacity: engine.phase == TarneebPhase.playing && engine.currentSeat == 0 && !legal.contains(card.code) ? .42 : 1,
-                child: PlayingCard(label: card.label, width: cardWidth, height: cardHeight, selected: selected),
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final available = math.min(maxWidth, constraints.maxWidth);
+        final cardWidth = visibleCardWidthV021(available, hand.length, preferred: compact ? 48 : 56, gap: 2);
+        final cardHeight = cardWidth * 1.52;
+        return SizedBox(
+          height: cardHeight + 22,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var index = 0; index < hand.length; index++)
+                  Padding(
+                    padding: EdgeInsets.only(right: index == hand.length - 1 ? 0 : 2),
+                    child: Transform.translate(
+                      offset: Offset(0, selectedCode == hand[index].code ? -7 : 0),
+                      child: GestureDetector(
+                        onTap: legal.contains(hand[index].code) && engine.phase == TarneebPhase.playing && engine.currentSeat == 0
+                            ? () => setState(() => selectedCode = selectedCode == hand[index].code ? null : hand[index].code)
+                            : null,
+                        onDoubleTap: legal.contains(hand[index].code) ? () => _playLocalCard(hand[index].code) : null,
+                        onVerticalDragEnd: legal.contains(hand[index].code)
+                            ? (details) { if ((details.primaryVelocity ?? 0) < -180) _playLocalCard(hand[index].code); }
+                            : null,
+                        child: Opacity(
+                          opacity: engine.phase == TarneebPhase.playing && engine.currentSeat == 0 && !legal.contains(hand[index].code) ? .42 : 1,
+                          child: PlayingCard(label: hand[index].label, width: cardWidth, height: cardHeight, selected: selectedCode == hand[index].code),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -4928,24 +4969,34 @@ class PremiumCardBack extends StatelessWidget {
     final c1 = product?.previewColor1 ?? const Color(0xff111827);
     final c2 = product?.previewColor2 ?? const Color(0xfffacc15);
     final customBytes = decodeDataImage(controller?.customCardBackData);
+    final asset = customBytes == null ? product?.imageAsset : null;
     return Container(
       width: width,
       height: height,
       alignment: Alignment.center,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(width * .18),
-        gradient: customBytes == null ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c1, Color.lerp(c1, Colors.black, .35)!]) : null,
-        image: customBytes == null ? null : DecorationImage(image: MemoryImage(customBytes), fit: BoxFit.cover),
+        gradient: customBytes == null && asset == null
+            ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c1, Color.lerp(c1, Colors.black, .35)!])
+            : null,
+        image: customBytes != null
+            ? DecorationImage(image: MemoryImage(customBytes), fit: BoxFit.cover)
+            : asset == null
+                ? null
+                : DecorationImage(image: AssetImage(asset), fit: BoxFit.cover, filterQuality: FilterQuality.high),
         border: Border.all(color: c2, width: 1.4),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .35), blurRadius: 5, offset: const Offset(0, 3))],
       ),
-      child: Container(
-        width: width * .62,
-        height: height * .67,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(width * .12), border: Border.all(color: c2.withValues(alpha: .7))),
-        child: Text(product?.icon ?? 'W', style: TextStyle(color: c2, fontSize: width * .34, fontWeight: FontWeight.w900)),
-      ),
+      child: asset == null && customBytes == null
+          ? Container(
+              width: width * .62,
+              height: height * .67,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(width * .12), border: Border.all(color: c2.withValues(alpha: .7))),
+              child: Text(product?.icon ?? 'W', style: TextStyle(color: c2, fontSize: width * .34, fontWeight: FontWeight.w900)),
+            )
+          : null,
     );
   }
 }
@@ -5642,7 +5693,16 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
                         : (participant.name.trim().isEmpty ? '?' : participant.name.trim().substring(0, 1));
                     return InkWell(
                       borderRadius: BorderRadius.circular(13),
-                      onTap: participant.self || service == null ? null : () => service.togglePeerMute(participant.userId),
+                      onTap: () => openPlayerProfileV021(
+                        context,
+                        widget.controller,
+                        userId: participant.userId,
+                        name: participant.name,
+                        avatar: participant.avatar,
+                        online: participant.online,
+                        activity: participant.self ? 'أنت • الغرفة الصوتية' : 'الغرفة الصوتية',
+                      ),
+                      onLongPress: participant.self || service == null ? null : () => service.togglePeerMute(participant.userId),
                       child: Container(
                         width: 118,
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
@@ -5869,7 +5929,18 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
                   icon: bot ? '🤖' : (player['flag']?.toString() ?? '👤'),
                   title: player['name']?.toString() ?? 'لاعب',
                   subtitle: bot ? 'لاعب آلي احترافي' : 'LV.${player['level'] ?? 1} • ${player['connected'] == true ? 'متصل' : 'غير متصل'}',
-                  onTap: bot ? null : () => showPublicPlayerProfileV170(context, widget.controller, _roomPlayerAsFriend(player)),
+                  onTap: () => openPlayerProfileV021(
+                    context,
+                    widget.controller,
+                    userId: bot ? null : int.tryParse(player['user_id']?.toString() ?? ''),
+                    name: player['name']?.toString() ?? 'لاعب',
+                    username: player['username']?.toString(),
+                    avatar: bot ? '🤖' : player['avatar']?.toString(),
+                    level: int.tryParse(player['level']?.toString() ?? '') ?? 1,
+                    countryCode: player['country_code']?.toString() ?? 'PS',
+                    online: player['connected'] == true,
+                    activity: bot ? 'لاعب آلي احترافي' : 'لاعب في الغرفة',
+                  ),
                   action: (!bot && !mine && room?['is_owner'] == true && room?['allow_owner_kick'] == true)
                       ? IconButton(onPressed: () => _kickRoomPlayer(player), icon: const Icon(Icons.person_remove_alt_1_rounded, color: Colors.redAccent))
                       : const SizedBox.shrink(),
@@ -5891,13 +5962,25 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
       bid: player['bot'] == true ? 'AI ${widget.controller.botDifficultyCode.toUpperCase()}' : 'LIVE',
       nameColor: index == 0 ? colorFromHex(widget.controller.selectedNameColor) : profile?.secondary ?? const Color(0xffe5e7eb),
       badge: index == 0 ? storeProductById(widget.controller.selectedBadge)?.icon : '🤖',
+      onProfileTap: player['bot'] == true
+          ? () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(profile!, widget.controller.localeCode))
+          : () => openPlayerProfileV021(
+                context,
+                widget.controller,
+                userId: int.tryParse(player['user_id']?.toString() ?? ''),
+                name: name,
+                username: player['username']?.toString(),
+                avatar: player['avatar']?.toString(),
+                level: int.tryParse(player['level']?.toString() ?? '') ?? 1,
+                countryCode: player['country_code']?.toString() ?? 'PS',
+                online: player['connected'] == true,
+              ),
     );
     final bot = player['bot'] == true;
     final mine = player['key']?.toString() == state['you']?.toString();
     final canKick = !bot && !mine && room?['is_owner'] == true && room?['allow_owner_kick'] == true;
     final interactiveSeat = GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: bot ? null : () => showPublicPlayerProfileV170(context, widget.controller, _roomPlayerAsFriend(player)),
       onLongPress: canKick ? () => _kickRoomPlayer(player) : null,
       child: seat,
     );
@@ -6154,32 +6237,38 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
 
   Widget _serverHand() {
     if (hand.isEmpty) return const SizedBox(height: 55, child: Center(child: Text('لا توجد أوراق ظاهرة في هذه المرحلة', style: TextStyle(color: Colors.white38, fontSize: 10))));
-    const cardWidth = 54.0;
-    const cardHeight = 81.0;
-    return SizedBox(
-      height: 104,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        itemCount: hand.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 3),
-        itemBuilder: (context, index) {
-          final card = hand[index];
-          final selected = selectedCard == card;
-          return Transform.translate(
-            offset: Offset(0, selected ? -7 : 0),
-            child: GestureDetector(
-              onTap: () => setState(() => selectedCard = selected ? null : card),
-              onDoubleTap: () => _quickPlayCard(card),
-              onVerticalDragEnd: (details) { if ((details.primaryVelocity ?? 0) < -180) _quickPlayCard(card); },
-              child: Opacity(
-                opacity: legal.isNotEmpty && !legal.contains(card) ? .42 : 1,
-                child: PlayingCard(label: _cardLabel(card), width: cardWidth, height: cardHeight, selected: selected),
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = visibleCardWidthV021(constraints.maxWidth, hand.length, preferred: 54, gap: 2);
+        final cardHeight = cardWidth * 1.5;
+        return SizedBox(
+          height: cardHeight + 23,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var index = 0; index < hand.length; index++)
+                  Padding(
+                    padding: EdgeInsets.only(right: index == hand.length - 1 ? 0 : 2),
+                    child: Transform.translate(
+                      offset: Offset(0, selectedCard == hand[index] ? -7 : 0),
+                      child: GestureDetector(
+                        onTap: () => setState(() => selectedCard = selectedCard == hand[index] ? null : hand[index]),
+                        onDoubleTap: () => _quickPlayCard(hand[index]),
+                        onVerticalDragEnd: (details) { if ((details.primaryVelocity ?? 0) < -180) _quickPlayCard(hand[index]); },
+                        child: Opacity(
+                          opacity: legal.isNotEmpty && !legal.contains(hand[index]) ? .42 : 1,
+                          child: PlayingCard(label: _cardLabel(hand[index]), width: cardWidth, height: cardHeight, selected: selectedCard == hand[index]),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -6530,11 +6619,24 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
                           final emojiOnly=!RegExp(r'[A-Za-z0-9\u0600-\u06FF]').hasMatch(message.body) && message.body.runes.length<=8;
                           return Align(
                             alignment: message.mine ? Alignment.centerRight : Alignment.centerLeft,
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 6),
-                              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-                              decoration: BoxDecoration(color: message.mine ? Theme.of(context).colorScheme.primary.withValues(alpha: .16) : Colors.white.withValues(alpha: .055), borderRadius: BorderRadius.circular(13)),
-                              child: Text(emojiOnly?message.body:'${message.sender}: ${message.body}', style: TextStyle(fontSize: emojiOnly?31*widget.controller.uiChatScale:12.5*widget.controller.uiChatScale, height: 1.35, fontWeight: message.mine ? FontWeight.w800 : FontWeight.w500, color: message.mine ? colorFromHex(widget.controller.selectedChatColor) : Colors.white)),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(13),
+                              onTap: () => openPlayerProfileV021(
+                                context,
+                                widget.controller,
+                                name: message.sender,
+                                avatar: message.mine ? widget.controller.avatarEmoji : null,
+                                level: message.mine ? widget.controller.level : 1,
+                                countryCode: message.mine ? widget.controller.countryCode : 'PS',
+                                online: true,
+                                activity: 'محادثة غرفة اللعب',
+                              ),
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                                decoration: BoxDecoration(color: message.mine ? Theme.of(context).colorScheme.primary.withValues(alpha: .16) : Colors.white.withValues(alpha: .055), borderRadius: BorderRadius.circular(13)),
+                                child: Text(emojiOnly?message.body:'${message.sender}: ${message.body}', style: TextStyle(fontSize: emojiOnly?31*widget.controller.uiChatScale:12.5*widget.controller.uiChatScale, height: 1.35, fontWeight: message.mine ? FontWeight.w800 : FontWeight.w500, color: message.mine ? colorFromHex(widget.controller.selectedChatColor) : Colors.white)),
+                              ),
                             ),
                           );
                         },
@@ -6551,7 +6653,28 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
                 ]),
               ),
             ] else ...[
-              Expanded(child:ListView.separated(padding:const EdgeInsets.all(8),itemCount:widget.controller.friends.length,separatorBuilder:(_,__)=>const Divider(height:1),itemBuilder:(_,index){final friend=widget.controller.friends[index];return ListTile(dense:true,leading:Stack(children:[CircleAvatar(child:Text(friend.name.substring(0,1))),if(friend.online)const Positioned(right:0,bottom:0,child:CircleAvatar(radius:5,backgroundColor:Colors.greenAccent))]),title:Text(friend.name,style:TextStyle(fontWeight:FontWeight.w900,fontSize:13*widget.controller.uiChatScale)),subtitle:Text(friend.activity,maxLines:1,overflow:TextOverflow.ellipsis,style:TextStyle(fontSize:10*widget.controller.uiChatScale)),trailing:const Icon(Icons.chat_bubble_outline,size:19),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>PrivateChatPage(controller:widget.controller,friend:friend))));})),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: widget.controller.friends.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, index) {
+                    final friend = widget.controller.friends[index];
+                    return ListTile(
+                      dense: true,
+                      leading: Stack(children: [CircleAvatar(child: Text(friend.avatar?.isNotEmpty == true ? friend.avatar! : friend.name.substring(0, 1))), if (friend.online) const Positioned(right: 0, bottom: 0, child: CircleAvatar(radius: 5, backgroundColor: Colors.greenAccent))]),
+                      title: Text(friend.name, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13 * widget.controller.uiChatScale)),
+                      subtitle: Text(friend.activity, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10 * widget.controller.uiChatScale)),
+                      trailing: IconButton(
+                        tooltip: 'فتح المحادثة',
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PrivateChatPage(controller: widget.controller, friend: friend))),
+                        icon: const Icon(Icons.chat_bubble_outline, size: 19),
+                      ),
+                      onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend),
+                    );
+                  },
+                ),
+              ),
             ],
           ],
         ),
@@ -6574,8 +6697,11 @@ class PlayingCard extends StatelessWidget {
     final rank = label.length > 1 ? label.substring(0, label.length - 1) : label;
     final red = suit == '♥' || suit == '♦';
     final ink = red ? const Color(0xffb42335) : const Color(0xff101419);
-    final cornerSize = math.max(9.0, width * .25).toDouble();
-    final centerSize = math.max(16.0, width * .48).toDouble();
+    final compactCard = width < 34;
+    final cornerSize = math.max(compactCard ? 6.0 : 9.0, width * .25).toDouble();
+    final centerSize = math.max(compactCard ? 9.0 : 16.0, width * .48).toDouble();
+    final edgeInset = compactCard ? 1.5 : 3.5;
+    final verticalInset = compactCard ? 1.0 : 2.5;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 170),
       curve: Curves.easeOutCubic,
@@ -6594,9 +6720,9 @@ class PlayingCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(math.max(6.0, width * .16).toDouble()),
         child: Stack(
           children: [
-            Positioned(left: 3.5, top: 2.5, child: Column(mainAxisSize: MainAxisSize.min, children: [Text(rank, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize, height: .9)), Text(suit, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize * .85, height: .85))])),
+            Positioned(left: edgeInset, top: verticalInset, child: Column(mainAxisSize: MainAxisSize.min, children: [Text(rank, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize, height: .9)), Text(suit, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize * .85, height: .85))])),
             Center(child: Text(suit.isEmpty ? label : suit, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: centerSize, shadows: const [Shadow(color: Colors.white, blurRadius: 1)]))),
-            Positioned(right: 3.5, bottom: 2.5, child: Transform.rotate(angle: math.pi, child: Column(mainAxisSize: MainAxisSize.min, children: [Text(rank, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize, height: .9)), Text(suit, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize * .85, height: .85))]))),
+            Positioned(right: edgeInset, bottom: verticalInset, child: Transform.rotate(angle: math.pi, child: Column(mainAxisSize: MainAxisSize.min, children: [Text(rank, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize, height: .9)), Text(suit, style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: cornerSize * .85, height: .85))]))),
             if (selected) Positioned.fill(child: IgnorePointer(child: DecoratedBox(decoration: BoxDecoration(borderRadius: BorderRadius.circular(math.max(7, width * .18).toDouble()), gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Theme.of(context).colorScheme.primary.withValues(alpha: .18), Colors.transparent]))))),
           ],
         ),
@@ -6614,8 +6740,9 @@ class PlayerSeat extends StatelessWidget {
   final String? badge;
   final String? avatarEmoji;
   final BotProfile? botProfile;
+  final VoidCallback? onProfileTap;
 
-  const PlayerSeat({super.key, required this.name, required this.letter, required this.bid, this.vertical = false, this.nameColor, this.badge, this.avatarEmoji, this.botProfile});
+  const PlayerSeat({super.key, required this.name, required this.letter, required this.bid, this.vertical = false, this.nameColor, this.badge, this.avatarEmoji, this.botProfile, this.onProfileTap});
 
   @override
   Widget build(BuildContext context) {
@@ -6630,7 +6757,18 @@ class PlayerSeat extends StatelessWidget {
         child: Text('${badge ?? ''}${badge == null ? '' : ' '}$name • $bid', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: nameColor ?? Colors.white)),
       ),
     ];
-    return vertical ? Column(mainAxisSize: MainAxisSize.min, children: content) : Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: content);
+    final seat = vertical
+        ? Column(mainAxisSize: MainAxisSize.min, children: content)
+        : Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: content);
+    return Semantics(
+      button: onProfileTap != null,
+      label: 'فتح بروفايل $name',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onProfileTap,
+        child: Padding(padding: const EdgeInsets.all(2), child: seat),
+      ),
+    );
   }
 }
 
@@ -7513,7 +7651,7 @@ void showGameLobby(BuildContext context, AppController controller, GameInfo game
             runSpacing: 6,
             children: [
               QuickButton(icon: '📖', label: L.t(controller.localeCode, 'rules'), onTap: () => showRules(context, controller.localeCode, game.id)),
-              QuickButton(icon: '📊', label: L.t(controller.localeCode, 'leaderboard'), onTap: () => showLeaderboard(context)),
+              QuickButton(icon: '📊', label: L.t(controller.localeCode, 'leaderboard'), onTap: () => showLeaderboard(context, controller)),
               QuickButton(icon: '➕', label: L.t(controller.localeCode, 'createRoom'), onTap: () => showCreateRoom(context, controller, game)),
               QuickButton(icon: '🌐', label: L.t(controller.localeCode, 'openRooms'), onTap: () => showAvailableRooms(context, controller, game)),
               QuickButton(icon: '🔑', label: L.t(controller.localeCode, 'joinByCode'), onTap: () => showJoinRoomByCode(context, controller, game)),
@@ -7939,13 +8077,20 @@ class _ProductLivePreview extends StatelessWidget {
             child: Container(
               width: 78,
               height: 114,
+              padding: const EdgeInsets.all(2),
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(13),
-                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c1, c2]),
+                gradient: product.imageAsset == null ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c1, c2]) : null,
                 border: Border.all(color: Colors.white.withValues(alpha: .55), width: 2),
                 boxShadow: [BoxShadow(color: c2.withValues(alpha: .35), blurRadius: 18)],
               ),
-              child: Center(child: Text(product.icon, style: const TextStyle(fontSize: 38))),
+              child: product.imageAsset == null
+                  ? Center(child: Text(product.icon, style: const TextStyle(fontSize: 38)))
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(product.imageAsset!, fit: BoxFit.cover, filterQuality: FilterQuality.high),
+                    ),
             ),
           ),
         ],
@@ -8106,8 +8251,13 @@ class _RuleSection extends StatelessWidget {
       );
 }
 
-void showLeaderboard(BuildContext context) {
-  const entries = [('🥇','ياسر','18,420 XP'),('🥈','ليلى','17,980 XP'),('🥉','سامر','16,800 XP'),('4','أحمد','15,120 XP')];
+void showLeaderboard(BuildContext context, AppController controller) {
+  final entries = <(String, LocalFriend)>[
+    ('🥇', LocalFriend(6, 'ياسر', 'Yasser', online: true, activity: 'المركز الأول', level: 64, xp: 18420, xpNext: xpNeededForLevel(64), gamesPlayed: 1870, wins: 1210, badge: 'LEGEND')),
+    ('🥈', LocalFriend(3, 'ليلى', 'Layla', online: true, activity: 'المركز الثاني', level: 61, xp: 17980, xpNext: xpNeededForLevel(61), gamesPlayed: 1640, wins: 1044, badge: 'PRO')),
+    ('🥉', LocalFriend(2, 'سامر', 'Samer', online: true, activity: 'المركز الثالث', level: 58, xp: 16800, xpNext: xpNeededForLevel(58), gamesPlayed: 1530, wins: 930, badge: 'PRO')),
+    ('4', LocalFriend(9, 'أحمد', 'Ahmad', activity: 'المركز الرابع', level: 55, xp: 15120, xpNext: xpNeededForLevel(55), gamesPlayed: 1420, wins: 810)),
+  ];
   showPremiumSheet(
     context,
     child: Column(
@@ -8115,7 +8265,16 @@ void showLeaderboard(BuildContext context) {
       children: [
         const Text('لوحة الصدارة', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
         const SizedBox(height: 10),
-        ...entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 8), child: PremiumListTile(icon: e.$1, title: e.$2, subtitle: e.$3, action: const SizedBox(width: 1)))),
+        ...entries.map((entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: PremiumListTile(
+                onTap: () => showPublicPlayerProfileV170(context, controller, entry.$2),
+                icon: entry.$1,
+                title: entry.$2.name,
+                subtitle: '${formatNumber(entry.$2.xp)} XP • المستوى ${entry.$2.level}',
+                action: const Icon(Icons.chevron_right_rounded),
+              ),
+            )),
       ],
     ),
   );
@@ -8305,7 +8464,7 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
         if (widget.controller.outgoingRequests.isEmpty) const Text('لا توجد طلبات معلقة.', style: TextStyle(color: Colors.white54)),
         ...widget.controller.outgoingRequests.map((friend) => Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: PremiumListTile(icon: friend.name.substring(0, 1), title: friend.name, subtitle: 'بانتظار القبول', action: TextButton(onPressed: () { widget.controller.cancelFriendRequest(friend); setState(() {}); }, child: const Text('إلغاء'))),
+          child: PremiumListTile(onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend), icon: friend.name.substring(0, 1), title: friend.name, subtitle: 'بانتظار القبول', action: TextButton(onPressed: () { widget.controller.cancelFriendRequest(friend); setState(() {}); }, child: const Text('إلغاء'))),
         )),
       ],
     );
@@ -8355,6 +8514,7 @@ class _SocialHubPageState extends State<SocialHubPage> with SingleTickerProvider
         ...widget.controller.blocked.map((friend) => Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: PremiumListTile(
+            onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend),
             icon: friend.name.substring(0, 1),
             title: friend.name,
             subtitle: '@${friend.username}',
@@ -8450,11 +8610,32 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     final messages = widget.controller.privateChats[widget.friend.id] ?? const <ChatMessage>[];
     return Scaffold(
       appBar: AppBar(
-        title: Row(children: [
-          PremiumAvatar(text: widget.friend.name.substring(0, 1), size: 38),
-          const SizedBox(width: 9),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(widget.friend.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)), Text(widget.friend.online ? 'متصل الآن' : widget.friend.activity, style: TextStyle(color: widget.friend.online ? Colors.greenAccent : Colors.white54, fontSize: 8))]),
-        ]),
+        title: PlayerIdentityTapV021(
+          controller: widget.controller,
+          userId: widget.friend.id,
+          name: widget.friend.name,
+          username: widget.friend.username,
+          avatar: widget.friend.avatar,
+          level: widget.friend.level,
+          countryCode: widget.friend.countryCode,
+          online: widget.friend.online,
+          activity: widget.friend.activity,
+          pashaDays: widget.friend.pashaDays,
+          gamesPlayed: widget.friend.gamesPlayed,
+          wins: widget.friend.wins,
+          xp: widget.friend.xp,
+          xpNext: widget.friend.xpNext,
+          roundPoints: widget.friend.roundPoints,
+          tournamentPoints: widget.friend.tournamentPoints,
+          clubPoints: widget.friend.clubPoints,
+          nameColor: widget.friend.nameColor,
+          badge: widget.friend.badge,
+          child: Row(children: [
+            PremiumAvatar(text: widget.friend.avatar?.isNotEmpty == true ? widget.friend.avatar! : widget.friend.name.substring(0, 1), size: 38),
+            const SizedBox(width: 9),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(widget.friend.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)), Text(widget.friend.online ? 'متصل الآن' : widget.friend.activity, style: TextStyle(color: widget.friend.online ? Colors.greenAccent : Colors.white54, fontSize: 8))]),
+          ]),
+        ),
         actions: [IconButton(onPressed: () => showToast(context, 'تم إرسال دعوة لعبة.'), icon: const Icon(Icons.sports_esports_outlined))],
       ),
       body: Column(children: [
@@ -8579,9 +8760,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
   Widget _users() => ListView(
     padding: const EdgeInsets.all(12),
     children: [
-      PremiumListTile(icon:'A',title:'Adnan',subtitle:'مدير • ${formatNumber(widget.controller.coins)} توكن',action:const Chip(label:Text('ADMIN'))),
+      PremiumListTile(onTap: () => showProfile(context, widget.controller), icon:'A',title:'Adnan',subtitle:'مدير رئيسي • صلاحية كاملة • ${formatNumber(widget.controller.coins)} توكن',action:const Chip(label:Text('SUPER ADMIN'))),
       const SizedBox(height:8),
-      ...widget.controller.friends.map((friend)=>Padding(padding:const EdgeInsets.only(bottom:8),child:PremiumListTile(icon:friend.name.substring(0,1),title:friend.name,subtitle:'@${friend.username} • ${friend.activity}',action:PopupMenuButton<String>(itemBuilder:(_)=>const [PopupMenuItem(value:'grant',child:Text('منح 200 توكن')),PopupMenuItem(value:'ban',child:Text('حظر الحساب'))],onSelected:(value)=>showToast(context,value=='grant'?'تم تسجيل عملية المنح.':'تم تحديث حالة الحساب.'))))),
+      ...widget.controller.friends.map((friend)=>Padding(padding:const EdgeInsets.only(bottom:8),child:PremiumListTile(onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend), icon:friend.name.substring(0,1),title:friend.name,subtitle:'@${friend.username} • ${friend.activity}',action:PopupMenuButton<String>(itemBuilder:(_)=>const [PopupMenuItem(value:'grant',child:Text('منح 200 توكن')),PopupMenuItem(value:'ban',child:Text('حظر الحساب'))],onSelected:(value)=>showToast(context,value=='grant'?'تم تسجيل عملية المنح.':'تم تحديث حالة الحساب.'))))),
     ],
   );
 

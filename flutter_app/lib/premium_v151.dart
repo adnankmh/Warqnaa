@@ -361,54 +361,167 @@ class AdminStoreStudioV151 extends StatefulWidget {
 }
 
 class _AdminStoreStudioV151State extends State<AdminStoreStudioV151> {
+  String group = 'visual';
   String category = 'tables';
   String query = '';
+  int page = 0;
+  static const int pageSize = 12;
 
-  static const categories = <(String, String)>[
-    ('pasha', 'الباشا'), ('themes', 'الثيمات'), ('tables', 'الطاولات'), ('cards', 'ظهر الورق'), ('emoji', 'الإيموجز'), ('boost', 'المسرعات'), ('names', 'ألوان اللاعب'), ('chat_colors', 'ألوان الدردشة'), ('covers', 'الأغلفة'), ('badges', 'الشارات'), ('effects', 'المؤثرات'),
+  static const groups = <(String, String, IconData, List<String>)>[
+    ('visual', 'المظهر واللعب', Icons.palette_outlined, ['tables', 'cards', 'themes']),
+    ('identity', 'هوية اللاعب', Icons.account_circle_outlined, ['names', 'chat_colors', 'covers', 'badges', 'effects']),
+    ('rewards', 'المكافآت والعضويات', Icons.workspace_premium_outlined, ['pasha', 'boost', 'competition_ticket']),
+    ('social', 'التفاعل', Icons.emoji_emotions_outlined, ['emoji']),
   ];
+
+  static const categoryLabels = <String, String>{
+    'pasha': 'الباشا',
+    'themes': 'الثيمات',
+    'tables': 'الطاولات',
+    'cards': 'ظهر الورق',
+    'emoji': 'الإيموجز',
+    'boost': 'المسرعات',
+    'competition_ticket': 'تذاكر المنافسات',
+    'names': 'ألوان اللاعب',
+    'chat_colors': 'ألوان الدردشة',
+    'covers': 'الأغلفة',
+    'badges': 'الشارات',
+    'effects': 'المؤثرات',
+  };
+
+  List<String> get activeCategories => groups.firstWhere((item) => item.$1 == group).$4;
+
+  void selectGroup(String value) {
+    final selected = groups.firstWhere((item) => item.$1 == value);
+    setState(() {
+      group = value;
+      category = selected.$4.first;
+      page = 0;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final items = products.where((product) => product.category == category && product.nameAr.contains(query)).toList();
+    final normalizedQuery = query.trim().toLowerCase();
+    final items = products.where((product) {
+      if (product.category != category) return false;
+      if (normalizedQuery.isEmpty) return true;
+      return product.nameAr.toLowerCase().contains(normalizedQuery) ||
+          product.nameEn.toLowerCase().contains(normalizedQuery) ||
+          product.id.toLowerCase().contains(normalizedQuery);
+    }).toList();
+    final pageCount = math.max(1, (items.length / pageSize).ceil());
+    final safePage = page.clamp(0, pageCount - 1).toInt();
+    final from = safePage * pageSize;
+    final visibleItems = items.skip(from).take(pageSize).toList();
+
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
           child: Column(
             children: [
-              const _AdminInfo(text: 'إدارة مرئية بنظام تبويبات. يمكنك تعديل السعر، الإظهار، المعاينة والتفعيل بدون كتابة كود. تحفظ التعديلات على هذا الجهاز وتصبح قابلة للمزامنة مع Laravel.'),
+              const _AdminInfo(text: 'إدارة المتجر مقسمة إلى مجموعات وتبويبات وصفحات قصيرة. لن تحتاج إلى النزول لمسافات طويلة، ويمكنك الوصول لأي فئة أو عنصر بسرعة.'),
               const SizedBox(height: 10),
-              TextField(onChanged: (value) => setState(() => query = value), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث داخل التصنيف الحالي...')),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 7,
+                runSpacing: 7,
+                children: groups.map((item) => ChoiceChip(
+                  avatar: Icon(item.$3, size: 17),
+                  label: Text(item.$2, style: const TextStyle(fontWeight: FontWeight.w900)),
+                  selected: group == item.$1,
+                  onSelected: (_) => selectGroup(item.$1),
+                )).toList(),
+              ),
               const SizedBox(height: 9),
-              SizedBox(
-                height: 48,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: categories.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 6),
-                  itemBuilder: (_, index) {
-                    final item = categories[index];
-                    return ChoiceChip(label: Text(item.$2, style: const TextStyle(fontWeight: FontWeight.w900)), selected: category == item.$1, onSelected: (_) => setState(() => category = item.$1));
-                  },
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .035),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: .07)),
+                ),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: activeCategories.map((value) => ChoiceChip(
+                    label: Text(categoryLabels[value] ?? value, style: const TextStyle(fontWeight: FontWeight.w900)),
+                    selected: category == value,
+                    onSelected: (_) => setState(() { category = value; page = 0; }),
+                  )).toList(),
                 ),
               ),
+              const SizedBox(height: 9),
+              Row(children: [
+                Expanded(
+                  child: TextField(
+                    onChanged: (value) => setState(() { query = value; page = 0; }),
+                    decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث بالاسم أو المعرّف...'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 12),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: .12), borderRadius: BorderRadius.circular(14)),
+                  child: Text('${items.length} عنصر', style: const TextStyle(fontWeight: FontWeight.w900)),
+                ),
+              ]),
             ],
           ),
         ),
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 1000 ? 4 : constraints.maxWidth >= 680 ? 3 : 2;
-              return GridView.builder(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 18),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: columns, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: columns == 2 ? .64 : .78),
-                itemCount: items.length,
-                itemBuilder: (_, index) => _AdminStoreItemCard(controller: widget.controller, product: items[index], onChanged: () => setState(() {})),
-              );
-            },
-          ),
+          child: visibleItems.isEmpty
+              ? const Center(child: Text('لا توجد عناصر مطابقة في هذا التبويب.', style: TextStyle(color: Colors.white54)))
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 1000 ? 4 : constraints.maxWidth >= 680 ? 3 : 2;
+                    return GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: columns == 2 ? .64 : .78,
+                      ),
+                      itemCount: visibleItems.length,
+                      itemBuilder: (_, index) => _AdminStoreItemCard(
+                        controller: widget.controller,
+                        product: visibleItems[index],
+                        onChanged: () => setState(() {}),
+                      ),
+                    );
+                  },
+                ),
         ),
+        if (items.length > pageSize)
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 2, 12, 10),
+              child: Row(children: [
+                IconButton.filledTonal(
+                  onPressed: safePage > 0 ? () => setState(() => page = safePage - 1) : null,
+                  icon: const Icon(Icons.chevron_right_rounded),
+                  tooltip: 'الصفحة السابقة',
+                ),
+                Expanded(
+                  child: Text(
+                    'صفحة ${safePage + 1} من $pageCount  •  العناصر ${from + 1}–${math.min(from + visibleItems.length, items.length)}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 11),
+                  ),
+                ),
+                IconButton.filledTonal(
+                  onPressed: safePage + 1 < pageCount ? () => setState(() => page = safePage + 1) : null,
+                  icon: const Icon(Icons.chevron_left_rounded),
+                  tooltip: 'الصفحة التالية',
+                ),
+              ]),
+            ),
+          ),
       ],
     );
   }
