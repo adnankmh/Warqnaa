@@ -46,8 +46,12 @@ class XpService
         $profile->xp = (int) $profile->xp + $earnedXp;
         $newLevel = $this->levelForXp((int) $profile->xp);
         $bonus = 0;
+        $levelRewards = [];
         if ($newLevel > $oldLevel) {
-            for ($i = $oldLevel + 1; $i <= $newLevel; $i++) $bonus += $this->rewardForLevel($i);
+            for ($i = $oldLevel + 1; $i <= $newLevel; $i++) {
+                $bonus += $this->rewardForLevel($i);
+                $levelRewards[] = app(LevelUpRewardService::class)->grant($user, $i);
+            }
         }
         $profile->level = $newLevel;
         $profile->games_played = (int) ($profile->games_played ?? 0) + ($countGame ? 1 : 0);
@@ -57,6 +61,6 @@ class XpService
             $wallet->tokens += max(0, $tokens) + $bonus;
             $wallet->save();
         }
-        return ['old_level'=>$oldLevel,'new_level'=>$newLevel,'level_bonus'=>$bonus,'earned_xp'=>$earnedXp ?? $xp];
+        return ['old_level'=>$oldLevel,'new_level'=>$newLevel,'level_bonus'=>$bonus,'level_rewards'=>$levelRewards,'earned_xp'=>$earnedXp ?? $xp];
     }
 }

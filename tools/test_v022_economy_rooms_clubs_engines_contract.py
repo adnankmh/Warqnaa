@@ -32,8 +32,12 @@ def forbid(rel: str, *needles: str) -> None:
 
 def main() -> None:
     meta = json.loads(require("RELEASE_VERSION.json"))
-    if meta.get("version") != "0.2.2" or meta.get("build") != 178:
-        fail("metadata is not 0.2.2+178")
+    try:
+        build = int(meta.get('build', 0))
+    except (TypeError, ValueError):
+        build = 0
+    if build < 178:
+        fail('metadata predates the V0.2.2 inherited contract')
 
     main_dart = require(
         "flutter_app/lib/main.dart",

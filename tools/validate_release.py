@@ -106,6 +106,15 @@ def check_required_files() -> None:
         "tools/test_v176_daily_pack_inventory_contract.py",
         "tools/test_v02_daily_prize_boxes_contract.py",
         "tools/test_v022_economy_rooms_clubs_engines_contract.py",
+        "tools/test_v03_platform_contract.py",
+        "flutter_app/lib/v03_release.dart",
+        "backend-laravel/app/Services/GameEngine/GlobalEngines/BalancedDealV03.php",
+        "backend-laravel/app/Services/WarqnaPro/ChallengeCampaignService.php",
+        "backend-laravel/app/Services/Leveling/LevelUpRewardService.php",
+        "backend-laravel/database/factories/UserFactory.php",
+        "backend-laravel/database/seeders/V03DemoPlayersSeeder.php",
+        "backend-laravel/database/migrations/2026_07_13_140000_v03_challenge_campaigns_level_rewards_and_room_presence.php",
+        "backend-laravel/tests/Feature/V03GlobalReleaseTest.php",
         "flutter_app/lib/v176_release.dart",
         "flutter_app/lib/v02_release.dart",
         "backend-laravel/app/Models/PrizeBox.php",
@@ -183,11 +192,22 @@ ROOT_IGNORED_METADATA = {
 }
 
 
+ROOT_LEGACY_DOCUMENT_PATTERNS = (
+    re.compile(r"^APPLY_PATCH(?:_[A-Z0-9.]+)?_?AR\.md$", re.IGNORECASE),
+    re.compile(r"^CHANGELOG_[A-Z0-9._-]+_AR\.md$", re.IGNORECASE),
+    re.compile(r"^FILES_MANIFEST(?:_[A-Z0-9._-]+)?\.txt$", re.IGNORECASE),
+    re.compile(r"^VALIDATION(?:_RESULTS)?_[A-Z0-9._-]+\.txt$", re.IGNORECASE),
+)
+
+def _is_allowed_root_entry(name: str) -> bool:
+    if name in ROOT_ALLOWED_ENTRIES or name in ROOT_IGNORED_METADATA:
+        return True
+    # Older patch-only packages placed their read-only handoff documents in the root.
+    # They are safe release metadata, not runtime clutter, so full releases remain compatible.
+    return any(pattern.fullmatch(name) for pattern in ROOT_LEGACY_DOCUMENT_PATTERNS)
+
 def unexpected_root_entries(names) -> list[str]:
-    return sorted(
-        str(name) for name in names
-        if str(name) not in ROOT_ALLOWED_ENTRIES and str(name) not in ROOT_IGNORED_METADATA
-    )
+    return sorted(str(name) for name in names if not _is_allowed_root_entry(str(name)))
 
 
 def check_clean_root_policy_self_test() -> None:
@@ -1312,6 +1332,17 @@ def check_v022_economy_rooms_clubs_engines_contract() -> None:
     print("[OK] V0.2.2 server economy, public rooms, club permissions, delegated admin and rummy engine contracts")
 
 
+def check_v03_platform_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v03_platform_contract.py")],
+        cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna V0.3 platform contract failed: " + result.stdout.strip())
+    print(result.stdout.strip())
+    print("[OK] V0.3 balanced premium deal, 3-turn absence, challenge road, level rewards, localized bots, owner designer and test ads")
+
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -1360,6 +1391,7 @@ def main() -> None:
     check_v176_daily_pack_inventory_contract()
     check_v02_daily_prize_boxes_contract()
     check_v022_economy_rooms_clubs_engines_contract()
+    check_v03_platform_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

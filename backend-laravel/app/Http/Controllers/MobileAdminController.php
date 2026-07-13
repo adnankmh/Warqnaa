@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{AdminAuditLog,AdminDelegation,AdminDesignerEntity,AppRelease,FeatureFlag,Game,Room,StoreItem,User,UserReport};
+use App\Models\{AdminAuditLog,AdminDelegation,AdminDesignerEntity,AppRelease,FeatureFlag,Friendship,Game,Room,StoreItem,User,UserReport};
 use App\Services\GameEngine\EngineRegistry;
 use App\Services\Platform\{AdminAuditService,ProductionConfigService};
 use Illuminate\Http\Request;
@@ -21,7 +21,7 @@ class MobileAdminController extends Controller
     private function ownerGuard(Request $request): void
     {
         $user = $request->user();
-        abort_unless($user && ((bool)$user->is_admin || strtolower((string)$user->username) === 'adnan'), 403, 'إدارة التفويضات للمدير الرئيسي فقط.');
+        abort_unless($user && strtolower((string)$user->username) === 'adnan', 403, 'هذه العملية متاحة للمدير الرئيسي Adnan فقط.');
     }
 
     public function dashboard(Request $request)
@@ -111,6 +111,32 @@ class MobileAdminController extends Controller
         return response()->json(['ok' => true, 'message' => 'تم تنفيذ الإجراء']);
     }
 
+    public function sendTokens(Request $request, User $user, AdminAuditService $audit)
+    {
+        $this->guard($request,'users.moderate');
+        $data=$request->validate(['amount'=>'required|integer|min:1|max:1000000000000']);
+        $before=$user->wallet?->tokens ?? 0;
+        $wallet=$user->wallet()->firstOrCreate(['user_id'=>$user->id],['tokens'=>50,'gems'=>0]);
+        $wallet->increment('tokens',(int)$data['amount']);
+        $audit->record($request,'admin.tokens.send',$user,['tokens'=>$before],['tokens'=>$wallet->fresh()->tokens,'amount'=>(int)$data['amount']]);
+        return response()->json(['ok'=>true,'message'=>'تم إرسال التوكنز للاعب','wallet'=>$wallet->fresh()]);
+    }
+
+    public function sendFriendRequest(Request $request, User $user, AdminAuditService $audit)
+    {
+        $this->guard($request,'users.moderate');
+        abort_if((int)$user->id===(int)$request->user()->id,422,'لا يمكنك إرسال طلب صداقة لنفسك.');
+        $friendship=Friendship::where(function($q) use($request,$user){
+            $q->where('requester_id',$request->user()->id)->where('addressee_id',$user->id);
+        })->orWhere(function($q) use($request,$user){
+            $q->where('requester_id',$user->id)->where('addressee_id',$request->user()->id);
+        })->first();
+        if(!$friendship){$friendship=Friendship::create(['requester_id'=>$request->user()->id,'addressee_id'=>$user->id,'status'=>'pending']);}
+        elseif($friendship->status!=='accepted'){$friendship->update(['requester_id'=>$request->user()->id,'addressee_id'=>$user->id,'status'=>'pending']);}
+        $audit->record($request,'admin.friend.request',$friendship,null,$friendship->toArray());
+        return response()->json(['ok'=>true,'message'=>'تم إرسال طلب الصداقة','friendship'=>$friendship]);
+    }
+
     public function updateFeatureFlag(Request $request, FeatureFlag $flag, AdminAuditService $audit, ProductionConfigService $config)
     {
         $this->guard($request, 'features.manage');
@@ -129,7 +155,7 @@ class MobileAdminController extends Controller
 
     public function designerIndex(Request $request)
     {
-        $this->guard($request, 'designer.manage');
+        $this->ownerGuard($request);
         return response()->json([
             'ok' => true,
             'entities' => AdminDesignerEntity::orderBy('entity_type')->orderBy('sort_order')->orderBy('key')->get(),
@@ -138,7 +164,7 @@ class MobileAdminController extends Controller
 
     public function upsertDesigner(Request $request, string $entityType, string $key, AdminAuditService $audit)
     {
-        $this->guard($request, 'designer.manage');
+        $this->ownerGuard($request);
         abort_unless((bool) preg_match('/^[a-z0-9_-]{2,80}$/i', $entityType), 422, 'نوع العنصر غير صحيح.');
         abort_unless((bool) preg_match('/^[a-z0-9_.:-]{2,150}$/i', $key), 422, 'مفتاح العنصر غير صحيح.');
         $data = $request->validate([
@@ -166,7 +192,7 @@ class MobileAdminController extends Controller
 
     public function deleteDesigner(Request $request, AdminDesignerEntity $entity, AdminAuditService $audit)
     {
-        $this->guard($request, 'designer.manage');
+        $this->ownerGuard($request);
         $before = $entity->toArray();
         $audit->record($request, 'admin.designer.delete', $entity, $before, null);
         $entity->delete();

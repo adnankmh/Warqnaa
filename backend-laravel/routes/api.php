@@ -57,6 +57,8 @@ Route::prefix('mobile/v1')->group(function () {
         Route::get('/prize-boxes', [MobileEngagementController::class, 'prizeBoxes']);
         Route::post('/prize-boxes/{prizeBox}/open', [MobileEngagementController::class, 'openPrizeBox'])->middleware('throttle:warqna-sensitive');
         Route::post('/packs/daily/open', [MobileEngagementController::class, 'openDailyPack'])->middleware('throttle:warqna-sensitive');
+        Route::post('/challenge-road/start', [MobileEngagementController::class, 'startChallengeRoad'])->middleware('throttle:warqna-sensitive');
+        Route::post('/challenge-road/{run}/report', [MobileEngagementController::class, 'reportChallengeRoad'])->middleware('throttle:warqna-sensitive');
         Route::post('/challenges/{challengeKey}/activate', [MobileEngagementController::class, 'activateChallenge'])->middleware('throttle:warqna-sensitive');
         Route::post('/challenges/{challengeKey}/claim', [MobileEngagementController::class, 'claimChallenge'])->middleware('throttle:warqna-sensitive');
         Route::post('/competitions/{competitionKey}/join', [MobileEngagementController::class, 'joinCompetition'])->middleware('throttle:warqna-sensitive');
@@ -114,6 +116,8 @@ Route::prefix('mobile/v1')->group(function () {
         Route::patch('/admin/games/{game}', [MobileAdminController::class, 'updateGame']);
         Route::patch('/admin/store/{item}', [MobileAdminController::class, 'updateStore']);
         Route::post('/admin/users/{user}/action', [MobileAdminController::class, 'userAction']);
+        Route::post('/admin/users/{user}/send-tokens', [MobileAdminController::class, 'sendTokens']);
+        Route::post('/admin/users/{user}/friend-request', [MobileAdminController::class, 'sendFriendRequest']);
         Route::patch('/admin/feature-flags/{flag}', [MobileAdminController::class, 'updateFeatureFlag']);
         Route::post('/admin/releases', [MobileAdminController::class, 'createRelease']);
         Route::get('/admin/designer', [MobileAdminController::class, 'designerIndex']);

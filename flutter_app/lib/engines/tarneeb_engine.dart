@@ -127,13 +127,35 @@ class TarneebLocalEngine {
         for (final rank in ranks) TarneebCard(rank, suit),
     ]..shuffle(_random);
 
-    for (var i = 0; i < 52; i++) {
-      hands[i % 4].add(deck[i]);
+    final balanced = _balancedStrongDealV03(deck);
+    for (var seat = 0; seat < 4; seat++) {
+      hands[seat].addAll(balanced[seat]);
     }
     for (final hand in hands) {
       _sortHand(hand);
     }
     messages.add('بدأت الجولة $round: تم توزيع 13 ورقة فريدة لكل لاعب.');
+  }
+
+  List<List<TarneebCard>> _balancedStrongDealV03(List<TarneebCard> deck) {
+    final sorted = List<TarneebCard>.from(deck)..sort((a, b) => b.power.compareTo(a.power));
+    final result = List<List<TarneebCard>>.generate(4, (_) => <TarneebCard>[]);
+    final strength = List<int>.filled(4, 0);
+    var rotation = 0;
+    for (final card in sorted) {
+      final eligible = List<int>.generate(4, (index) => index).where((seat) => result[seat].length < 13).toList()
+        ..sort((a, b) {
+          final score = strength[a].compareTo(strength[b]);
+          return score != 0 ? score : result[a].length.compareTo(result[b].length);
+        });
+      final minimum = strength[eligible.first];
+      final tied = eligible.where((seat) => strength[seat] == minimum).toList();
+      final seat = tied[rotation % tied.length];
+      rotation += 1;
+      result[seat].add(card);
+      strength[seat] += card.power;
+    }
+    return result;
   }
 
   bool canBid(int seat, int? amount) {

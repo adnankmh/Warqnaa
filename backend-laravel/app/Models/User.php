@@ -3,11 +3,12 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = ['username','email','password','is_admin','is_banned','last_seen_at','email_verified_at','deletion_requested_at','last_login_ip','last_login_user_agent'];
     protected $hidden = ['password','remember_token'];
@@ -37,6 +38,8 @@ class User extends Authenticatable
     public function prizeBoxes(){ return $this->hasMany(PrizeBox::class); }
     public function clubMembership(){ return $this->hasOne(ClubMember::class); }
     public function adminDelegation(){ return $this->hasOne(AdminDelegation::class); }
+    public function challengeRuns(){ return $this->hasMany(ChallengeRun::class); }
+    public function levelRewardClaims(){ return $this->hasMany(LevelRewardClaim::class); }
 
     public function publicProfile(): array
     {

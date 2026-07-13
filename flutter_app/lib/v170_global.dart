@@ -765,18 +765,25 @@ class TarneebBidButtonV170 extends StatelessWidget {
       borderRadius:BorderRadius.circular(16),
       gradient:LinearGradient(colors:selected?[Theme.of(context).colorScheme.primary,const Color(0xff7c4a08)]:[Colors.white.withValues(alpha:.08),Colors.white.withValues(alpha:.035)]),
       border:Border.all(color:selected?Theme.of(context).colorScheme.primary:Colors.white12,width:selected?2:1),
-      boxShadow:selected?[BoxShadow(color:Theme.of(context).colorScheme.primary.withValues(alpha:.32),blurRadius:16)]:const[],
+      boxShadow:onPressed==null
+          ? const []
+          : [
+              BoxShadow(color:(selected?Theme.of(context).colorScheme.primary:Colors.black).withValues(alpha:selected ? .38 : .34),blurRadius:selected?18:8,offset:const Offset(0,6)),
+              BoxShadow(color:Colors.white.withValues(alpha:selected ? .20 : .07),blurRadius:2,offset:const Offset(0,-1)),
+            ],
     ),
     child:InkWell(
       onTap:onPressed,
       borderRadius:BorderRadius.circular(16),
-      child:Padding(
-        padding:const EdgeInsets.symmetric(horizontal:14,vertical:10),
+      child:Transform.translate(
+        offset:onPressed==null?const Offset(0,2):Offset.zero,
+        child:Padding(
+        padding:const EdgeInsets.symmetric(horizontal:14,vertical:11),
         child:Column(mainAxisSize:MainAxisSize.min,children:[
           Text(label,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:15)),
           if(subtitle!=null) Text(subtitle!,style:const TextStyle(fontSize:9,color:Colors.white60)),
         ]),
-      ),
+      )),
     ),
   );
 }

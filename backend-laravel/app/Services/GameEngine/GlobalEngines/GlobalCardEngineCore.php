@@ -42,14 +42,14 @@ class GlobalCardEngineCore
 
         if (in_array($mode, ['trick','trick400','trix','trix-complex'], true)) {
             $cardsEach = intdiv(count($deck), count($players));
-            for ($r=0; $r<$cardsEach; $r++) {
-                foreach ($players as $p) $hands[(string)$p['id']][] = array_shift($deck);
-            }
-            foreach ($hands as $pid => $h) $hands[$pid] = $this->sortCards($h);
+            $deal = BalancedDealV03::trick($deck, array_keys($hands), $cardsEach);
+            $hands = $deal['hands'];
+            $deck = $deal['deck'];
             $phase = in_array($mode, ['trick','trick400'], true) ? 'bidding' : 'contract';
         } elseif ($mode === 'baloot') {
-            for ($r=0; $r<8; $r++) foreach ($players as $p) $hands[(string)$p['id']][] = array_shift($deck);
-            foreach ($hands as $pid => $h) $hands[$pid] = $this->sortCards($h);
+            $deal = BalancedDealV03::trick($deck, array_keys($hands), 8);
+            $hands = $deal['hands'];
+            $deck = $deal['deck'];
             $phase = 'bidding';
         } elseif ($mode === 'solitaire') {
             foreach ($players as $p) {
@@ -61,20 +61,12 @@ class GlobalCardEngineCore
             $phase = 'playing';
         } else { // rummy / hand / banakil
             $cardsEach = (int)($cfg['cardsEach'] ?? 14);
-            for ($r = 0; $r < $cardsEach; $r++) {
-                foreach ($players as $p) {
-                    $hands[(string)$p['id']][] = array_shift($deck);
-                }
-            }
             // Some regional variants start the first player with an extra card so
             // the opening turn begins with a discard instead of an artificial draw.
             $firstExtra = max(0, (int)($cfg['firstExtra'] ?? 0));
-            for ($i = 0; $i < $firstExtra; $i++) {
-                $hands[(string)$players[0]['id']][] = array_shift($deck);
-            }
-            foreach ($hands as $pid => $h) {
-                $hands[$pid] = $this->sortCards($h);
-            }
+            $deal = BalancedDealV03::rummy($deck, array_keys($hands), $cardsEach, $firstExtra);
+            $hands = $deal['hands'];
+            $deck = $deal['deck'];
             $discard[] = array_shift($deck);
             $phase = $firstExtra > 0 ? 'discard' : 'draw';
         }
@@ -93,6 +85,8 @@ class GlobalCardEngineCore
                 'away'=>false,
                 'connected'=>true,
                 'missedTurns'=>0,
+                'voluntaryLeaves'=>0,
+                'rejoinBlocked'=>false,
             ], $players, array_keys($players))),
             'phase'=>$phase,
             'currentIndex'=>0,
@@ -269,6 +263,16 @@ class GlobalCardEngineCore
         if ($this->currentPlayerId($state) !== $playerId && !in_array(($action['type'] ?? ''), ['set_away','return_from_away'], true)) throw new GameEngineException('ليست دورك.');
         $type = (string)($action['type'] ?? '');
         $mode = $state['config']['mode'];
+        if (!in_array($type, ['set_away'], true)) {
+            foreach ($state['players'] as &$player) {
+                if ((string)$player['id'] === $playerId && empty($player['rejoinBlocked'])) {
+                    $player['missedTurns'] = 0;
+                    $player['connected'] = true;
+                    $player['away'] = false;
+                }
+            }
+            unset($player);
+        }
         return match($type) {
             'pass' => $this->pass($state, $playerId),
             'bid' => $this->bid($state, $playerId, (int)$action['amount']),
@@ -816,6 +820,55 @@ class GlobalCardEngineCore
         foreach ($state['players'] as &$p) if ($p['id']===$playerId) $p['away']=$away;
         $state = $this->record($state, $away?'player.away':'player.returned', compact('playerId'));
         return $this->finalizeState($state);
+    }
+
+
+    /** Three consecutive missed turns switch the seat to away/autoplay. */
+    public function onTurnTimeout(array $state): array
+    {
+        if ($state['gameOver']) return $state;
+        $pid = $this->currentPlayerId($state);
+        foreach ($state['players'] as &$player) {
+            if ((string)$player['id'] !== $pid) continue;
+            $player['missedTurns'] = (int)($player['missedTurns'] ?? 0) + 1;
+            if ($player['missedTurns'] >= 3) {
+                $player['away'] = true;
+                $player['connected'] = false;
+            }
+        }
+        $state = $this->record($state, 'turn.timeout', ['playerId'=>$pid,'missedTurns'=>$this->playerMeta($state,$pid,'missedTurns')]);
+        // Execute one legal automatic move, while keeping the seat available for rejoin.
+        return $this->botMove($state);
+    }
+
+    public function leave(array $state, string $playerId): array
+    {
+        foreach ($state['players'] as &$player) {
+            if ((string)$player['id'] !== $playerId) continue;
+            $player['voluntaryLeaves'] = (int)($player['voluntaryLeaves'] ?? 0) + 1;
+            $player['away'] = true;
+            $player['connected'] = false;
+            if ($player['voluntaryLeaves'] >= 3) $player['rejoinBlocked'] = true;
+        }
+        return $this->finalizeState($this->record($state,'player.left',['playerId'=>$playerId,'count'=>$this->playerMeta($state,$playerId,'voluntaryLeaves')]));
+    }
+
+    public function rejoin(array $state, string $playerId): array
+    {
+        foreach ($state['players'] as &$player) {
+            if ((string)$player['id'] !== $playerId) continue;
+            if (!empty($player['rejoinBlocked'])) throw new GameEngineException('لا يمكنك العودة بعد الخروج الاختياري ثلاث مرات.');
+            $player['away'] = false;
+            $player['connected'] = true;
+            $player['missedTurns'] = 0;
+        }
+        return $this->finalizeState($this->record($state,'player.rejoined',['playerId'=>$playerId]));
+    }
+
+    private function playerMeta(array $state,string $playerId,string $key): int
+    {
+        foreach($state['players'] as $player) if((string)$player['id']===$playerId) return (int)($player[$key]??0);
+        return 0;
     }
 
     public function botMove(array $state): array

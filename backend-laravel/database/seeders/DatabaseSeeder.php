@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder { public function run(): void {
    Profile::updateOrCreate(['user_id'=>$u->id],['display_name'=>$username,'avatar'=>$avatar,'country_code'=>$country,'country_name'=>country_name($country),'level'=>$level,'xp'=>$level*1200,'games_played'=>$level*15,'wins'=>$level*7,'name_color'=>$color,'chat_color'=>$color,'pasha_days'=>0,'badge'=>'pro']);
    Wallet::updateOrCreate(['user_id'=>$u->id],['tokens'=>$tokens,'gems'=>0]);
  }
+ $this->call(V03DemoPlayersSeeder::class);
 
  
  // v131 only 15 working games: deactivate games outside curated stable catalog.

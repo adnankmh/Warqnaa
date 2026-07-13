@@ -71,8 +71,31 @@ class PrizeBoxService
                     'game_key' => $gameKey,
                     'daily_sequence' => $todayBoxes->count() + 1,
                     'daily_limit' => self::DAILY_LIMIT,
-                    'version' => 'V0.2',
+                    'version' => 'V0.3',
                 ],
+            ]);
+        });
+    }
+
+    /**
+     * Grants an extra box from a level/challenge reward without consuming the
+     * four game-win boxes available for the day. Source keys stay idempotent.
+     */
+    public function awardBonus(User $user, string $sourceKey, ?string $gameKey = null): PrizeBox
+    {
+        $normalizedSource = trim($sourceKey);
+        if ($normalizedSource === '') throw new RuntimeException('Prize box source key is required.');
+        return DB::transaction(function () use ($user, $normalizedSource, $gameKey) {
+            $existing = PrizeBox::where('user_id', $user->id)->where('source_key', $normalizedSource)->lockForUpdate()->first();
+            if ($existing) return $existing;
+            $index = abs((int) crc32('bonus|'.$normalizedSource.'|'.($gameKey ?? 'reward'))) % count(self::BOX_KEYS);
+            return PrizeBox::create([
+                'user_id'=>$user->id,
+                'box_key'=>self::BOX_KEYS[$index],
+                'source_type'=>'bonus_reward',
+                'source_key'=>$normalizedSource,
+                'awarded_date'=>now()->toDateString(),
+                'payload'=>['game_key'=>$gameKey,'bonus'=>true,'version'=>'V0.3'],
             ]);
         });
     }
@@ -134,7 +157,7 @@ class PrizeBoxService
                 'expires_at' => $expiresAt,
                 'payload' => array_merge($locked->payload ?? [], [
                     'reward' => $reward,
-                    'version' => 'V0.2',
+                    'version' => 'V0.3',
                 ]),
             ])->save();
 
@@ -173,7 +196,7 @@ class PrizeBoxService
                 $store = $inventory->storeItem;
                 $payload = is_array($store?->payload) ? $store->payload : [];
                 $source = (string) ($payload['source'] ?? '');
-                if (!in_array($source, ['daily_prize_box_v02', 'daily_pack'], true)) {
+                if (!in_array($source, ['daily_prize_box_v02', 'daily_pack', 'level_up_v03', 'challenge_road_v03'], true)) {
                     continue;
                 }
 

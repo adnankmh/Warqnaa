@@ -34,6 +34,7 @@ part 'v176_release.dart';
 part 'v02_release.dart';
 part 'v021_patch.dart';
 part 'v022_patch.dart';
+part 'v03_release.dart';
 
 final GlobalKey<NavigatorState> warqnaNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -125,7 +126,12 @@ class _WarqnaAppState extends State<WarqnaApp> {
             final safeScale = (current * controller.uiFontScale).clamp(.85, widthCap).toDouble();
             return MediaQuery(
               data: media.copyWith(textScaler: TextScaler.linear(safeScale)),
-              child: ClipRect(child: child ?? const SizedBox.shrink()),
+              child: ClipRect(
+                child: Stack(children: [
+                  Positioned.fill(child: child ?? const SizedBox.shrink()),
+                  if (controller.isAuthenticated) GlobalSettingsDockV03(controller: controller),
+                ]),
+              ),
             );
           },
           theme: ThemeData(
@@ -169,8 +175,23 @@ class _WarqnaAppState extends State<WarqnaApp> {
                   borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble()),
                 ),
                 minimumSize: Size(48, controller.uiButtonHeight),
+                elevation: 7,
+                shadowColor: colorFromHex(controller.uiAccentHex).withValues(alpha: .45),
+                textStyle: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: .15),
+              ),
+            ),
+            outlinedButtonTheme: OutlinedButtonThemeData(
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(48, controller.uiButtonHeight),
+                side: BorderSide(color: colorFromHex(controller.uiAccentHex).withValues(alpha: .72), width: 1.3),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble())),
                 textStyle: const TextStyle(fontWeight: FontWeight.w900),
               ),
+            ),
+            chipTheme: ChipThemeData(
+              labelStyle: const TextStyle(fontWeight: FontWeight.w800),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              side: BorderSide(color: Colors.white.withValues(alpha: .12)),
             ),
             fontFamily: controller.uiFontFamily,
           ),
@@ -215,7 +236,7 @@ class AppController extends ChangeNotifier {
   String botDifficultyCode = 'pro';
   double uiButtonHeight = 48;
   double uiRadius = 18;
-  double uiFontScale = 1.0;
+  double uiFontScale = 1.08;
   double uiChatScale = 1.0;
   String uiFontFamily = 'Roboto';
   String? customTableBackgroundData;
@@ -245,6 +266,7 @@ class AppController extends ChangeNotifier {
   final Set<int> claimedGiftSteps = <int>{};
   String? activeCompetition;
   String? activeChallenge;
+  Map<String, dynamic>? challengeRoadV03;
   String? activeGame;
   String? activeRoomCode;
   String? activeRoomName;
@@ -3503,7 +3525,7 @@ class _HomeShellState extends State<HomeShell> {
         selectedIndex: index,
         onDestinationSelected: (value) => setState(() => index = value),
         destinations: [
-          NavigationDestination(icon: const Tooltip(message: 'المتجر', child: Icon(Icons.redeem)), label: ''),
+          NavigationDestination(icon: const Tooltip(message: 'المتجر', child: Icon(Icons.redeem)), label: L.t(widget.controller.localeCode, 'store')),
           NavigationDestination(icon: const Icon(Icons.style), label: L.t(widget.controller.localeCode, 'games')),
           NavigationDestination(icon: const Icon(Icons.home_rounded), label: L.t(widget.controller.localeCode, 'home')),
           NavigationDestination(icon: const Icon(Icons.shield), label: L.t(widget.controller.localeCode, 'clubs')),
@@ -3735,12 +3757,11 @@ class _StorePageState extends State<StorePage> {
           children: [
             Image.asset('assets/images/brand/warqna_logo.png', width: 56, height: 56, fit: BoxFit.contain),
             const SizedBox(width: 8),
-            Expanded(
-              child: SectionTitle(
-                title: L.t(lang, 'store'),
-                action: '🪙 ${formatNumber(widget.controller.coins)}',
-                onTap: () => showWallet(context, widget.controller),
-              ),
+            const Spacer(),
+            ActionChip(
+              avatar: const Text('🪙'),
+              label: Text(formatNumber(widget.controller.coins), style: const TextStyle(fontWeight: FontWeight.w900)),
+              onPressed: () => showWallet(context, widget.controller),
             ),
             buildMainFileFriendsButton(context, widget.controller),
           ],
@@ -4540,7 +4561,9 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
     _maybeAwardRoundProgress();
     if (rewardGranted || engine.phase != TarneebPhase.gameOver) return;
     rewardGranted = true;
-    if (engine.winnerTeam == 0 && !awayMode) {
+    final wonChallengeMatch = engine.winnerTeam == 0 && !awayMode;
+    unawaited(widget.controller.reportChallengeRoadResultV03(wonChallengeMatch));
+    if (wonChallengeMatch) {
       widget.controller.rewardGameWin('tarneeb');
       if (mounted) showToast(context, 'فوز رائع! تمت إضافة مكافأة الفوز وXP وطريق الهدايا.');
     }
@@ -4665,7 +4688,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
         : Column(
             children: [
               Expanded(child: _gameArea(context, landscape: false)),
-              if (chatOpen) SizedBox(height: 185 * widget.controller.uiChatScale, child: _chatPanel(context)) else _collapsedChatButton(),
+              if (chatOpen) SizedBox(height: (145 * widget.controller.uiChatScale).clamp(118.0, 168.0).toDouble(), child: _chatPanel(context)) else _collapsedChatButton(),
             ],
           );
 
@@ -5340,7 +5363,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
   }
 
   Future<void> _openLocalRoom([String? reason]) async {
-    localSession = LocalGameSession(gameId: widget.game.id, humanName: widget.controller.displayName, difficulty: widget.controller.botDifficultyCode, playerCount: widget.options.playerCount);
+    localSession = LocalGameSession(gameId: widget.game.id, humanName: widget.controller.displayName, difficulty: widget.controller.botDifficultyCode, localeCode: widget.controller.localeCode, playerCount: widget.options.playerCount);
     if (!mounted) return;
     setState(() {
       room = localSession!.room();
@@ -5576,6 +5599,9 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
       });
       WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) showRoundRewardReport(context, widget.controller, report); });
     }
+    if ((afterPhase == 'finished' || afterPhase == 'game_over')) {
+      unawaited(widget.controller.reportChallengeRoadResultV03(won, roomCode: roomCode.isEmpty ? null : roomCode));
+    }
     if (won) {
       final product = storeProductById(widget.controller.selectedEffect);
       floatingReaction = ReactionItem('local_victory_$marker', product?.icon ?? '🏆', 'victory', product?.nameAr ?? 'مؤثر الفوز', product?.nameEn ?? 'Victory effect', animated: true);
@@ -5735,7 +5761,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
                           final landscape = widget.controller.landscapeMode;
                           return landscape
                               ? Row(children: [Expanded(flex: 7, child: _engineBoard(context)), if (chatOpen) SizedBox(width: 285 * widget.controller.uiChatScale, child: _engineChat())])
-                              : Column(children: [Expanded(child: _engineBoard(context)), if (chatOpen) SizedBox(height: 165 * widget.controller.uiChatScale, child: _engineChat())]);
+                              : Column(children: [Expanded(child: _engineBoard(context)), if (chatOpen) SizedBox(height: (138 * widget.controller.uiChatScale).clamp(112.0, 158.0).toDouble(), child: _engineChat())]);
                         }),
                       ),
                     ],
@@ -7674,7 +7700,8 @@ void showSettings(BuildContext context, AppController controller) {
               ],
             ),
           ),
-          ListTile(leading: const Icon(Icons.tune_rounded), title: Text(L.t(controller.localeCode, 'noCode')), subtitle: const Text('حجم الأزرار والخط والحواف والمؤثرات مع معاينة فورية'), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(context); showNoCodeDesignerSheet(context, controller); }),
+          if (controller.username.trim().toLowerCase() == 'adnan')
+            ListTile(leading: const Icon(Icons.tune_rounded), title: Text(v03Text(controller.localeCode, 'noCodeDesigner')), subtitle: const Text('تحكم شامل بدون كود مع معاينة فورية'), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(context); showNoCodeDesignerSheet(context, controller); }),
           ListTile(leading: const Icon(Icons.install_mobile_rounded), title: const Text('تثبيت التطبيق على الهاتف'), subtitle: const Text('استخدم زر التثبيت أو إضافة إلى الشاشة الرئيسية من المتصفح.')),
           ListTile(leading: const Icon(Icons.security_rounded, color: Colors.lightBlueAccent), title: Text(v153Text(controller.localeCode, 'productionCenter')), subtitle: Text(v153Text(controller.localeCode, 'productionCenterHint')), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(context); openProductionCenterV153(context, controller); }),
           const ListTile(leading: Icon(Icons.restore_rounded), title: Text('مهلة استعادة الحساب'), subtitle: Text('بعد إلغاء الحساب يمكنك استعادته بمجرد تسجيل الدخول خلال 30 يوماً؛ لا تُحذف الحسابات العادية بسبب عدم النشاط.')),
@@ -7816,7 +7843,7 @@ Future<void> openGameRoom(BuildContext context, AppController controller, GameIn
 
 void showChallenges(BuildContext context, AppController controller) {
   // Legacy v170 contract symbol retained: showChallengesV170
-  showChallengesV175(context, controller);
+  openChallengeRoadV03(context, controller);
 }
 
 void showCompetitions(BuildContext context, AppController controller) {
@@ -8866,7 +8893,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
   @override
   void initState() {
     super.initState();
-    tabs = TabController(length: 7, vsync: this);
+    tabs = TabController(length: widget.controller.username.trim().toLowerCase() == 'adnan' ? 7 : 6, vsync: this);
     _load();
   }
 
@@ -8894,9 +8921,25 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
       appBar: AppBar(
         title: const Text('لوحة إدارة Warqna', style: TextStyle(fontWeight: FontWeight.w900)),
         actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))],
-        bottom: TabBar(controller: tabs, isScrollable: true, tabs: const [Tab(text:'نظرة عامة'),Tab(text:'الألعاب'),Tab(text:'المتجر'),Tab(text:'اللاعبون'),Tab(text:'الصلاحيات'),Tab(text:'مصمم بدون كود'),Tab(text:'النظام')]),
+        bottom: TabBar(
+          controller: tabs,
+          isScrollable: true,
+          tabs: [
+            const Tab(text:'نظرة عامة'), const Tab(text:'الألعاب'), const Tab(text:'المتجر'),
+            const Tab(text:'اللاعبون'), const Tab(text:'الصلاحيات'),
+            if (widget.controller.username.trim().toLowerCase() == 'adnan') const Tab(text:'مصمم بدون كود'),
+            const Tab(text:'النظام'),
+          ],
+        ),
       ),
-      body: loading ? const Center(child: CircularProgressIndicator()) : TabBarView(controller: tabs, children: [_overview(), _games(), _store(), _users(), AdminDelegationsV022(controller: widget.controller), _designer(), _system()]),
+      body: loading ? const Center(child: CircularProgressIndicator()) : TabBarView(
+        controller: tabs,
+        children: [
+          _overview(), _games(), _store(), _users(), AdminDelegationsV022(controller: widget.controller),
+          if (widget.controller.username.trim().toLowerCase() == 'adnan') _designer(),
+          _system(),
+        ],
+      ),
     );
   }
 
@@ -8930,12 +8973,64 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
 
   Widget _store() => AdminStoreStudioV151(controller: widget.controller);
 
+  Future<void> _adminUserCommand(LocalFriend friend, String action) async {
+    if (!widget.controller.serverConnected || friend.id <= 0) {
+      showToast(context, 'يجب الاتصال بالخادم واختيار لاعب حقيقي.');
+      return;
+    }
+    try {
+      if (action == 'grant') {
+        final field = TextEditingController(text: '200');
+        final amount = await showDialog<int>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text('إرسال توكنز إلى ${friend.name}'),
+            content: TextField(controller: field, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'عدد التوكنز')),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
+              FilledButton(onPressed: () => Navigator.pop(dialogContext, int.tryParse(field.text.trim())), child: const Text('إرسال')),
+            ],
+          ),
+        );
+        field.dispose();
+        if (amount == null || amount < 1) return;
+        await widget.controller.api.adminSendTokensV03(friend.id, amount);
+        if (mounted) showToast(context, 'تم إرسال $amount توكن إلى ${friend.name}.');
+      } else if (action == 'friend') {
+        await widget.controller.api.adminFriendRequestV03(friend.id);
+        if (mounted) showToast(context, 'تم إرسال طلب صداقة إلى ${friend.name}.');
+      } else if (action == 'ban') {
+        await widget.controller.api.adminUserAction(friend.id, 'ban');
+        if (mounted) showToast(context, 'تم حظر الحساب.');
+      }
+      await _load();
+    } catch (error) {
+      if (mounted) showToast(context, friendlyErrorMessage(error, widget.controller.localeCode));
+    }
+  }
+
   Widget _users() => ListView(
     padding: const EdgeInsets.all(12),
     children: [
       PremiumListTile(onTap: () => showProfile(context, widget.controller), icon:'A',title:'Adnan',subtitle:'مدير رئيسي • صلاحية كاملة • ${formatNumber(widget.controller.coins)} توكن',action:const Chip(label:Text('SUPER ADMIN'))),
       const SizedBox(height:8),
-      ...widget.controller.friends.map((friend)=>Padding(padding:const EdgeInsets.only(bottom:8),child:PremiumListTile(onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend), icon:friend.name.substring(0,1),title:friend.name,subtitle:'@${friend.username} • ${friend.activity}',action:PopupMenuButton<String>(itemBuilder:(_)=>const [PopupMenuItem(value:'grant',child:Text('منح 200 توكن')),PopupMenuItem(value:'ban',child:Text('حظر الحساب'))],onSelected:(value)=>showToast(context,value=='grant'?'تم تسجيل عملية المنح.':'تم تحديث حالة الحساب.'))))),
+      ...widget.controller.friends.map((friend)=>Padding(
+        padding:const EdgeInsets.only(bottom:8),
+        child:PremiumListTile(
+          onTap: () => showPublicPlayerProfileV170(context, widget.controller, friend),
+          icon:friend.name.isEmpty ? '؟' : friend.name.substring(0,1),
+          title:friend.name,
+          subtitle:'@${friend.username} • ${friend.activity} • LV ${friend.level}',
+          action:PopupMenuButton<String>(
+            itemBuilder:(_)=>const [
+              PopupMenuItem(value:'grant',child:Text('إرسال توكنز')),
+              PopupMenuItem(value:'friend',child:Text('إرسال طلب صداقة')),
+              PopupMenuItem(value:'ban',child:Text('حظر الحساب')),
+            ],
+            onSelected:(value)=>_adminUserCommand(friend,value),
+          ),
+        ),
+      )),
     ],
   );
 

@@ -607,11 +607,7 @@ final class TarneebEngine
         $roundSeed = ((int)$state['seed']) + ((int)$state['round'] * 9973);
         $deck = $this->buildDeck();
         $deck = $this->shuffleDeterministic($deck, $roundSeed);
-        $state['hands'] = [0 => [], 1 => [], 2 => [], 3 => []];
-        for ($i = 0; $i < 52; $i++) {
-            $seat = $i % 4;
-            $state['hands'][$seat][] = $deck[$i];
-        }
+        $state['hands'] = $this->balancedPremiumHands($deck);
         if (!empty($state['rules']['sortHands'])) {
             for ($seat = 0; $seat < 4; $seat++) {
                 $state['hands'][$seat] = $this->sortCards($state['hands'][$seat]);
@@ -1003,6 +999,25 @@ final class TarneebEngine
     private function nextSeat(int $seat): int
     {
         return ($seat + 1) % 4;
+    }
+
+    /** @param array<int,string> $deck @return array<int,array<int,string>> */
+    private function balancedPremiumHands(array $deck): array
+    {
+        usort($deck, fn(string $a,string $b): int => $this->cardPower($b) <=> $this->cardPower($a));
+        $hands=[0=>[],1=>[],2=>[],3=>[]];$strength=[0=>0,1=>0,2=>0,3=>0];$rotation=0;
+        foreach($deck as $card){
+            $eligible=array_values(array_filter([0,1,2,3],fn(int $seat): bool=>count($hands[$seat])<13));
+            usort($eligible,function(int $a,int $b) use($strength,$hands): int {
+                $cmp=$strength[$a]<=>$strength[$b];
+                return $cmp!==0?$cmp:count($hands[$a])<=>count($hands[$b]);
+            });
+            $minimum=$strength[$eligible[0]];
+            $tied=array_values(array_filter($eligible,fn(int $seat): bool=>$strength[$seat]===$minimum));
+            $seat=$tied[$rotation%count($tied)];$rotation++;
+            $hands[$seat][]=$card;$strength[$seat]+=$this->cardPower($card);
+        }
+        return $hands;
     }
 
     /** @return array<int,string> */

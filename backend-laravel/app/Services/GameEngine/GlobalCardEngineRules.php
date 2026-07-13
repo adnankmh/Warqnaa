@@ -1,6 +1,7 @@
 <?php
 namespace App\Services\GameEngine;
 
+require_once __DIR__.'/GlobalEngines/BalancedDealV03.php';
 require_once __DIR__.'/GlobalEngines/GlobalCardEngineCore.php';
 require_once __DIR__.'/GlobalEngines/SyrianTarneebEngine.php';
 require_once __DIR__.'/GlobalEngines/Tarneeb400Engine.php';
@@ -103,9 +104,10 @@ class GlobalCardEngineRules implements GameRuleContract
     {
         try{
             $g=$this->globalState($state); if(!$g) return $state;
-            $pid=(string)($state['turn'] ?? '');
-            if($pid){
-                try{$g=$this->engine->applyAction($g,$pid,['type'=>'set_away']);}catch(\Throwable $e){}
+            if (method_exists($this->engine, 'onTurnTimeout')) {
+                $g = $this->engine->onTurnTimeout($g);
+            } else {
+                $g = $this->autoBots($g, 1);
             }
             $g=$this->autoBots($g,40);
             $next=$this->fromGlobal($g,array_values($state['players'] ?? []));

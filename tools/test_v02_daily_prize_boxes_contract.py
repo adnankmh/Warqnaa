@@ -27,10 +27,13 @@ def require(rel: str, *needles: str) -> str:
 
 def main() -> None:
     meta = json.loads((ROOT / "RELEASE_VERSION.json").read_text(encoding="utf-8"))
-    # V0.2 prize boxes are inherited by all V0.2.x patch releases.
-    version = str(meta.get("version", ""))
-    if not version.startswith("0.2.") or not str(meta.get("display_release", "")).startswith("V0.2"):
-        fail("release metadata is outside the V0.2 family")
+    # V0.2 prize boxes are inherited by V0.2.x and all later full releases.
+    try:
+        build = int(meta.get('build', 0))
+    except (TypeError, ValueError):
+        build = 0
+    if build < 176:
+        fail('release metadata predates the V0.2 prize-box contract')
 
     main_dart = require(
         "flutter_app/lib/main.dart",

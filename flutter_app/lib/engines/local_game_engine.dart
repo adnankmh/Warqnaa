@@ -6,7 +6,7 @@ import 'dart:math';
 /// keeps every curated card game playable when the app is hosted on GitHub
 /// Pages or opened without a backend connection.
 class LocalGameSession {
-  LocalGameSession({required this.gameId, required this.humanName, this.difficulty = 'pro', int playerCount = 4, int? seed})
+  LocalGameSession({required this.gameId, required this.humanName, this.difficulty = 'pro', this.localeCode = 'ar', int playerCount = 4, int? seed})
       : requestedPlayerCount = playerCount,
         _random = Random(seed) {
     _setup();
@@ -15,6 +15,7 @@ class LocalGameSession {
   final String gameId;
   final String humanName;
   final String difficulty;
+  final String localeCode;
   final int requestedPlayerCount;
   final Random _random;
 
@@ -39,7 +40,9 @@ class LocalGameSession {
   ];
   static const _balootRanks = <String>['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
   static const _suits = <String>['C', 'D', 'S', 'H'];
-  static const _botNames = <String>['سامر', 'ليلى', 'جميل', 'نور', 'رامي'];
+  static const _botNamesAr = <String>['عدنان','بيان','كنان','جميل','رعد','عاصم','معتصم','حسام','جنان','حور','جنات','آلاء','أفنان','شهد','حلا','شذى','قمر'];
+  static const _botNamesEn = <String>['Adnan','Bayan','Kanan','Jamil','Raad','Asim','Mutasim','Hossam','Jinan','Hoor','Jannat','Alaa','Afnan','Shahd','Hala','Shatha','Qamar'];
+  static const _botAssets = <String>['bot_adnan','bot_bayan','bot_kanan','bot_jamil','bot_raad','bot_asim','bot_mutasim','bot_hossam','bot_jinan','bot_hoor','bot_jannat','bot_alaa','bot_afnan','bot_shahd','bot_hala','bot_shatha','bot_qamar'];
 
   final List<List<String>> _hands = <List<String>>[];
   final List<String> _deck = <String>[];
@@ -207,19 +210,71 @@ class LocalGameSession {
     for (var seat = 0; seat < playerCount; seat++) {
       _hands.add(<String>[]);
     }
-    for (var card = 0; card < 14; card++) {
-      for (var seat = 0; seat < playerCount; seat++) {
-        _hands[seat].add(_deck.removeLast());
-      }
-    }
+    _dealBalancedRummyV03();
     for (final hand in _hands) {
       _sortHand(hand);
     }
     _discard.add(_deck.removeLast());
     phase = 'draw';
     enginePhase = 'draw';
-    _messages.add('اسحب من الرزمة أو المكشوف، نزّل المجموعات، ثم ارمِ ورقة.');
+    _messages.add(localeCode == 'ar' ? 'تم توزيع أوراق قوية وعادلة. كوّن مجموعات وسلاسل وافتح بـ51 عند الحاجة.' : 'Balanced strong hands dealt. Build sets and runs, opening with 51 when required.');
   }
+
+  void _dealBalancedRummyV03() {
+    for (var seat = 0; seat < playerCount; seat++) {
+      final run = _extractRunV03();
+      if (run.isNotEmpty) _hands[seat].addAll(run);
+      final set = _extractSetV03();
+      if (set.isNotEmpty && _hands[seat].length + set.length <= 14) _hands[seat].addAll(set);
+    }
+    while (_hands.any((hand) => hand.length < 14) && _deck.isNotEmpty) {
+      final seats = List<int>.generate(playerCount, (index) => index)..sort((a, b) {
+        final strength = _handStrengthV03(_hands[a]).compareTo(_handStrengthV03(_hands[b]));
+        return strength != 0 ? strength : _hands[a].length.compareTo(_hands[b].length);
+      });
+      final seat = seats.firstWhere((index) => _hands[index].length < 14);
+      _deck.sort((a, b) => _cardPower(b).compareTo(_cardPower(a)));
+      _hands[seat].add(_deck.removeAt(0));
+    }
+  }
+
+  List<String> _extractRunV03() {
+    for (final suit in _suits) {
+      for (var start = 0; start <= _standardRanks.length - 3; start++) {
+        final wanted = _standardRanks.sublist(start, start + 3).map((rank) => '$rank$suit').toList();
+        final copy = List<String>.from(_deck);
+        var ok = true;
+        for (final card in wanted) {
+          final index = copy.indexOf(card);
+          if (index < 0) { ok = false; break; }
+          copy.removeAt(index);
+        }
+        if (ok) {
+          for (final card in wanted) _deck.removeAt(_deck.indexOf(card));
+          return wanted;
+        }
+      }
+    }
+    return <String>[];
+  }
+
+  List<String> _extractSetV03() {
+    for (final rank in _standardRanks.reversed) {
+      final result = <String>[];
+      for (final suit in _suits) {
+        final card = '$rank$suit';
+        if (_deck.contains(card)) result.add(card);
+        if (result.length == 3) break;
+      }
+      if (result.length == 3) {
+        for (final card in result) _deck.removeAt(_deck.indexOf(card));
+        return result;
+      }
+    }
+    return <String>[];
+  }
+
+  int _handStrengthV03(List<String> hand) => hand.fold<int>(0, (sum, card) => sum + _cardPower(card));
 
   void _setupBasra() {
     _deck.addAll(_makeDeck());
@@ -249,13 +304,15 @@ class LocalGameSession {
       'code': 'LOCAL-${gameId.toUpperCase()}',
       'local': true,
       'players': List<Map<String, dynamic>>.generate(playerCount, (index) {
-        final name = index == 0 ? humanName : _botNames[index - 1];
+        final botIndex = (index - 1).clamp(0, _botNamesAr.length - 1).toInt();
+        final name = index == 0 ? humanName : (localeCode == 'ar' ? _botNamesAr[botIndex] : _botNamesEn[botIndex]);
         return <String, dynamic>{
           'key': index == 0 ? 'user:0' : 'bot:$index',
           'name': name,
           'bot': index != 0,
           'bot_level': index == 0 ? null : difficulty,
-          'avatar': index == 0 ? '🦁' : const <String>['🤖','🦅','🌙','🦁','🐉'][(index - 1) % 5],
+          'avatar': index == 0 ? '🦁' : '👤',
+          'avatar_asset': index == 0 ? null : 'assets/images/bots/${_botAssets[botIndex]}.png',
           'seat': index,
           'score': _scores[index] ?? 0,
         };

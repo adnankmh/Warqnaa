@@ -1,0 +1,141 @@
+name: Publish GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, for example v0.3.0'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate source package
+        run: python3 tools/validate_release.py
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+
+      - name: Install Laravel dependencies
+        working-directory: backend-laravel
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run Laravel tests
+        working-directory: backend-laravel
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+        run: php artisan test
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Flutter dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Analyze Flutter
+        working-directory: flutter_app
+        run: bash ../tools/flutter_analyze_ci.sh
+
+      - name: Run Flutter tests
+        working-directory: flutter_app
+        run: flutter test
+
+      - name: Build Android APK
+        working-directory: flutter_app
+        run: flutter build apk --release
+
+      - name: Build Android AAB
+        working-directory: flutter_app
+        run: flutter build appbundle --release
+
+      - name: Build Flutter Web
+        working-directory: flutter_app
+        run: flutter build web --release --base-href /Warqnaa/
+
+      - name: Prepare release files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+
+          cp flutter_app/build/app/outputs/flutter-apk/app-release.apk \
+            "release-assets/Warqna-${RELEASE_TAG}-Android.apk"
+          cp flutter_app/build/app/outputs/bundle/release/app-release.aab \
+            "release-assets/Warqna-${RELEASE_TAG}-Android.aab"
+
+          (cd flutter_app/build/web && zip -qr ../../../release-assets/Warqna-${RELEASE_TAG}-Web.zip .)
+
+          git archive --format=zip --output="release-assets/Warqna-${RELEASE_TAG}-Source.zip" HEAD
+
+          previous_tag="$(git describe --tags --abbrev=0 "${RELEASE_TAG}^" 2>/dev/null || true)"
+          mkdir -p patch-work
+          if [ -n "$previous_tag" ]; then
+            while IFS= read -r file; do
+              [ -z "$file" ] && continue
+              if [ -f "$file" ]; then
+                mkdir -p "patch-work/$(dirname "$file")"
+                cp "$file" "patch-work/$file"
+              fi
+            done < <(git diff --name-only "$previous_tag" HEAD)
+            printf 'Patch from %s to %s\n' "$previous_tag" "$RELEASE_TAG" > patch-work/PATCH_INFO.txt
+          else
+            printf 'No previous tag found. This patch contains release automation files only.\n' > patch-work/PATCH_INFO.txt
+            mkdir -p patch-work/.github/workflows patch-work/tools
+            cp .github/workflows/release.yml patch-work/.github/workflows/release.yml
+            cp tools/validate_release.py patch-work/tools/validate_release.py
+          fi
+          (cd patch-work && zip -qr ../release-assets/Warqna-${RELEASE_TAG}-Patch.zip .)
+
+          cp RELEASE_VERSION.json release-assets/RELEASE_VERSION.json
+          if [ -f CHANGELOG.md ]; then
+            cp CHANGELOG.md release-assets/CHANGELOG.md
+          elif [ -f README.md ]; then
+            cp README.md release-assets/CHANGELOG.md
+          fi
+
+          (cd release-assets && sha256sum * > SHA256SUMS.txt)
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-assets/* --clobber
+          else
+            gh release create "$RELEASE_TAG" release-assets/* \
+              --title "Warqna ${RELEASE_TAG}" \
+              --generate-notes
+          fi

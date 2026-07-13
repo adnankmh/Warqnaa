@@ -14,6 +14,7 @@ foreach ([
     'BackgammonRules.php',
     'JackarooRules.php',
     'ChessRules.php',
+    '../WarqnaPro/PlayActionNormalizer.php',
     'TarneebRules.php',
     'GlobalCardEngineRules.php',
     'UniversalSocialGameRules.php',
@@ -25,13 +26,7 @@ foreach ([
 
 use App\Services\GameEngine\{EngineRegistry, GameFactory};
 
-$keys = [
-    'tarneeb', 'syrian_tarneeb', 'tarneeb_400',
-    'trix', 'trix_partner', 'trix_complex',
-    'hand', 'hand_partner', 'saudi_hand',
-    'banakil', 'pinochle', 'baloot', 'solitaire_multiplayer',
-    'domino', 'basra', 'backgammon', 'jackaroo', 'chess',
-];
+$keys = array_keys(EngineRegistry::all());
 
 $failures = [];
 foreach ($keys as $key) {

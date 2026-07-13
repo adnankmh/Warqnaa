@@ -134,7 +134,10 @@ class MobileGameController extends Controller
 
         $existing = $room->players()->where('user_id', $user->id)->first();
         if ($existing) {
-            $existing->update(['connected' => true, 'missed_turns' => 0]);
+            abort_if((bool)($existing->rejoin_blocked ?? false), 403, 'لا يمكنك العودة إلى المباراة بعد الخروج الاختياري ثلاث مرات.');
+            $state = $this->setPlayerPresenceV03($room->state ?: [], 'user:'.$user->id, true, false);
+            $existing->update(['connected' => true, 'missed_turns' => 0, 'away_since'=>null]);
+            $room->update(['state'=>$state]);
             return response()->json(['ok' => true, 'message' => 'عدت إلى مقعدك.', 'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $user->id)]);
         }
 
@@ -399,6 +402,11 @@ class MobileGameController extends Controller
         $progressionPopup = $this->awardProgressionTransition($progression, $room, $before, $state);
         if ($progressionPopup !== []) $state['progression_popup'] = $progressionPopup;
         $room->update(['state' => $state, 'status' => $this->roomStatus((string) ($state['phase'] ?? 'playing'))]);
+        $timedOut=$room->players()->where('user_id',$request->user()->id)->first();
+        if($timedOut){
+            $missed=min(3,(int)$timedOut->missed_turns+1);
+            $timedOut->update(['missed_turns'=>$missed,'connected'=>$missed<3,'away_since'=>$missed>=3?now():null]);
+        }
         return response()->json(['ok' => true, 'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $request->user()->id)]);
     }
 
@@ -406,8 +414,14 @@ class MobileGameController extends Controller
     {
         $player = $room->players()->where('user_id', $request->user()->id)->first();
         abort_unless($player, 403, 'أنت لست داخل هذه الغرفة');
-        $player->update(['connected' => false]);
-        return response()->json(['ok' => true, 'message' => 'تمت مغادرة الغرفة دون خصم توكنز.']);
+        $count=(int)($player->voluntary_leave_count ?? 0)+1;
+        $blocked=$count>=3;
+        $state=$this->setPlayerPresenceV03($room->state ?: [], 'user:'.$request->user()->id, false, true, $count, $blocked);
+        DB::transaction(function() use($player,$room,$state,$count,$blocked){
+            $player->update(['connected'=>false,'away_since'=>now(),'voluntary_leave_count'=>$count,'rejoin_blocked'=>$blocked]);
+            $room->update(['state'=>$state]);
+        });
+        return response()->json(['ok'=>true,'message'=>$blocked?'تمت المغادرة. لن تتمكن من العودة إلى هذه المباراة بعد ثلاث مغادرات اختيارية.':'تمت مغادرة الغرفة ويمكنك العودة لاحقاً.','leave_count'=>$count,'rejoin_blocked'=>$blocked]);
     }
 
     public function chat(Request $request, Room $room)
@@ -729,6 +743,24 @@ class MobileGameController extends Controller
     {
         abort_unless($room->players()->where('user_id', $request->user()->id)->exists(), 403, 'لا تملك صلاحية هذه الغرفة');
         $room->loadMissing('game');
+    }
+
+    private function setPlayerPresenceV03(array $state,string $playerKey,bool $connected,bool $away,int $leaveCount=0,bool $blocked=false): array
+    {
+        foreach(['players'] as $key){
+            if(!isset($state[$key])||!is_array($state[$key]))continue;
+            foreach($state[$key] as &$player){
+                if(is_array($player)&&(string)($player['id']??'')===$playerKey){
+                    $player['connected']=$connected;$player['away']=$away;$player['missedTurns']=$connected?0:(int)($player['missedTurns']??0);
+                    $player['voluntaryLeaves']=max((int)($player['voluntaryLeaves']??0),$leaveCount);$player['rejoinBlocked']=$blocked;
+                }
+            }
+        }
+        if(isset($state['_global_engine'])&&is_array($state['_global_engine'])){
+            $state['_global_engine']=$this->setPlayerPresenceV03($state['_global_engine'],$playerKey,$connected,$away,$leaveCount,$blocked);
+        }
+        $state['messages'][]=$connected?'↩️ عاد اللاعب إلى مقعده.':'🚪 غادر اللاعب وسيتم تشغيل مقعده تلقائياً عند الحاجة.';
+        return $state;
     }
 
     private function uniqueCode(): string

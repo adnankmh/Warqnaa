@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{AdminDesignerEntity,ChallengeDefinition,CompetitionTicket,DailyPackClaim,PrizeBox,Tournament};
-use App\Services\WarqnaPro\{ChallengeService,CompetitionService,DailyPackService,PrizeBoxService};
+use App\Models\{AdminDesignerEntity,ChallengeDefinition,ChallengeRun,CompetitionTicket,DailyPackClaim,PrizeBox,Tournament};
+use App\Services\WarqnaPro\{ChallengeCampaignService,ChallengeService,CompetitionService,DailyPackService,PrizeBoxService};
 use Illuminate\Http\Request;
 use RuntimeException;
 
 class MobileEngagementController extends Controller
 {
-    public function center(Request $request, ChallengeService $challenges, PrizeBoxService $prizeBoxes)
+    public function center(Request $request, ChallengeService $challenges, PrizeBoxService $prizeBoxes, ChallengeCampaignService $campaigns)
     {
         $user = $request->user();
         return response()->json([
@@ -20,6 +20,7 @@ class MobileEngagementController extends Controller
             'prize_boxes'=>$prizeBoxes->center($user),
             'inventory'=>$user->inventoryItems()->with('storeItem')->latest()->limit(200)->get(),
             'challenges'=>$challenges->center($user),
+            'challenge_road'=>$campaigns->center($user),
             'competitions'=>Tournament::whereIn('status', ['open','running'])->withCount('entries')->orderByDesc('featured')->orderBy('starts_at')->get(),
             'designer'=>AdminDesignerEntity::where('active', true)->orderBy('entity_type')->orderBy('sort_order')->get()->groupBy('entity_type'),
             'champion_rank_points'=>(int)($user->profile?->champion_rank_points ?? 0),
@@ -62,6 +63,22 @@ class MobileEngagementController extends Controller
             'tickets'=>$this->tickets($request->user()->id),
             'inventory'=>$request->user()->inventoryItems()->with('storeItem')->latest()->limit(200)->get(),
         ]);
+    }
+
+    public function startChallengeRoad(Request $request, ChallengeCampaignService $campaigns)
+    {
+        $data=$request->validate(['game_key'=>'required|string|max:80','stages'=>'required|integer|in:10,12,15']);
+        try{$run=$campaigns->start($request->user(),$data['game_key'],(int)$data['stages']);}
+        catch(RuntimeException $e){return response()->json(['ok'=>false,'message'=>$e->getMessage()],422);}
+        return response()->json(['ok'=>true,'message'=>'تم بدء طريق التحدي','run'=>$run]);
+    }
+
+    public function reportChallengeRoad(Request $request, ChallengeRun $run, ChallengeCampaignService $campaigns)
+    {
+        $data=$request->validate(['won'=>'required|boolean','room_code'=>'nullable|string|max:40']);
+        try{$result=$campaigns->report($request->user(),$run,(bool)$data['won'],$data['room_code']??null);}
+        catch(RuntimeException $e){return response()->json(['ok'=>false,'message'=>$e->getMessage()],409);}
+        return response()->json(['ok'=>true,'message'=>$data['won']?'تم اجتياز المرحلة وإضافة الجائزة':'خسرت محاولة ويمكنك المحاولة مجدداً',...$result]);
     }
 
     public function activateChallenge(Request $request, string $challengeKey, ChallengeService $challenges)
