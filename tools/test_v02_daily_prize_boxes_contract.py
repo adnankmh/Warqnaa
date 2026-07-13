@@ -27,10 +27,8 @@ def require(rel: str, *needles: str) -> str:
 
 def main() -> None:
     meta = json.loads((ROOT / "RELEASE_VERSION.json").read_text(encoding="utf-8"))
-    # V0.2 prize boxes are inherited by all V0.2.x patch releases.
-    version = str(meta.get("version", ""))
-    if not version.startswith("0.2.") or not str(meta.get("display_release", "")).startswith("V0.2"):
-        fail("release metadata is outside the V0.2 family")
+    if not str(meta.get("version", "")).startswith("0.2."):
+        fail("release metadata is not in the V0.2 line")
 
     main_dart = require(
         "flutter_app/lib/main.dart",
@@ -105,8 +103,7 @@ def main() -> None:
     )
     require("backend-laravel/tests/Feature/V02DailyPrizeBoxesTest.php", "test_one_varied_box_is_awarded_per_win_up_to_four_per_day")
 
-    full = str(meta.get("full", ""))
-    pubspec = require("flutter_app/pubspec.yaml", f"version: {full}", "assets/images/v02/prize_boxes/", "assets/images/v02/tickets/", "assets/images/v02/rewards/")
+    pubspec = require("flutter_app/pubspec.yaml", f"version: {meta['version']}+{meta['build']}", "assets/images/v02/prize_boxes/", "assets/images/v02/tickets/", "assets/images/v02/rewards/")
     if len(re.findall(r"ticket_\$value", v02)) < 1:
         fail("ticket asset helper is missing")
 

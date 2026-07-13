@@ -59,13 +59,14 @@ class MobileGameController extends Controller
         if (!$game) return response()->json(['ok' => true, 'rooms' => []]);
 
         $rooms = Room::query()
-            ->with(['players.user.profile', 'game', 'owner.profile'])
+            ->with(['players.user.profile', 'game'])
             ->where('game_id', $game->id)
             ->whereIn('status', ['waiting', 'bidding', 'playing'])
             ->where('visibility', '!=', 'private')
             ->latest('updated_at')
             ->limit(30)
             ->get()
+            ->filter(fn (Room $room) => $room->players->where('is_bot', false)->where('connected', true)->count() > 0)
             ->map(function (Room $room) {
                 $state = $room->state ?: [];
                 $realPlayers = $room->players->where('is_bot', false)->count();
@@ -80,23 +81,13 @@ class MobileGameController extends Controller
                     'min_level' => (int) ($room->min_level ?? 1),
                     'game' => $room->game?->key,
                     'owner' => $room->owner?->username,
-                    'avatars' => $room->players->where('is_bot', false)->take(6)->map(fn ($player) => [
+                    'avatars' => $room->players->where('is_bot', false)->take(4)->map(fn ($player) => [
                         'id' => $player->user_id,
                         'name' => $player->user?->profile?->display_name ?: $player->user?->username,
-                        'username' => $player->user?->username,
                         'avatar' => $player->user?->profile?->avatar,
                         'name_color' => $player->user?->profile?->name_color ?: '#facc15',
                         'country_code' => $player->user?->profile?->country_code ?: 'PS',
-                        'connected' => (bool)$player->connected,
-                        'seat' => (int)$player->seat,
                     ])->values()->all(),
-                    'empty_seats' => max(0, (int)$room->max_players - $realPlayers),
-                    'status_label' => match($room->status) {
-                        'waiting' => 'بانتظار اللاعبين',
-                        'bidding' => 'مرحلة الطلب',
-                        'playing' => 'اللعبة جارية',
-                        default => $room->status,
-                    },
                 ];
             })->values();
 

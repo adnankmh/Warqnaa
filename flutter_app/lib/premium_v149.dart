@@ -279,7 +279,7 @@ const reactionCatalog = <ReactionItem>[
   ReactionItem('nervous', '😬', 'mood', 'متوتر', 'Nervous'),
   ReactionItem('confused', '😵‍💫', 'mood', 'محتار', 'Confused', animated: true),
   ReactionItem('silent', '🤐', 'mood', 'صامت', 'Silent'),
-  ReactionItem('pasha', '👑', 'pasha', 'باشا', 'Pasha', animated: true),
+  ReactionItem('pasha', '🎩', 'pasha', 'باشا', 'Pasha', animated: true),
   ReactionItem('lion', '🦁', 'pasha', 'الأسد', 'Lion', animated: true),
   ReactionItem('eagle', '🦅', 'pasha', 'النسر', 'Eagle', animated: true),
   ReactionItem('palace', '🏰', 'pasha', 'القصر', 'Palace'),

@@ -3,11 +3,12 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = ['username','email','password','is_admin','is_banned','last_seen_at','email_verified_at','deletion_requested_at','last_login_ip','last_login_user_agent'];
     protected $hidden = ['password','remember_token'];
@@ -35,8 +36,6 @@ class User extends Authenticatable
     public function competitionTickets(){ return $this->hasMany(CompetitionTicket::class); }
     public function dailyPackClaims(){ return $this->hasMany(DailyPackClaim::class); }
     public function prizeBoxes(){ return $this->hasMany(PrizeBox::class); }
-    public function clubMembership(){ return $this->hasOne(ClubMember::class); }
-    public function adminDelegation(){ return $this->hasOne(AdminDelegation::class); }
 
     public function publicProfile(): array
     {
@@ -74,19 +73,12 @@ class User extends Authenticatable
             'pasha_days'=>(int)($p?->pasha_days ?? 0),
             'pasha_style'=>'red',
             'champion_rank_points'=>(int)($p?->champion_rank_points ?? 0),
+            'chat_color'=>$p?->chat_color,
             'active_table_skin'=>$p?->active_table_skin,
             'active_card_back'=>$p?->active_card_back,
             'active_cover'=>$p?->active_profile_cover,
             'bot_difficulty'=>$p?->bot_difficulty ?? 'pro',
             'ui_preferences'=>$p?->ui_preferences,
-            'club'=>$this->clubMembership?->club ? [
-                'id'=>$this->clubMembership->club->id,
-                'name'=>$this->clubMembership->club->name,
-                'logo'=>$this->clubMembership->club->logo,
-                'level'=>(int)$this->clubMembership->club->level,
-                'role'=>$this->clubMembership->role,
-            ] : null,
-            'admin_permissions'=>$this->is_admin ? ['*'] : (($this->adminDelegation?->active ?? false) ? ($this->adminDelegation?->permissions ?? []) : []),
         ];
     }
 }

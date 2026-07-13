@@ -30,13 +30,8 @@ def forbid(rel: str, *needles: str) -> None:
 
 def main() -> None:
     meta = json.loads((ROOT / "RELEASE_VERSION.json").read_text(encoding="utf-8"))
-    # This is an inherited feature contract. Newer releases must preserve it.
-    try:
-        build = int(meta.get("build", 0))
-    except (TypeError, ValueError):
-        build = 0
-    if build < 176:
-        fail("metadata predates the v176 inventory contract")
+    if int(meta.get("build", 0)) < 176:
+        fail("metadata build is older than v176")
 
     main_dart = require(
         "flutter_app/lib/main.dart",

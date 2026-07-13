@@ -14,8 +14,7 @@ use App\Http\Controllers\{
     MobileAuthRecoveryController,
     SocialAuthController,
     MobilePushController,
-    MobileEngagementController,
-    MobileClubController
+    MobileEngagementController
 };
 
 // Backward-compatible public aliases for older Flutter/PWA builds. They
@@ -88,11 +87,6 @@ Route::prefix('mobile/v1')->group(function () {
         Route::patch('/games/session/{room:code}/voice/controls', [MobileVoiceController::class, 'controls'])->middleware('throttle:60,1');
         Route::post('/games/session/{room:code}/voice/leave', [MobileVoiceController::class, 'leave'])->middleware('throttle:30,1');
 
-        Route::get('/clubs', [MobileClubController::class, 'index']);
-        Route::get('/clubs/mine', [MobileClubController::class, 'mine']);
-        Route::get('/clubs/{club}/activity', [MobileClubController::class, 'activity']);
-        Route::patch('/clubs/{club}/members/{member}', [MobileClubController::class, 'updateMember']);
-
         Route::get('/social', [MobileSocialController::class, 'index']);
         Route::get('/social/search', [MobileSocialController::class, 'search']);
         Route::get('/social/users/{user}/profile', [MobileSocialController::class, 'profile']);
@@ -108,9 +102,6 @@ Route::prefix('mobile/v1')->group(function () {
         Route::post('/social/transfer', [MobileSocialController::class, 'transfer'])->middleware('throttle:warqna-sensitive');
 
         Route::get('/admin/dashboard', [MobileAdminController::class, 'dashboard']);
-        Route::get('/admin/delegations', [MobileAdminController::class, 'delegations']);
-        Route::patch('/admin/delegations/{user}', [MobileAdminController::class, 'updateDelegation']);
-        Route::delete('/admin/delegations/{user}', [MobileAdminController::class, 'deleteDelegation']);
         Route::patch('/admin/games/{game}', [MobileAdminController::class, 'updateGame']);
         Route::patch('/admin/store/{item}', [MobileAdminController::class, 'updateStore']);
         Route::post('/admin/users/{user}/action', [MobileAdminController::class, 'userAction']);

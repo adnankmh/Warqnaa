@@ -27,7 +27,7 @@ class GlobalCardEngineRules implements GameRuleContract
 
     public function initialState(array $players, array $options=[]): array
     {
-        $cfgPlayers=$this->playerCountFor($this->key, count($players));
+        $cfgPlayers=$this->playerCountFor($this->key);
         $players=array_values(array_slice($players,0,$cfgPlayers));
         while(count($players)<$cfgPlayers) $players[]='bot:global_'.count($players);
         $enginePlayers=[];
@@ -88,9 +88,6 @@ class GlobalCardEngineRules implements GameRuleContract
             return array_values(array_map(function (array $action): array {
                 if (isset($action['card'])) $action['card'] = $this->toLongCard((string) $action['card']);
                 if (isset($action['cards']) && is_array($action['cards'])) $action['cards'] = $this->longCards($action['cards']);
-                if (isset($action['groups']) && is_array($action['groups'])) {
-                    $action['groups'] = array_values(array_map(fn($group) => $this->longCards((array)$group), $action['groups']));
-                }
                 if (isset($action['suit'])) $action['suit'] = $this->toLongSuit((string) $action['suit']);
                 return $action;
             }, $actions));
@@ -205,16 +202,6 @@ class GlobalCardEngineRules implements GameRuleContract
             'draw_discard' => ['type'=>'draw_discard'],
             'discard' => ['type'=>'discard','card'=>$this->toShortCard($this->cardPayload($payload),$state['hands'][$playerId] ?? [])],
             'meld' => ['type'=>'meld','cards'=>array_map(fn($c)=>$this->toShortCard((string)$c,$state['hands'][$playerId] ?? []),(array)($payload['cards'] ?? []))],
-            'meld_batch' => ['type'=>'meld_batch','groups'=>array_values(array_map(
-                fn($group)=>array_values(array_map(fn($c)=>$this->toShortCard((string)$c,$state['hands'][$playerId] ?? []),(array)$group)),
-                (array)($payload['groups'] ?? [])
-            ))],
-            'lay_off' => [
-                'type'=>'lay_off',
-                'owner'=>(string)($payload['owner'] ?? $payload['ownerId'] ?? $payload['owner_id'] ?? $playerId),
-                'meld_index'=>(int)($payload['meld_index'] ?? $payload['meldIndex'] ?? 0),
-                'cards'=>array_values(array_map(fn($c)=>$this->toShortCard((string)$c,$state['hands'][$playerId] ?? []),(array)($payload['cards'] ?? []))),
-            ],
             'organize' => ['type'=>'organize','strategy'=>'smart'],
             'draw_stock' => ['type'=>'draw_stock'],
             'move_to_foundation' => ['type'=>'move_to_foundation','card'=>$this->toShortCard($this->cardPayload($payload),$state['hands'][$playerId] ?? [])],
@@ -235,15 +222,7 @@ class GlobalCardEngineRules implements GameRuleContract
     }
 
     private function globalState(array $state): ?array { return isset($state['_global_engine']) && is_array($state['_global_engine']) ? $state['_global_engine'] : null; }
-    private function playerCountFor(string $key, int $requested): int
-    {
-        return match($key) {
-            'hand','saudi_hand' => max(2, min(5, $requested ?: 4)),
-            'pinochle' => in_array($requested, [2,3,4], true) ? $requested : 4,
-            'solitaire_multiplayer' => max(2, min(4, $requested ?: 4)),
-            default => 4,
-        };
-    }
+    private function playerCountFor(string $key): int { return in_array($key,['hand','saudi_hand','banakil','pinochle','solitaire_multiplayer'],true) ? 4 : 4; }
     private function defaultTarget(string $key): int { return match($key){'baloot'=>152,'tarneeb_400'=>400,default=>101}; }
     private function gameType(): string { return match($this->key){'trix','trix_partner','trix_complex'=>'trix','hand','hand_partner','saudi_hand','banakil','pinochle','solitaire_multiplayer'=>'hand','baloot'=>'baloot','syrian_tarneeb','tarneeb_400'=>'tarneeb',default=>$this->key}; }
     private function mapPhase(string $p): string { return match($p){'contract'=>'choose_contract','draw','discard'=>'playing',default=>$p}; }
@@ -298,8 +277,6 @@ class GlobalCardEngineRules implements GameRuleContract
                 'rummy.draw_discard'=>$name.' سحب الورقة المكشوفة.',
                 'rummy.discard'=>$name.' رمى ورقة.',
                 'rummy.meld'=>$name.' أنزل مجموعة قانونية.',
-                'rummy.meld_batch'=>$name.' افتتح بعدة مجموعات قانونية.',
-                'rummy.lay_off'=>$name.' ركّب أوراقاً على مجموعة موجودة.',
                 default=>'• '.str_replace(['.','_'],' ',$type),
             };
         }return $out;
