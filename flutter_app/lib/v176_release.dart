@@ -452,7 +452,7 @@ class _DailyPackOpeningDialogV176State extends State<DailyPackOpeningDialogV176>
     final label = item['label_ar']?.toString() ?? widget.controller.dailyPackReward ?? 'هدية يومية';
     final productId = item['product_id']?.toString();
     final hasStoreItem = productId != null && productId.isNotEmpty;
-    final expiryText = hasStoreItem ? widget.controller.remainingForProductV176(productId!) : 'أضيفت مباشرة إلى حسابك';
+    final expiryText = hasStoreItem ? widget.controller.remainingForProductV176(productId) : 'أضيفت مباشرة إلى حسابك';
     return TweenAnimationBuilder<double>(
       key: const ValueKey('reward'),
       duration: const Duration(milliseconds: 900),
