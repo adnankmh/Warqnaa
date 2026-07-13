@@ -4,7 +4,7 @@ namespace App\Services\Progression;
 
 use App\Models\{ClubMember, ProgressionEvent, Room, User};
 use App\Services\Leveling\XpService;
-use App\Services\WarqnaPro\ChallengeService;
+use App\Services\WarqnaPro\{ChallengeService, PrizeBoxService};
 use Illuminate\Support\Facades\DB;
 
 class ProgressionService
@@ -20,7 +20,18 @@ class ProgressionService
     public function award(User $user, string $eventKey, array $context = []): array
     {
         $existing = ProgressionEvent::where('event_key',$eventKey)->first();
-        if ($existing) return $this->payload($existing, true) + ['user_id'=>(int)$user->id,'profile'=>$this->profileSnapshot($user)];
+        if ($existing) {
+            $meta = is_array($existing->meta) ? $existing->meta : [];
+            $prizeBox = null;
+            if ($existing->event_type === 'match_complete' && (bool)($meta['won'] ?? false)) {
+                $prizeBox = app(PrizeBoxService::class)->awardForWin($user, $eventKey, $meta['game'] ?? null);
+            }
+            return $this->payload($existing, true) + [
+                'user_id'=>(int)$user->id,
+                'profile'=>$this->profileSnapshot($user),
+                'prize_box'=>$prizeBox ? app(PrizeBoxService::class)->boxPayload($prizeBox) : null,
+            ];
+        }
 
         return DB::transaction(function () use ($user,$eventKey,$context) {
             $profile = $user->profile()->lockForUpdate()->firstOrCreate([], [
@@ -77,10 +88,20 @@ class ProgressionService
             }
             if ($clubPoints > 0) $challenges->record($user, 'club_points', $clubPoints);
 
+            $prizeBox = null;
+            if ($eventType === 'match_complete' && $won) {
+                $prizeBox = app(PrizeBoxService::class)->awardForWin(
+                    $user,
+                    $eventKey,
+                    isset($context['game']) ? (string)$context['game'] : null,
+                );
+            }
+
             return $this->payload($event, false) + [
                 'user_id'=>(int)$user->id,
                 'level'=>$levelResult,
                 'profile'=>$this->profileSnapshot($user),
+                'prize_box'=>$prizeBox ? app(PrizeBoxService::class)->boxPayload($prizeBox) : null,
             ];
         });
     }

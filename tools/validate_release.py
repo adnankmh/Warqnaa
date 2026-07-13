@@ -104,7 +104,13 @@ def check_required_files() -> None:
         "tools/test_v174_offline_progression_navigation_contract.py",
         "tools/test_v175_xp_challenges_pasha_designer_contract.py",
         "tools/test_v176_daily_pack_inventory_contract.py",
+        "tools/test_v02_daily_prize_boxes_contract.py",
         "flutter_app/lib/v176_release.dart",
+        "flutter_app/lib/v02_release.dart",
+        "backend-laravel/app/Models/PrizeBox.php",
+        "backend-laravel/app/Services/WarqnaPro/PrizeBoxService.php",
+        "backend-laravel/database/migrations/2026_07_13_000200_create_v02_prize_boxes.php",
+        "backend-laravel/tests/Feature/V02DailyPrizeBoxesTest.php",
         "backend-laravel/tests/Feature/V176DailyPackInventoryTest.php",
         "flutter_app/lib/v175_release.dart",
         "backend-laravel/config/warqna_xp_levels.php",
@@ -1277,6 +1283,20 @@ def check_v176_daily_pack_inventory_contract() -> None:
     print("[OK] v176 analyzer fixes, animated pack reveal, server inventory and timed expiry")
 
 
+def check_v02_daily_prize_boxes_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v02_daily_prize_boxes_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna V0.2 daily prize boxes contract failed: " + result.stdout.strip())
+    print(result.stdout.strip())
+    print("[OK] V0.2 dedicated prize-box page, 4-win limit, front-opening animation, ticket art and translated rewards")
+
+
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
         text = path.read_text(encoding="utf-8")
@@ -1323,6 +1343,7 @@ def main() -> None:
     check_v174_offline_progression_navigation_contract()
     check_v175_xp_challenges_pasha_designer_contract()
     check_v176_daily_pack_inventory_contract()
+    check_v02_daily_prize_boxes_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

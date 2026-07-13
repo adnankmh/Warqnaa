@@ -1,7 +1,7 @@
 name: warqna_mobile
 publish_to: none
 description: Warqna premium social card games app for Android, iOS and Web.
-version: 1.76.0+176
+version: 0.2.0+176
 
 environment:
   sdk: '>=3.10.0 <4.0.0'
@@ -42,4 +42,7 @@ flutter:
     - assets/images/tables/v173/royal/
     - assets/images/tables/v173/showcase/
     - assets/images/brand/
+    - assets/images/v02/prize_boxes/
+    - assets/images/v02/tickets/
+    - assets/images/v02/rewards/
     - assets/sounds/

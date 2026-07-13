@@ -15,7 +15,7 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '1.76.0');
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.2.0');
 const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 176);
 
 class WarqnaApiClient {
@@ -129,6 +129,8 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> claimDaily() => post('/rewards/daily', const {});
   Future<Map<String, dynamic>> claimRewardedAd(String verificationId) => post('/rewards/rewarded-ad', {'verification_id': verificationId, 'network': 'admob', 'reward_type': 'standard'});
   Future<Map<String, dynamic>> openDailyPackV173() => post('/packs/daily/open', const {});
+  Future<Map<String, dynamic>> prizeBoxesV02() => get('/prize-boxes');
+  Future<Map<String, dynamic>> openPrizeBoxV02(int boxId) => post('/prize-boxes/$boxId/open', const {});
   Future<Map<String, dynamic>> engagementCenterV173() => get('/engagement/center');
   Future<Map<String, dynamic>> joinCompetitionV173(String competitionKey, int fee) => post('/competitions/$competitionKey/join', {'entry_fee': fee, 'entry_mode': 'auto'});
   Future<Map<String, dynamic>> activateChallengeV175(String challengeKey) => post('/challenges/$challengeKey/activate', const {});

@@ -1,0 +1,25 @@
+{
+  "release": "Warqna V0.2",
+  "version": "0.2.0",
+  "build": 176,
+  "full": "0.2.0+176",
+  "display_release": "V0.2",
+  "features": [
+    "dedicated_daily_prize_box_page",
+    "four_win_boxes_per_day",
+    "six_royal_box_designs",
+    "five_second_front_opening_animation",
+    "server_authoritative_box_economy",
+    "timed_reward_inventory",
+    "luxury_numbered_competition_tickets",
+    "original_red_pasha",
+    "six_language_prize_box_localization",
+    "universal_admin_designer"
+  ],
+  "files": {
+    "start": "START_HERE_AR.md",
+    "release_notes": "docs/ar/releases/current/RELEASE_NOTES_V0.2_AR.md",
+    "changelog": "docs/ar/releases/current/CHANGELOG_V0.2_AR.md",
+    "validation": "docs/ar/validation/current/VALIDATION_RESULTS_V0.2.txt"
+  }
+}

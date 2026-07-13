@@ -148,6 +148,9 @@ extension WarqnaV176Controller on AppController {
         activeXpMultiplier = 1.0;
         boosterExpiresAtV173 = null;
       }
+      if (productId == 'daily_prize_cover_v02') {
+        selectedCover = 'cover_royal_gold';
+      }
     }
   }
 

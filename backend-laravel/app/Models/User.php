@@ -34,6 +34,7 @@ class User extends Authenticatable
     public function pushDevices(){ return $this->hasMany(PushDevice::class); }
     public function competitionTickets(){ return $this->hasMany(CompetitionTicket::class); }
     public function dailyPackClaims(){ return $this->hasMany(DailyPackClaim::class); }
+    public function prizeBoxes(){ return $this->hasMany(PrizeBox::class); }
 
     public function publicProfile(): array
     {
@@ -69,7 +70,7 @@ class User extends Authenticatable
             'email_verified'=>(bool)$this->email_verified_at,
             'deletion_requested_at'=>$this->deletion_requested_at?->toIso8601String(),
             'pasha_days'=>(int)($p?->pasha_days ?? 0),
-            'pasha_style'=>$p?->pasha_style ?? 'red',
+            'pasha_style'=>'red',
             'champion_rank_points'=>(int)($p?->champion_rank_points ?? 0),
             'chat_color'=>$p?->chat_color,
             'active_table_skin'=>$p?->active_table_skin,

@@ -31,6 +31,7 @@ part 'v170_global.dart';
 part 'v173_global.dart';
 part 'v175_release.dart';
 part 'v176_release.dart';
+part 'v02_release.dart';
 
 final GlobalKey<NavigatorState> warqnaNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -227,6 +228,8 @@ class AppController extends ChangeNotifier {
   final Map<String, DateTime> packInventoryExpiriesV176 = <String, DateTime>{};
   final List<Map<String, dynamic>> dailyPackHistoryV176 = <Map<String, dynamic>>[];
   Map<String, dynamic>? lastDailyPackRevealV176;
+  final List<Map<String, dynamic>> prizeBoxesV02 = <Map<String, dynamic>>[];
+  String prizeBoxesDateV02 = '';
   int championRankPointsV173 = 0;
   int challengeStreakV173 = 0;
   Timer? connectivityTimerV173;
@@ -612,7 +615,7 @@ class AppController extends ChangeNotifier {
     customCardBackData = prefs.getString('customCardBackData');
     uiAccentHex = prefs.getString('uiAccentHex') ?? uiAccentHex;
     tableAmbientEffects = prefs.getBool('tableAmbientEffects') ?? tableAmbientEffects;
-    selectedPashaStyle = prefs.getString('selectedPashaStyleV173') ?? selectedPashaStyle;
+    selectedPashaStyle = 'red';
     competitionTickets
       ..clear()
       ..addAll(decodeIntMap(prefs.getString('competitionTicketsV173')).map((key, value) => MapEntry(int.tryParse(key) ?? 0, value)));
@@ -627,6 +630,11 @@ class AppController extends ChangeNotifier {
       ..clear()
       ..addAll(decodeMapListV176(prefs.getString('dailyPackHistoryV176')));
     if (dailyPackHistoryV176.isNotEmpty) lastDailyPackRevealV176 = Map<String, dynamic>.from(dailyPackHistoryV176.first);
+    prizeBoxesV02
+      ..clear()
+      ..addAll(decodeMapListV176(prefs.getString('prizeBoxesV02')));
+    prizeBoxesDateV02 = prefs.getString('prizeBoxesDateV02') ?? '';
+    normalizePrizeBoxesV02();
     championRankPointsV173 = prefs.getInt('championRankPointsV173') ?? championRankPointsV173;
     challengeStreakV173 = prefs.getInt('challengeStreakV173') ?? challengeStreakV173;
     gamesPlayed = prefs.getInt('gamesPlayed') ?? gamesPlayed;
@@ -759,6 +767,8 @@ class AppController extends ChangeNotifier {
     if (boosterExpiresAtV173 == null) { await prefs.remove('boosterExpiresAtV173'); } else { await prefs.setString('boosterExpiresAtV173', boosterExpiresAtV173!.toIso8601String()); }
     await prefs.setString('packInventoryExpiriesV176', jsonEncode(packInventoryExpiriesV176.map((key, value) => MapEntry(key, value.toIso8601String()))));
     await prefs.setString('dailyPackHistoryV176', jsonEncode(dailyPackHistoryV176));
+    await prefs.setString('prizeBoxesV02', jsonEncode(prizeBoxesV02));
+    await prefs.setString('prizeBoxesDateV02', prizeBoxesDateV02);
     await prefs.setInt('championRankPointsV173', championRankPointsV173);
     await prefs.setInt('challengeStreakV173', challengeStreakV173);
     await prefs.setInt('gamesPlayed', gamesPlayed);
@@ -993,7 +1003,8 @@ class AppController extends ChangeNotifier {
       dailyPackReward = pack['last_reward']?.toString() ?? dailyPackReward;
     }
     syncPackInventoryV176(data['inventory']);
-    selectedPashaStyle = user is Map ? (user['pasha_style']?.toString() ?? selectedPashaStyle) : selectedPashaStyle;
+    syncPrizeBoxesV02(data['prize_boxes']);
+    selectedPashaStyle = 'red';
     championRankPointsV173 = int.tryParse(data['champion_rank_points']?.toString() ?? '') ?? championRankPointsV173;
     if (isAdmin && username.toLowerCase() == 'adnan') {
       if (coins < BigInt.parse('1000000000000000000')) coins = BigInt.parse('1000000000000000000');
@@ -1055,6 +1066,8 @@ class AppController extends ChangeNotifier {
       clubPoints += int.tryParse((result['club_points'] ?? 0).toString()) ?? 0;
       _recalculateLevel();
     }
+    final prizeBox = result['prize_box'];
+    if (prizeBox is Map) upsertPrizeBoxV02(Map<String, dynamic>.from(prizeBox));
     unawaited(_save());
     refreshUi();
   }
@@ -1715,6 +1728,7 @@ class AppController extends ChangeNotifier {
     giftRoadProgress = (giftRoadProgress + 1).clamp(0, 30).toInt();
     transactions.insert(0, TokenTransaction('مكافأة فوز', baseReward, 'الآن'));
     notices.insert(0, AppNotice(storeProductById(selectedEffect)?.icon ?? '🏆', 'فوز جديد', 'حصلت على $baseReward توكن و$xpReward XP مع تفعيل مؤثر الفوز.'));
+    awardLocalPrizeBoxV02(gameId);
     activeChallenge = null;
     _save();
     notifyListeners();
@@ -2782,9 +2796,10 @@ List<StoreProduct> buildTimedColorProducts() {
 
 
 final List<StoreProduct> products = <StoreProduct>[
-  StoreProduct(id: 'daily_pack_name_gold_24h_v176', category: 'names', icon: '🎨', nameAr: 'هدية الحزمة: لون اسم ذهبي', nameEn: 'Pack Gift: Golden Name Color', descriptionAr: 'لون اسم ذهبي مؤقت من الحزمة اليومية، يظهر في مقتنياتك حتى انتهاء الصلاحية.', descriptionEn: 'A temporary golden name color awarded by the daily pack.', price: 0, durationHours: 24, value: '#facc15', previewColor1: Color(0xfffacc15), previewColor2: Color(0xff422006), collection: 'daily_pack_v176'),
-  StoreProduct(id: 'daily_pack_chat_cyan_24h_v176', category: 'chat_colors', icon: '💬', nameAr: 'هدية الحزمة: لون دردشة سماوي', nameEn: 'Pack Gift: Cyan Chat Color', descriptionAr: 'لون كتابة سماوي مؤقت من الحزمة اليومية، يظهر في مقتنياتك حتى انتهاء الصلاحية.', descriptionEn: 'A temporary cyan chat color awarded by the daily pack.', price: 0, durationHours: 24, value: '#22d3ee', previewColor1: Color(0xff22d3ee), previewColor2: Color(0xff083344), collection: 'daily_pack_v176'),
-  StoreProduct(id: 'daily_pack_xp_15x_6h_v176', category: 'boost', icon: '⚡', nameAr: 'هدية الحزمة: مسرّع XP ×1.5', nameEn: 'Pack Gift: XP Booster ×1.5', descriptionAr: 'مسرّع خبرة مؤقت لمدة 6 ساعات من الحزمة اليومية، يُضاف إلى مقتنيات المتجر مباشرة.', descriptionEn: 'A six-hour XP booster awarded by the daily pack.', price: 0, durationHours: 6, multiplier: 1.5, previewColor1: Color(0xfff59e0b), previewColor2: Color(0xff7c2d12), collection: 'daily_pack_v176'),
+  StoreProduct(id: 'daily_pack_name_gold_24h_v176', category: 'names', icon: '🎨', nameAr: 'صندوق الجوائز: لون لاعب ذهبي', nameEn: 'Prize Box: Golden Player Color', descriptionAr: 'لون لاعب ذهبي مؤقت من صندوق الجوائز اليومي، يظهر في مقتنياتك حتى انتهاء الصلاحية.', descriptionEn: 'A temporary golden player color awarded by the daily prize box.', price: 0, durationHours: 24, value: '#facc15', previewColor1: Color(0xfffacc15), previewColor2: Color(0xff422006), collection: 'daily_pack_v176'),
+  StoreProduct(id: 'daily_pack_chat_cyan_24h_v176', category: 'chat_colors', icon: '💬', nameAr: 'صندوق الجوائز: لون كتابة سماوي', nameEn: 'Prize Box: Cyan Writing Color', descriptionAr: 'لون كتابة سماوي مؤقت من صندوق الجوائز اليومي، يظهر في مقتنياتك حتى انتهاء الصلاحية.', descriptionEn: 'A temporary cyan writing color awarded by the daily prize box.', price: 0, durationHours: 24, value: '#22d3ee', previewColor1: Color(0xff22d3ee), previewColor2: Color(0xff083344), collection: 'daily_pack_v176'),
+  StoreProduct(id: 'daily_pack_xp_15x_6h_v176', category: 'boost', icon: '⚡', nameAr: 'صندوق الجوائز: مسرّع XP ×1.5', nameEn: 'Prize Box: XP Booster ×1.5', descriptionAr: 'مسرّع خبرة مؤقت لمدة 6 ساعات من صندوق الجوائز اليومي، يُضاف إلى مقتنيات المتجر مباشرة.', descriptionEn: 'A six-hour XP booster awarded by the daily prize box.', price: 0, durationHours: 6, multiplier: 1.5, previewColor1: Color(0xfff59e0b), previewColor2: Color(0xff7c2d12), collection: 'daily_pack_v176'),
+  StoreProduct(id: 'daily_prize_cover_v02', category: 'covers', icon: '🖼️', nameAr: 'صندوق الجوائز: غلاف ملكي', nameEn: 'Prize Box: Royal Profile Cover', descriptionAr: 'غلاف شخصي ملكي مؤقت لمدة 3 أيام من صندوق الجوائز اليومي.', descriptionEn: 'A royal profile cover active for three days from the daily prize box.', price: 0, durationHours: 72, value: 'cover_v02_royal', previewColor1: Color(0xff581c87), previewColor2: Color(0xfffacc15), collection: 'daily_pack_v176'),
   StoreProduct(id: "pasha_1_day_v132", category: "pasha", icon: "🎩", nameAr: "باشا يوم واحد", nameEn: "Pasha 1 Day", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 1700, durationDays: 1, value: "pasha"),
   StoreProduct(id: "pasha_3_days_v132", category: "pasha", icon: "🎩", nameAr: "باشا 3 أيام", nameEn: "Pasha 3 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 5000, durationDays: 3, value: "pasha"),
   StoreProduct(id: "pasha_7_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا 7 أيام", nameEn: "Pasha 7 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 10000, durationDays: 7, value: "pasha"),
@@ -3406,6 +3421,11 @@ class HomePage extends StatelessWidget {
           onJoin: () => showCompetitions(context, controller),
         ),
         const SizedBox(height: 13),
+        PrizeBoxesHomeCardV02(
+          controller: controller,
+          onOpen: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => PrizeBoxesPageV02(controller: controller))),
+        ),
+        const SizedBox(height: 13),
         GiftRoad(controller: controller),
         const SizedBox(height: 16),
         SectionTitle(title: L.t(lang, 'featured'), action: 'عرض الكل', onTap: () => onTab(1)),
@@ -3604,17 +3624,6 @@ class _StorePageState extends State<StorePage> {
           ],
         ),
         const SizedBox(height: 10),
-        PremiumPanel(child: ListTile(
-          leading: const Text('🎁', style: TextStyle(fontSize: 35)),
-          title: const Text('الحزمة اليومية المجانية', style: TextStyle(fontWeight: FontWeight.w900)),
-          subtitle: Text(widget.controller.dailyPackAvailableV173 ? 'جاهزة للفتح الآن • مرة واحدة يومياً' : 'تم فتح حزمة اليوم'),
-          trailing: FilledButton.tonal(onPressed: () => showDailyPackV173(context, widget.controller), child: const Text('فتح')),
-        )),
-        const SizedBox(height: 10),
-        if (widget.controller.dailyPackHistoryV176.isNotEmpty) ...[
-          PackInventoryStripV176(controller: widget.controller, onOpenInventory: () => setState(() => category = 'inventory')),
-          const SizedBox(height: 10),
-        ],
         PremiumPanel(child:Padding(padding:const EdgeInsets.all(13),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Row(children:[Expanded(child:Text('تقدم المستوى ${widget.controller.level}',style:const TextStyle(fontWeight:FontWeight.w900))),Text('${widget.controller.xp} / ${widget.controller.xpNext} XP',style:const TextStyle(color:Colors.amber,fontWeight:FontWeight.w900,fontSize:11))]),
           const SizedBox(height:8),
@@ -4171,6 +4180,12 @@ class _CompactProductPreview extends StatelessWidget {
             ]),
           ],
         ),
+      );
+    }
+    if (product.category == 'competition_ticket' && product.value != null) {
+      return Padding(
+        padding: const EdgeInsets.all(4),
+        child: Image.asset(ticketAssetV02(product.value!), fit: BoxFit.contain, filterQuality: FilterQuality.high),
       );
     }
     if (product.category == 'cards') {
@@ -7907,6 +7922,12 @@ class _ProductLivePreview extends StatelessWidget {
             ),
           ],
         ),
+      );
+    } else if (product.category == 'competition_ticket' && product.value != null) {
+      preview = SizedBox(
+        width: 390,
+        height: 245,
+        child: Image.asset(ticketAssetV02(product.value!), fit: BoxFit.contain, filterQuality: FilterQuality.high),
       );
     } else if (product.category == 'cards') {
       preview = Row(

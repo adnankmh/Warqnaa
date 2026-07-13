@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{AdminDesignerEntity,ChallengeDefinition,CompetitionTicket,DailyPackClaim,Tournament};
-use App\Services\WarqnaPro\{ChallengeService,CompetitionService,DailyPackService};
+use App\Models\{AdminDesignerEntity,ChallengeDefinition,CompetitionTicket,DailyPackClaim,PrizeBox,Tournament};
+use App\Services\WarqnaPro\{ChallengeService,CompetitionService,DailyPackService,PrizeBoxService};
 use Illuminate\Http\Request;
 use RuntimeException;
 
 class MobileEngagementController extends Controller
 {
-    public function center(Request $request, ChallengeService $challenges)
+    public function center(Request $request, ChallengeService $challenges, PrizeBoxService $prizeBoxes)
     {
         $user = $request->user();
         return response()->json([
@@ -17,11 +17,33 @@ class MobileEngagementController extends Controller
             'online_only'=>false,
             'tickets'=>$this->tickets($user->id),
             'daily_pack'=>$this->packStatus($user->id),
+            'prize_boxes'=>$prizeBoxes->center($user),
             'inventory'=>$user->inventoryItems()->with('storeItem')->latest()->limit(200)->get(),
             'challenges'=>$challenges->center($user),
             'competitions'=>Tournament::whereIn('status', ['open','running'])->withCount('entries')->orderByDesc('featured')->orderBy('starts_at')->get(),
             'designer'=>AdminDesignerEntity::where('active', true)->orderBy('entity_type')->orderBy('sort_order')->get()->groupBy('entity_type'),
             'champion_rank_points'=>(int)($user->profile?->champion_rank_points ?? 0),
+        ]);
+    }
+
+
+    public function prizeBoxes(Request $request, PrizeBoxService $prizeBoxes)
+    {
+        return response()->json(['ok'=>true, ...$prizeBoxes->center($request->user())]);
+    }
+
+    public function openPrizeBox(Request $request, PrizeBox $prizeBox, PrizeBoxService $prizeBoxes)
+    {
+        try {
+            $result = $prizeBoxes->open($request->user(), $prizeBox);
+        } catch (RuntimeException $e) {
+            return response()->json(['ok'=>false,'message'=>$e->getMessage()], 409);
+        }
+
+        return response()->json([
+            'ok'=>true,
+            'message'=>'تم فتح صندوق الجوائز اليومي وإضافة المكافأة مباشرة.',
+            ...$result,
         ]);
     }
 

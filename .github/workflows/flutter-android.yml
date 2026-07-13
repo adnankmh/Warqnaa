@@ -146,6 +146,7 @@ jobs:
           python3 ../tools/test_v174_offline_progression_navigation_contract.py
           python3 ../tools/test_v175_xp_challenges_pasha_designer_contract.py
           python3 ../tools/test_v176_daily_pack_inventory_contract.py
+          python3 ../tools/test_v02_daily_prize_boxes_contract.py
           bash ../tools/flutter_analyze_ci.sh
           flutter test
 

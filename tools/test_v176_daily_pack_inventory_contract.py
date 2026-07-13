@@ -30,8 +30,8 @@ def forbid(rel: str, *needles: str) -> None:
 
 def main() -> None:
     meta = json.loads((ROOT / "RELEASE_VERSION.json").read_text(encoding="utf-8"))
-    if meta.get("version") != "1.76.0" or meta.get("build") != 176:
-        fail("metadata is not 1.76.0+176")
+    if meta.get("version") != "0.2.0" or meta.get("build") != 176:
+        fail("metadata is not 0.2.0+176")
 
     main_dart = require(
         "flutter_app/lib/main.dart",
@@ -41,10 +41,11 @@ def main() -> None:
         "syncPackInventoryV176(data['inventory'])",
         "final navigationContext = warqnaNavigatorKey.currentContext;",
         "('inventory', 'مقتنياتي')",
-        "PackInventoryStripV176",
     )
     if "_openingRoomRouteV174" in main_dart:
         fail("unused _openingRoomRouteV174 field returned")
+    if "PackInventoryStripV176(" in main_dart or "DailyPackCardV176(" in main_dart:
+        fail("legacy daily-pack UI returned to the store instead of the dedicated V0.2 prize-box page")
 
     release = require(
         "flutter_app/lib/v176_release.dart",
