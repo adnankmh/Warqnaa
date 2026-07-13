@@ -1,0 +1,48 @@
+Warqna 0.2.0+176 preflight
+[OK] Required v176 release files
+[OK] Clean-root policy self-test (Git metadata accepted, clutter rejected)
+[OK] Clean organized project root (repository metadata ignored)
+[OK] No Git conflict markers
+[OK] No corrupt control characters in text launchers or source files
+[OK] v174 offline-capable login, registration and social-provider contract
+[PASS] Release version contract is consistent: 0.2.0+176
+[OK] GitHub Actions clean-root regression contract
+[OK] JSON syntax (42 files)
+[OK] YAML structural audit (15 files)
+[OK] Robust Flutter pubspec.lock parser and pinned dependencies
+[OK] SQLite :memory: and URI preservation
+[OK] Composer, PHPUnit, migration and Docker CI contracts
+[OK] Laravel HTTP base controller and autoload guards
+[OK] Deterministic duplicate-free card-deal tests
+[OK] Unicode card normalization and Tarneeb state compatibility
+[OK] Versioned/legacy Mobile API and explicit PWA routes
+[OK] Current 12-game, 140-table (50 legacy + 40 v172 + 50 v173), 40-card-back product contract
+[OK] Dynamic release gate, Eloquent wallet relation and charset regression guards
+[OK] Android project generation and Java/Gradle CI order
+[OK] v161 voice, Android startup, countries, progression, clubs, designer and social OAuth contracts
+[OK] v162 30-day account cancellation/reactivation and analyzer-only-info handling
+[OK] v163 StorePage controller and account-cancellation validation regressions
+[OK] v164 first-frame boot, AdMob manifest sanitization and safe APK contracts
+[OK] v165 Android WorkManager pre-Flutter boot guard
+[OK] v166 voice, gameplay, social, accessibility, store, push and Play Store polish contracts
+[PASS] Flutter v169 CI/API regression contract
+[OK] v169 Flutter localization, notification API and ChangeNotifier CI regressions
+[PASS] Warqna v170 responsive UI, voice, gameplay, social, economy and anti-cheat contract
+[OK] v170 responsive UI, public profiles, XP curve, mobile voice diagnostics, room controls and security contracts
+[PASS] Controller references are semantically correct: 3 controller, 1 widget.controller
+[OK] v171 semantic AppController reference contract
+[PASS] v172 additive brand/table contract: 50 legacy + 40 new tables, 40 HD assets, global logo, and dual controller-reference compatibility
+[OK] v172 additive Warqna brand, 40-table HD collection, and legacy CI compatibility
+[PASS] inherited v173 contract: 14 Pasha styles, 50 HD tables, server-authoritative economy, ads, daily packs, competitions, tickets, and universal designer
+[OK] inherited v173 engagement assets, server-authoritative economy, Pasha colors, tables, tickets, packs and universal designer
+[PASS] inherited v174+ contract: offline access, fixed user-controlled orientation, direct room navigation, visible human-player XP, and exact XP table
+[OK] v174 offline access, fixed orientation, direct-room navigation, visible XP and requested level curve
+[PASS] v175 exact XP, challenges, packs, full Pasha, web fallback login and universal designer contract
+[OK] v175 exact Excel XP, web fallback login, full Pasha, premium challenges/packs and universal designer
+[PASS] v176 analyzer regression, animated daily pack, timed store inventory and expiry contract
+[OK] v176 analyzer fixes, animated pack reveal, server inventory and timed expiry
+[PASS] Warqna V0.2 prize boxes, ticket art, original Pasha, translations and server economy contract
+[OK] V0.2 dedicated prize-box page, 4-win limit, front-opening animation, ticket art and translated rewards
+[OK] No runtime secrets or signing files
+[OK] Dart delimiter structure
+[PASS] Warqna v176 source-package preflight completed successfully

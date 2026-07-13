@@ -219,7 +219,7 @@ class JackarooRules extends AbstractCardRules
     }
     private function ownPieceAt(array $state,string $owner,int $position,int $except): bool{foreach($state['pieces'][$owner]??[] as $i=>$p)if($i!==$except&&(int)$p===$position)return true;return false;}
     private function globalPosition(array $state,string $player,int $progress): int{$seat=array_search($player,$state['players'],true);return ((($seat===false?0:$seat)*14)+$progress)%56;}
-    private function dealRound(array &$hands,array &$deck,array $players): void{foreach($players as $p)$hands[$p]=[];for($i=0;$i<4;$i++)foreach($players as $p)if($deck)$hands[$p][]=array_shift($deck);$hands=FairDealBalancer::balance($hands,'jackaroo');foreach($hands as $p=>$cards)$hands[$p]=$this->sortHand($cards);}
+    private function dealRound(array &$hands,array &$deck,array $players): void{foreach($players as $p)$hands[$p]=[];for($i=0;$i<4;$i++)foreach($players as $p)if($deck)$hands[$p][]=array_shift($deck);}
     private function defaultSteps(string $rank): int{return $rank==='4'?-4:($rank==='A'?1:($this->forwardValues[$rank]??0));}
     private function canonical(string $card,array $hand): ?string{if(in_array($card,$hand,true))return $card;$n=strtolower(str_replace(['-',' '],'_',$card));foreach($hand as $h)if(strtolower((string)$h)===$n)return (string)$h;return null;}
     private function payloadMatches(array $candidate,array $payload): bool{foreach(['owner','piece','steps','piece2','steps2','target_owner','target_piece'] as $key)if(array_key_exists($key,$candidate)&&(string)$candidate[$key]!==((string)($payload[$key]??'')))return false;return true;}

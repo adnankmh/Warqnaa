@@ -196,5 +196,5 @@ class _ChallengeCenterV175State extends State<ChallengeCenterV175> {
 }
 
 void showChallengesV175(BuildContext context, AppController controller) {
-  showChallengeHubV025(context, controller);
+  showPremiumSheet(context, child: ChallengeCenterV175(controller: controller));
 }

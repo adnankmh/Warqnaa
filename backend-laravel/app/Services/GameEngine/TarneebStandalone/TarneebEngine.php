@@ -612,7 +612,6 @@ final class TarneebEngine
             $seat = $i % 4;
             $state['hands'][$seat][] = $deck[$i];
         }
-        $state['hands'] = \App\Services\GameEngine\FairDealBalancer::balance($state['hands'], 'trick');
         if (!empty($state['rules']['sortHands'])) {
             for ($seat = 0; $seat < 4; $seat++) {
                 $state['hands'][$seat] = $this->sortCards($state['hands'][$seat]);

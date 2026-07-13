@@ -3,7 +3,7 @@ namespace App\Services\GameEngine;
 
 /**
  * Deck construction and unbiased server-side shuffling.
- * Uses a secure shuffle followed by bounded seat-neutral fairness balancing.
+ * No hand strengthening, balancing or player-specific redistribution is applied.
  */
 class DeckFactory
 {
@@ -44,12 +44,6 @@ class DeckFactory
                 if($deck) $hands[$p][]=array_shift($deck);
             }
         }
-        $objectsById=[];
-        foreach($hands as $hand) foreach($hand as $card) $objectsById[$card->id()]=$card;
-        $ids=[];
-        foreach($hands as $player=>$hand) $ids[$player]=array_map(fn(Card $card)=>$card->id(),$hand);
-        $ids=FairDealBalancer::balance($ids,'trick');
-        foreach($ids as $player=>$cardIds) $hands[$player]=array_map(fn(string $id)=>$objectsById[$id],$cardIds);
         return $hands;
     }
 

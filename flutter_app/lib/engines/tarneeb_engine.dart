@@ -1,7 +1,5 @@
 import 'dart:math' as math;
 
-import 'fair_deal.dart';
-
 enum TarneebPhase { bidding, chooseTrump, playing, roundEnd, gameOver }
 
 class TarneebCard {
@@ -132,18 +130,10 @@ class TarneebLocalEngine {
     for (var i = 0; i < 52; i++) {
       hands[i % 4].add(deck[i]);
     }
-    final balancedCodes = FairDealBalancer.balanceCodes(
-      hands.map((hand) => hand.map((card) => card.code).toList()).toList(),
-      mode: 'trick',
-    );
-    final byCode = <String, TarneebCard>{for (final card in deck) card.code: card};
-    for (var seat = 0; seat < hands.length; seat++) {
-      hands[seat]
-        ..clear()
-        ..addAll(balancedCodes[seat].map((code) => byCode[code]!));
-      _sortHand(hands[seat]);
+    for (final hand in hands) {
+      _sortHand(hand);
     }
-    messages.add('بدأت الجولة $round: توزيع عشوائي متوازن يحفظ 13 ورقة فريدة ويمنع اليد شديدة الضعف.');
+    messages.add('بدأت الجولة $round: تم توزيع 13 ورقة فريدة لكل لاعب.');
   }
 
   bool canBid(int seat, int? amount) {

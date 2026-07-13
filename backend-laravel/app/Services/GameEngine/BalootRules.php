@@ -7,7 +7,7 @@ class BalootRules extends AbstractCardRules
     private array $hokmRankTrump=['J'=>9,'9'=>8,'A'=>7,'10'=>6,'K'=>5,'Q'=>4,'8'=>2,'7'=>1];
     public function initialState(array $players,array $options=[]): array
     {
-        $players=array_values($players); $deck=[]; foreach(['clubs','diamonds','spades','hearts'] as $s) foreach(['A','10','K','Q','J','9','8','7'] as $r) $deck[]=new Card($s,$r); $deck=DeckFactory::secureShuffle($deck); [$hands,$deck]=$this->deal($players,$deck,8);
+        $players=array_values($players); $deck=[]; foreach(['clubs','diamonds','spades','hearts'] as $s) foreach(['A','10','K','Q','J','9','8','7'] as $r) $deck[]=new Card($s,$r); shuffle($deck); [$hands,$deck]=$this->deal($players,$deck,8);
         return ['phase'=>'baloot_bid','game_type'=>'baloot','players'=>$players,'teams'=>$this->teams($players),'turn'=>$players[0]??null,'hands'=>$hands,'bid'=>null,'passes'=>0,'trump'=>null,'trick'=>[],'last_trick'=>[],'round_tricks'=>['teamA'=>0,'teamB'=>0],'round_points'=>['teamA'=>0,'teamB'=>0],'score'=>['teamA'=>0,'teamB'=>0],'messages'=>['بلوت: اختر صن أو حكم. عند الحكم اختر النوع. يجب اتباع النوع، ويتم احتساب نقاط الأوراق للفريق.']];
     }
     public function validate(array $state,string $playerId,string $action,array $payload): bool

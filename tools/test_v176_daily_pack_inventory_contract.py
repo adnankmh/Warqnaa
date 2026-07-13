@@ -30,13 +30,8 @@ def forbid(rel: str, *needles: str) -> None:
 
 def main() -> None:
     meta = json.loads((ROOT / "RELEASE_VERSION.json").read_text(encoding="utf-8"))
-    # This is an inherited feature contract. Newer releases must preserve it.
-    try:
-        build = int(meta.get("build", 0))
-    except (TypeError, ValueError):
-        build = 0
-    if build < 176:
-        fail("metadata predates the v176 inventory contract")
+    if meta.get("version") != "0.2.0" or meta.get("build") != 176:
+        fail("metadata is not 0.2.0+176")
 
     main_dart = require(
         "flutter_app/lib/main.dart",
@@ -45,7 +40,7 @@ def main() -> None:
         "dailyPackHistoryV176",
         "syncPackInventoryV176(data['inventory'])",
         "final navigationContext = warqnaNavigatorKey.currentContext;",
-        "('inventory', trV025(widget.controller, 'inventory'))",
+        "('inventory', 'مقتنياتي')",
     )
     if "_openingRoomRouteV174" in main_dart:
         fail("unused _openingRoomRouteV174 field returned")
