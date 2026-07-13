@@ -15,4 +15,5 @@ class Club extends Model
     public function joinRequests(){ return $this->hasMany(ClubJoinRequest::class); }
     public function announcements(){ return $this->hasMany(ClubAnnouncement::class)->latest(); }
     public function tournaments(){ return $this->hasMany(Tournament::class); }
+    public function activityLogs(){ return $this->hasMany(ClubActivityLog::class)->latest(); }
 }

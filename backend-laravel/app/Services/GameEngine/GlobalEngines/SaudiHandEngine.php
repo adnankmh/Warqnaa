@@ -12,12 +12,14 @@ class SaudiHandEngine extends GlobalCardEngineCore
     {
         return [
             'mode' => 'rummy',
-            'players' => [2, 3, 4],
+            'players' => [2, 3, 4, 5],
             'partnership' => false,
             'deck' => 'double-joker',
             'rounds' => 5,
             'cardsEach' => 14,
             'opening' => 51,
+            'wildTwos' => false,
+            'wildValue' => 20,
             'targetScore' => 41,
             'targetOptions' => [],
             'minBid' => 7,
@@ -37,9 +39,9 @@ class SaudiHandEngine extends GlobalCardEngineCore
             'slug'=>'saudi-hand',
             'title_ar'=>'هاند سعودي',
             'emoji'=>'🂱',
-            'description'=>'محرك هاند سعودي فردي 2-4 لاعبين بقوانين السحب والرمي والمجموعات والسلاسل والهاند الكامل.',
+            'description'=>'محرك هاند سعودي فردي 2-5 لاعبين بقوانين السحب والرمي والمجموعات والسلاسل والهاند الكامل.',
             'version'=>'final-v1',
-            'players'=>[2, 3, 4],
+            'players'=>[2, 3, 4, 5],
             'partnership'=>false,
         ];
     }

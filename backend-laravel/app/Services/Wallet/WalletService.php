@@ -20,8 +20,8 @@ class WalletService
     {
         $this->validateAmount($amount);
         DB::transaction(function() use($user,$amount,$type,$meta){
-            $w=$user->wallet()->lockForUpdate()->first();
-            if(!$w || $w->tokens < $amount) throw new RuntimeException('Insufficient tokens');
+            $w=$user->wallet()->lockForUpdate()->firstOrCreate(['user_id'=>$user->id],['tokens'=>$user->is_admin ? 1000000000000 : 0]);
+            if((int)$w->tokens < $amount) throw new RuntimeException('Insufficient tokens');
             if($amount > 0) $w->decrement('tokens',$amount);
             $user->walletTransactions()->create(['type'=>$type,'amount'=>-$amount,'meta'=>$meta]);
         });
