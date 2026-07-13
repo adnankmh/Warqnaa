@@ -1,0 +1,24 @@
+Warqna V0.2.2 / build 178 — Local Validation
+==============================================
+
+PASS: tools/verify_release_versions.py
+PASS: tools/validate_release.py
+PASS: tools/test_v022_economy_rooms_clubs_engines_contract.py
+PASS: tools/test_v176_daily_pack_inventory_contract.py
+PASS: tools/test_v02_daily_prize_boxes_contract.py
+PASS: PHP syntax audit (310 PHP files)
+PASS: Python compile audit
+PASS: shell syntax audit
+PASS: JSON syntax audit (43 files)
+PASS: Dart lexical delimiter audit (24 Dart files)
+PASS: standalone V0.2.2 game-engine smoke test
+PASS: git diff --check
+PASS: Patch overlay test against a clean V0.2/V0.2.1 baseline
+PASS: Applied-patch release preflight and version contract
+PASS: Applied-patch changed PHP syntax audit (33 PHP files)
+PASS: ZIP integrity audit (65 patch files)
+
+Execution limitations in this build environment:
+- flutter analyze / flutter test were not executed because Flutter and Dart SDKs are unavailable.
+- php artisan test was not executed because Composer vendor dependencies are unavailable.
+- These executable checks remain required in GitHub Actions or a complete local development environment.

@@ -223,9 +223,9 @@ class ResponsiveAccountStatsV170 extends StatelessWidget {
   const ResponsiveAccountStatsV170({super.key, required this.controller});
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
-        final children = <Widget>[
-          _AccountMetricV170(
+  Widget build(BuildContext context) => Row(children: [
+        Expanded(
+          child: _AccountMetricV170(
             icon: '🏅',
             label: L.t(controller.localeCode, 'level'),
             value: 'LV.${controller.level}',
@@ -233,33 +233,19 @@ class ResponsiveAccountStatsV170 extends StatelessWidget {
             progress: controller.xpNext <= 0 ? 0 : (controller.xp / controller.xpNext).clamp(0, 1).toDouble(),
             onTap: () => showProfile(context, controller),
           ),
-          _AccountMetricV170(
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _AccountMetricV170(
             icon: '🪙',
             label: L.t(controller.localeCode, 'coins'),
             value: formatNumber(controller.coins),
             details: 'الرصيد المتاح',
             onTap: () => showWallet(context, controller),
           ),
-          _AccountMetricV170(
-            icon: '🎩',
-            label: L.t(controller.localeCode, 'vip'),
-            value: '${controller.vipDays} ${L.t(controller.localeCode, 'days')}',
-            details: controller.vipDays > 0 ? 'مزايا الباشا فعّالة' : 'اضغط للترقية',
-            accent: const Color(0xffffcf67),
-            onTap: () => showPashaBenefits(context, controller),
-          ),
-        ];
-        if (constraints.maxWidth >= 590) {
-          return Row(children: [Expanded(child: children[0]), const SizedBox(width: 8), Expanded(child: children[1]), const SizedBox(width: 8), Expanded(child: children[2])]);
-        }
-        return Column(children: [
-          Row(children: [Expanded(child: children[0]), const SizedBox(width: 8), Expanded(child: children[1])]),
-          const SizedBox(height: 8),
-          SizedBox(width: double.infinity, child: children[2]),
-        ]);
-      });
+        ),
+      ]);
 }
-
 
 class _AccountMetricV170 extends StatelessWidget {
   final String icon;
@@ -355,7 +341,7 @@ class ProductCardV170 extends StatelessWidget {
           ]),
           const SizedBox(height:7),
           Expanded(child:Container(width:double.infinity,padding:EdgeInsets.all(isPasha?6:0),decoration:BoxDecoration(color:Colors.black.withValues(alpha:.14),borderRadius:BorderRadius.circular(20)),child:Center(child:isPasha
-              ? Image.asset('assets/images/pasha.png',fit:BoxFit.contain,width:double.infinity,height:double.infinity,filterQuality:FilterQuality.high,errorBuilder:(_,__,___)=>const Text('🎩',style:TextStyle(fontSize:72)))
+              ? Image.asset('assets/images/pasha.png',fit:BoxFit.contain,width:double.infinity,height:double.infinity,filterQuality:FilterQuality.high,errorBuilder:(_,__,___)=>const Text('👑',style:TextStyle(fontSize:72)))
               : InkWell(onTap:()=>showProductPreview(context,controller,product),borderRadius:BorderRadius.circular(20),child:Center(child:_CompactProductPreview(controller:controller,product:product)))))),
           const SizedBox(height:9),
           Text(controller.nameFor(product),textAlign:TextAlign.center,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16,height:1.25)),
@@ -366,7 +352,7 @@ class ProductCardV170 extends StatelessWidget {
           if (expiryLabel != null) ...[const SizedBox(height:5), Container(padding:const EdgeInsets.symmetric(horizontal:9,vertical:5),decoration:BoxDecoration(color:Colors.orangeAccent.withValues(alpha:.12),borderRadius:BorderRadius.circular(20),border:Border.all(color:Colors.orangeAccent.withValues(alpha:.35))),child:Text('⌛ $expiryLabel',textAlign:TextAlign.center,style:const TextStyle(color:Colors.orangeAccent,fontSize:10,fontWeight:FontWeight.w900)))],
           const SizedBox(height:8),
           if (isPasha)
-            SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:() async { if(owned && !product.reusable){ controller.activateProduct(product); showToast(context,'تم تفعيل ${controller.nameFor(product)}.'); return; } final confirmed=await showDialog<bool>(context:context,builder:(dialogContext)=>AlertDialog(icon:Image.asset('assets/images/pasha.png',height:100,fit:BoxFit.contain),title:Text(controller.nameFor(product)),content:Text('${controller.descriptionFor(product)}\n\nالسعر: ${formatNumber(controller.priceFor(product))} توكن'),actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),child:Text(owned?'تفعيل':'شراء'))])); if(confirmed==true && context.mounted){ if(owned){controller.activateProduct(product);showToast(context,'تم التفعيل.');}else{final ok=await controller.buy(product);if(context.mounted)showToast(context,ok?'تم شراء الباشا وتفعيله.':'تعذر الشراء. تحقق من الاتصال والرصيد.');}} },icon:const Icon(Icons.workspace_premium),label:Text(owned?'تفعيل الباشا':'شراء الباشا'),style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(50))))
+            SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:() async { if(owned && !product.reusable){ controller.activateProduct(product); showToast(context,'تم تفعيل ${controller.nameFor(product)}.'); return; } final confirmed=await showDialog<bool>(context:context,builder:(dialogContext)=>AlertDialog(icon:Image.asset('assets/images/pasha.png',height:100,fit:BoxFit.contain),title:Text(controller.nameFor(product)),content:Text('${controller.descriptionFor(product)}\n\nالسعر: ${formatNumber(controller.priceFor(product))} توكن'),actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),child:Text(owned?'تفعيل':'شراء'))])); if(confirmed==true && context.mounted){ if(owned){controller.activateProduct(product);showToast(context,'تم التفعيل.');}else{final ok=await controller.buy(product);if(context.mounted)showToast(context, ok ? 'تم شراء الباشا وتفعيله.' : (controller.lastPurchaseErrorV022 ?? 'تعذر إكمال الشراء.'));}} },icon:const Icon(Icons.workspace_premium),label:Text(owned?'تفعيل الباشا':'شراء الباشا'),style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(50))))
           else
             Row(children:[Expanded(child:OutlinedButton.icon(onPressed:()=>showProductPreview(context,controller,product),icon:const Icon(Icons.visibility_outlined,size:17),label:Text(L.t(controller.localeCode,'preview'),maxLines:1,overflow:TextOverflow.ellipsis),style:OutlinedButton.styleFrom(minimumSize:const Size.fromHeight(48),padding:const EdgeInsets.symmetric(horizontal:8)))),const SizedBox(width:7),Expanded(child:FilledButton(onPressed:() async { if(owned && !product.reusable){controller.activateProduct(product);showToast(context,'تم تفعيل ${controller.nameFor(product)}.');return;}await showProductPreview(context,controller,product);},style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(48),padding:const EdgeInsets.symmetric(horizontal:8)),child:FittedBox(child:Text(owned&&!product.reusable?'تفعيل':L.t(controller.localeCode,'buy'),style:const TextStyle(fontWeight:FontWeight.w900)))))]),
         ]),
@@ -431,6 +417,9 @@ Future<void> showPublicPlayerProfileV170(BuildContext context, AppController con
         clubPoints: int.tryParse(map['club_points']?.toString() ?? '') ?? friend.clubPoints,
         nameColor: map['name_color']?.toString() ?? friend.nameColor,
         badge: map['badge']?.toString() ?? friend.badge,
+        clubName: map['club'] is Map ? (map['club'] as Map)['name']?.toString() : friend.clubName,
+        clubLogo: map['club'] is Map ? (map['club'] as Map)['logo']?.toString() : friend.clubLogo,
+        clubLevel: map['club'] is Map ? (int.tryParse((map['club'] as Map)['level']?.toString() ?? '') ?? friend.clubLevel) : friend.clubLevel,
       );
     } catch (_) {}
   }
@@ -460,6 +449,8 @@ Future<void> showPublicPlayerProfileV170(BuildContext context, AppController con
         ]),
       ),
       const SizedBox(height: 12),
+      ClubIdentityV022(name: visible.clubName, logo: visible.clubLogo, level: visible.clubLevel),
+      if (visible.clubName != null) const SizedBox(height: 10),
       Row(children: [
         Expanded(child: ProfileMetric(value: '${visible.level}', label: 'المستوى')),
         const SizedBox(width: 7),
@@ -499,7 +490,7 @@ Future<void> showPublicPlayerProfileV170(BuildContext context, AppController con
             Icon(visible.online ? Icons.circle : Icons.circle_outlined, size: 13, color: visible.online ? Colors.greenAccent : Colors.white38),
             const SizedBox(width: 8),
             Expanded(child: Text(visible.online ? 'متصل الآن' : visible.activity, style: const TextStyle(fontWeight: FontWeight.w800))),
-            if (visible.pashaDays > 0) Flexible(child: Text('🎩 باشا ${visible.pashaDays} يوم', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900))),
+            if (visible.pashaDays > 0) Flexible(child: Row(mainAxisSize: MainAxisSize.min, children: [Image.asset('assets/images/pasha.png', width: 27, height: 21, fit: BoxFit.contain), const SizedBox(width: 4), Flexible(child: Text('باشا ${visible.pashaDays} يوم', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900)))])),
           ]),
         ),
       ),
@@ -522,7 +513,7 @@ List<int> v170AllowedPlayerCounts(String gameId) {
       return const [2, 4];
     case 'hand':
     case 'saudi_hand':
-      return const [2, 3, 4];
+      return const [2, 3, 4, 5];
     case 'hand_partner':
       return const [4];
     default:
@@ -590,17 +581,33 @@ class OpenRoomCardV170 extends StatelessWidget {
             const SizedBox(height: 4),
             Text('${voice ? '🎙️ صوتية' : '🃏 عادية'} • ${room['players'] ?? 1}/${room['max_players'] ?? 4} • LV.${room['min_level'] ?? 1}+', style: const TextStyle(color: Colors.white60, fontSize: 10)),
             const SizedBox(height: 7),
-            SizedBox(height: 30, child: Stack(children: [
-              for (var index = 0; index < rawAvatars.length && index < 4; index++)
-                Positioned(
-                  left: index * 22,
-                  child: CircleAvatar(
-                    radius: 15,
-                    backgroundColor: colorFromHex((rawAvatars[index] is Map ? rawAvatars[index]['name_color'] : null)?.toString() ?? '#38bdf8'),
-                    child: Text(((rawAvatars[index] is Map ? rawAvatars[index]['name'] : null)?.toString() ?? '؟').characters.first, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
-                  ),
-                ),
-              if (rawAvatars.isEmpty) const Text('بانتظار لاعبين…', style: TextStyle(color: Colors.white38, fontSize: 10)),
+            SizedBox(height: 34, child: Row(children: [
+              for (var index = 0; index < (room['max_players'] as num? ?? 4).toInt().clamp(1, 6); index++) ...[
+                if (index > 0) const SizedBox(width: 5),
+                if (index < rawAvatars.length && rawAvatars[index] is Map)
+                  InkWell(
+                    onTap: () {
+                      final avatar = Map<String, dynamic>.from(rawAvatars[index] as Map);
+                      openPlayerProfileV021(context, controller,
+                        userId: int.tryParse(avatar['id']?.toString() ?? ''),
+                        name: avatar['name']?.toString() ?? 'لاعب',
+                        username: avatar['username']?.toString(),
+                        avatar: avatar['avatar']?.toString(),
+                        nameColor: avatar['name_color']?.toString() ?? '#38bdf8',
+                        countryCode: avatar['country_code']?.toString() ?? 'PS',
+                        online: avatar['connected'] == true,
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: colorFromHex((rawAvatars[index] as Map)['name_color']?.toString() ?? '#38bdf8'),
+                      child: Text(((rawAvatars[index] as Map)['name']?.toString() ?? '؟').characters.first, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+                    ),
+                  )
+                else
+                  CircleAvatar(radius: 16, backgroundColor: Colors.white.withValues(alpha: .05), child: const Icon(Icons.person_add_alt_1, size: 14, color: Colors.white24)),
+              ],
             ])),
           ])),
           FilledButton(onPressed: onJoin, child: Text(L.t(controller.localeCode, 'join'))),

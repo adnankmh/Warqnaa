@@ -1,8 +1,10 @@
 {
-  "version": "0.2.0",
-  "build": 176,
-  "full": "0.2.0+176",
-  "release": "v176",
-  "display_release": "V0.2",
-  "name": "Warqna V0.2 Daily Prize Boxes Professional"
+  "version": "0.2.2",
+  "build": 178,
+  "full": "0.2.2+178",
+  "release": "v178",
+  "display_release": "V0.2.2",
+  "name": "Warqna V0.2.2 Economy Rooms Clubs Engines Patch",
+  "build_number": 178,
+  "display_version": "V0.2.2"
 }

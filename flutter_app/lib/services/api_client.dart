@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.2.0');
-const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 176);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.2.2');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 178);
 
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})
@@ -281,4 +281,29 @@ class WarqnaApiClient {
     }
     return data;
   }
+
+  Future<Map<String, dynamic>> adminDelegationsV022() => get('/admin/delegations');
+
+  Future<Map<String, dynamic>> updateAdminDelegationV022(int userId, List<String> permissions) =>
+      patch('/admin/delegations/$userId', <String, dynamic>{'permissions': permissions});
+
+  Future<Map<String, dynamic>> removeAdminDelegationV022(int userId) =>
+      delete('/admin/delegations/$userId');
+
+  Future<Map<String, dynamic>> clubsV022() => get('/clubs');
+
+  Future<Map<String, dynamic>> myClubV022() => get('/clubs/mine');
+
+  Future<Map<String, dynamic>> clubActivityV022(int clubId) => get('/clubs/$clubId/activity');
+
+  Future<Map<String, dynamic>> updateClubMemberV022({
+    required int clubId,
+    required int membershipId,
+    required String role,
+    required List<String> permissions,
+  }) => patch('/clubs/$clubId/members/$membershipId', <String, dynamic>{
+        'role': role,
+        'permissions': permissions,
+      });
+
 }
