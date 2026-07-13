@@ -77,7 +77,7 @@ LocalFriend botProfileFriendV021(BotProfile profile, String locale) => LocalFrie
       gamesPlayed: 2500 + profile.seed * 21,
       wins: 1450 + profile.seed * 12,
       xp: profile.level * 820,
-      xpNext: xpNeededForLevel(profile.level),
+      xpNext: xpNeededForLevelV175(profile.level),
       roundPoints: profile.level * 44,
       tournamentPoints: profile.level * 17,
       clubPoints: profile.level * 9,

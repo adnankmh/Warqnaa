@@ -1,6 +1,17 @@
 part of 'main.dart';
 
 /// Exact level-transition XP contract imported from XPs.xlsx for levels 1..100.
+
+/// Returns the authoritative XP required to advance from [currentLevel].
+/// Shared by controller logic and top-level profile/card helpers.
+int xpNeededForLevelV175(int currentLevel) {
+  final safe = currentLevel.clamp(1, 200).toInt();
+  final exact = xpRequirementsV175[safe];
+  if (exact != null) return exact;
+  final extra = safe - 100;
+  return (xpRequirementsV175[100]! * math.pow(1.12, extra)).round();
+}
+
 const Map<int, int> xpRequirementsV175 = <int, int>{
   1: 80,
   2: 98,

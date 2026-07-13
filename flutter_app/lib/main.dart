@@ -5849,26 +5849,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
     );
   }
 
-  LocalFriend _roomPlayerAsFriend(Map<String, dynamic> player) => LocalFriend(
-        int.tryParse(player['user_id']?.toString() ?? '') ?? 0,
-        player['name']?.toString() ?? 'لاعب',
-        player['username']?.toString() ?? 'player',
-        online: player['connected'] == true,
-        activity: player['connected'] == true ? 'داخل الغرفة الآن' : 'غير متصل',
-        level: int.tryParse(player['level']?.toString() ?? '') ?? 1,
-        countryCode: player['country_code']?.toString() ?? 'PS',
-        avatar: player['avatar']?.toString(),
-        pashaDays: int.tryParse(player['pasha_days']?.toString() ?? '') ?? 0,
-        gamesPlayed: int.tryParse(player['games_played']?.toString() ?? '') ?? 0,
-        wins: int.tryParse(player['wins']?.toString() ?? '') ?? 0,
-        xp: int.tryParse(player['xp']?.toString() ?? '') ?? 0,
-        xpNext: int.tryParse(player['xp_next']?.toString() ?? '') ?? 100,
-        roundPoints: int.tryParse(player['round_points']?.toString() ?? '') ?? 0,
-        tournamentPoints: int.tryParse(player['tournament_points']?.toString() ?? '') ?? 0,
-        clubPoints: int.tryParse(player['club_points']?.toString() ?? '') ?? 0,
-        nameColor: player['name_color']?.toString() ?? '#facc15',
-        badge: player['badge']?.toString(),
-      );
+
 
   Future<void> _refreshServerRoom() async {
     if (localSession != null || roomCode.isEmpty) return;
@@ -8253,10 +8234,10 @@ class _RuleSection extends StatelessWidget {
 
 void showLeaderboard(BuildContext context, AppController controller) {
   final entries = <(String, LocalFriend)>[
-    ('🥇', LocalFriend(6, 'ياسر', 'Yasser', online: true, activity: 'المركز الأول', level: 64, xp: 18420, xpNext: xpNeededForLevel(64), gamesPlayed: 1870, wins: 1210, badge: 'LEGEND')),
-    ('🥈', LocalFriend(3, 'ليلى', 'Layla', online: true, activity: 'المركز الثاني', level: 61, xp: 17980, xpNext: xpNeededForLevel(61), gamesPlayed: 1640, wins: 1044, badge: 'PRO')),
-    ('🥉', LocalFriend(2, 'سامر', 'Samer', online: true, activity: 'المركز الثالث', level: 58, xp: 16800, xpNext: xpNeededForLevel(58), gamesPlayed: 1530, wins: 930, badge: 'PRO')),
-    ('4', LocalFriend(9, 'أحمد', 'Ahmad', activity: 'المركز الرابع', level: 55, xp: 15120, xpNext: xpNeededForLevel(55), gamesPlayed: 1420, wins: 810)),
+    ('🥇', LocalFriend(6, 'ياسر', 'Yasser', online: true, activity: 'المركز الأول', level: 64, xp: 18420, xpNext: xpNeededForLevelV175(64), gamesPlayed: 1870, wins: 1210, badge: 'LEGEND')),
+    ('🥈', LocalFriend(3, 'ليلى', 'Layla', online: true, activity: 'المركز الثاني', level: 61, xp: 17980, xpNext: xpNeededForLevelV175(61), gamesPlayed: 1640, wins: 1044, badge: 'PRO')),
+    ('🥉', LocalFriend(2, 'سامر', 'Samer', online: true, activity: 'المركز الثالث', level: 58, xp: 16800, xpNext: xpNeededForLevelV175(58), gamesPlayed: 1530, wins: 930, badge: 'PRO')),
+    ('4', LocalFriend(9, 'أحمد', 'Ahmad', online: false, activity: 'المركز الرابع', level: 55, xp: 15120, xpNext: xpNeededForLevelV175(55), gamesPlayed: 1420, wins: 810)),
   ];
   showPremiumSheet(
     context,
