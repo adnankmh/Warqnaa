@@ -59,3 +59,12 @@
 - تحسين SEO وبيانات Open Graph وJSON-LD وملفات robots وsitemap.
 - إضافة عقد إصدار V0.3 وفحص ثابت لـ Dart وJSON وYAML وXML وعلامات تعارض Git.
 - إدخال فحوص V0.3 الجديدة إلى مسارات GitHub Actions للويب وAndroid وiOS وفحص الإنتاج.
+
+## إصلاح CI بعد الإصدار
+
+- إصلاح قاعدة الأقواس في `leaveChallenge`.
+- إضافة `teamScores` للقراءة فقط داخل محرك الطرنيب.
+- استبدال `DropdownButtonFormField.value` المهجورة بـ `initialValue`.
+- إضافة PSR-4 الخاص بـ `Database\\Factories\\` إلى Composer.
+- استعادة عقد كتالوج V173 إلى 78 عنصرًا بإضافة طربوش قرمزي غير أسود.
+- إضافة اختبار رجوعي جديد وتشغيله في جميع مسارات بناء Flutter وفحص الإنتاج.

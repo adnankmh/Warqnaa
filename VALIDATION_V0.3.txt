@@ -1,43 +1,37 @@
-Warqnaa V0.3 Validation Report
-==============================
-Release: 0.3.0+180 (V0.3)
+Warqnaa V0.3 CI Hotfix Validation Report
+========================================
+Release: 0.3.0+180 (V0.3 fixed source package)
+
+Reported CI failures fixed
+--------------------------
+- Flutter curly_braces_in_flow_control_structures: FIXED
+- Flutter undefined TarneebLocalEngine.teamScores: FIXED
+- Flutter deprecated DropdownButtonFormField.value: FIXED
+- Laravel Database\\Factories\\UserFactory autoload: FIXED in composer.json
+- V173 catalog expected 78 but found 77: FIXED
 
 Passed checks
 -------------
-- 11 Python source/feature contract suites: PASS
+- All 12 Python source/feature contract suites: PASS
+- New CI regression contract: PASS
 - Release-version consistency: PASS (0.3.0+180)
-- PHP syntax lint: PASS for 308 PHP files
-- Engine adapter initialization: PASS for 18 engines
-- Dedicated rule-core regression tests: PASS
-- Banakil V0.3 regression and hidden-state tests: PASS
+- PHP syntax lint: PASS for 269 application/config/database/route/test PHP files
 - Static configuration/source validation: PASS
-  * JSON files parsed: 44
+  * JSON files parsed: 45
   * YAML files parsed: 15
   * XML files parsed: 2
   * Dart files delimiter/reference scan: 27
-  * Source files scanned for unresolved Git conflicts: 429
+  * Source files scanned for unresolved Git conflicts: 432
+- V173 catalog: PASS
+  * Total items: 78
+  * Non-black Pasha styles: 14
+  * Tables: 50
+  * Competition tickets: 14
 
-Environment limitations
------------------------
-Flutter/Dart SDK and Composer were not installed in the packaging environment.
-Therefore flutter analyze, flutter test, Flutter Web/APK/AAB compilation,
-Composer install, Laravel PHPUnit, migrations and runtime browser/device tests
-must be executed through the included GitHub Actions or on a prepared machine.
-
-Production prerequisites
-------------------------
-- Deploy Laravel over HTTPS and set WARQNA_API_URL for authoritative multiplayer.
-- Configure production database, cache, sessions, queues, mail and CORS.
-- Replace sample AdMob identifiers with approved production identifiers.
-- Configure Android/iOS signing secrets.
-- Disable or secure demo accounts before public launch.
-
-Two-part package integrity
---------------------------
-- Complementary archives: PASS
-- Overlapping paths between parts: none
-- Combined extraction file count: 1415
-- Full SHA-256 comparison after extraction: PASS
-- Approximate archive sizes: 56.0 MiB and 56.2 MiB
-- Final archive checksums are printed by tools/package_v030.py and may change
-  whenever any source or documentation file is updated before final packaging.
+Environment limitation
+----------------------
+The packaging environment did not contain Flutter/Dart SDK or Composer vendor
+dependencies and had no external network access. Therefore the authoritative
+flutter analyze, Flutter builds and php artisan test remain GitHub Actions gates.
+The exact reported source failures were corrected and protected by regression
+contracts included in those workflows.

@@ -34,6 +34,23 @@
     }
   },
   {
+    "key": "pasha_style_crimson_v173",
+    "ar": "طربوش باشا قرمزي",
+    "en": "Crimson Pasha Fez",
+    "category": "pasha_style",
+    "price": 6500,
+    "duration_days": null,
+    "payload": {
+      "style": "crimson",
+      "color1": "#c1123f",
+      "color2": "#74001f",
+      "image": "/assets/store/pasha/v173/pasha_crimson.png",
+      "asset": "assets/images/pasha/v173/pasha_crimson.png",
+      "preview_icon": "🎩",
+      "tier": "featured"
+    }
+  },
+  {
     "key": "pasha_style_blue_v173",
     "ar": "طربوش باشا أزرق",
     "en": "Blue Pasha Fez",

@@ -1856,7 +1856,12 @@ class AppController extends ChangeNotifier {
 
   void leaveChallenge() {
     activeChallenge = null;
-    if (challengeRoadGame != null) resetChallengeRoad(); else { _save(); notifyListeners(); }
+    if (challengeRoadGame != null) {
+      resetChallengeRoad();
+    } else {
+      _save();
+      notifyListeners();
+    }
   }
 
   bool enterGame(String id) {

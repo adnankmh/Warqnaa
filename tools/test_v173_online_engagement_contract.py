@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TICKET_VALUES = [50,100,200,500,1000,2000,4000,5000,8000,10000,20000,30000,50000,100000]
-PASHA_KEYS = ["yellow","red","blue","green","purple","bronze","gold","orange","pink","silver","platinum","navy","white"]
+PASHA_KEYS = ["yellow","red","crimson","blue","green","purple","bronze","gold","orange","pink","silver","platinum","navy","white"]
 
 def fail(message: str) -> None:
     print(f"[FAIL] {message}")
@@ -37,7 +37,7 @@ def main() -> None:
     if any(item.get("key")=="pasha_style_black_v173" for item in catalog): fail("Black Pasha style remains in the active catalog")
     groups: dict[str,list[dict]]={}
     for item in catalog: groups.setdefault(item["category"],[]).append(item)
-    if len(groups.get("pasha_style",[]))!=13 or len(groups.get("table",[]))!=50 or len(groups.get("competition_ticket",[]))!=14:
+    if len(groups.get("pasha_style",[]))!=14 or len(groups.get("table",[]))!=50 or len(groups.get("competition_ticket",[]))!=14:
         fail("V0.3 inherited catalog counts are incorrect")
     tickets=sorted(groups["competition_ticket"],key=lambda item:item["payload"]["denomination"])
     if [item["payload"]["denomination"] for item in tickets]!=TICKET_VALUES: fail("Ticket denominations mismatch")
@@ -49,7 +49,7 @@ def main() -> None:
         "joinCompetitionV173",
         "(key == 'black' ? 'red' : key)",
     ])
-    if len(re.findall(r"PashaStyleV173\('",flutter))!=13: fail("Flutter Pasha registry must contain 13 non-black legacy color entries")
+    if len(re.findall(r"PashaStyleV173\('",flutter))!=14: fail("Flutter Pasha registry must contain 14 non-black color entries")
     if "PashaStyleV173('black'" in flutter: fail("Black Pasha registry entry remains")
 
     main_dart=require_text("flutter_app/lib/main.dart",[

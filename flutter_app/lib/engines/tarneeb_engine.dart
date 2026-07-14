@@ -102,6 +102,9 @@ class TarneebLocalEngine {
   bool get isHumanTurn => currentSeat == 0 && phase != TarneebPhase.gameOver;
   List<TarneebCard> get humanHand => List.unmodifiable(hands[0]);
 
+  /// Backwards-compatible read-only team score view used by UI and challenge markers.
+  List<int> get teamScores => List<int>.unmodifiable(scores);
+
   void startNextRound() {
     round += 1;
     dealerSeat = (dealerSeat + 1) % 4;
