@@ -57,6 +57,9 @@ class XpService
             $wallet->tokens += max(0, $tokens) + $bonus;
             $wallet->save();
         }
-        return ['old_level'=>$oldLevel,'new_level'=>$newLevel,'level_bonus'=>$bonus,'earned_xp'=>$earnedXp ?? $xp];
+        $levelRewards = $newLevel > $oldLevel
+            ? app(\App\Services\WarqnaPro\LevelRewardService::class)->grantRange($user, $oldLevel, $newLevel)
+            : [];
+        return ['old_level'=>$oldLevel,'new_level'=>$newLevel,'level_bonus'=>$bonus,'earned_xp'=>$earnedXp ?? $xp,'level_rewards'=>$levelRewards];
     }
 }

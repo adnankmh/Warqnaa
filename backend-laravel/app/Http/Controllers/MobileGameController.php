@@ -125,7 +125,14 @@ class MobileGameController extends Controller
 
         $existing = $room->players()->where('user_id', $user->id)->first();
         if ($existing) {
-            $existing->update(['connected' => true, 'missed_turns' => 0]);
+            $leaveCounts = (array)($state['manual_leave_counts'] ?? []);
+            abort_if((int)($leaveCounts[(string)$user->id] ?? 0) >= 3, 403, 'غادرت هذه المباراة يدويًا ثلاث مرات ولا يمكن العودة إليها.');
+            $awayKey = 'bot:away-'.$user->id;
+            $userKey = 'user:'.$user->id;
+            if ($existing->is_bot) $state = $this->replacePlayerKey($state, $awayKey, $userKey);
+            $state['messages'][] = '↩️ عاد '.$user->username.' إلى مقعده.';
+            $room->update(['state'=>$state]);
+            $existing->update(['connected' => true, 'missed_turns' => 0, 'is_bot'=>false, 'bot_key'=>null]);
             return response()->json(['ok' => true, 'message' => 'عدت إلى مقعدك.', 'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $user->id)]);
         }
 
@@ -377,28 +384,44 @@ class MobileGameController extends Controller
     public function timeout(Request $request, Room $room, ProgressionService $progression)
     {
         $this->authorizeRoom($request, $room);
-        $state = $room->state ?: [];
-        $engine = GameFactory::make($room->game->key);
-        if (method_exists($engine, 'onTurnTimeout')) {
-            $state = $engine->onTurnTimeout($state);
-        } else {
-            $state = $this->automaticMove($engine, $state, (string) $room->game->key);
-        }
         $before = $room->state ?: [];
-        $state = $this->advanceAutomatedTurns($engine, $state, (string) $room->game->key);
-        $state['_revision'] = (int)($before['_revision'] ?? 0) + 1;
-        $progressionPopup = $this->awardProgressionTransition($progression, $room, $before, $state);
-        if ($progressionPopup !== []) $state['progression_popup'] = $progressionPopup;
-        $room->update(['state' => $state, 'status' => $this->roomStatus((string) ($state['phase'] ?? 'playing'))]);
-        return response()->json(['ok' => true, 'room' => $this->roomPayload($room->fresh(['game', 'players.user.profile']), $request->user()->id)]);
+        $turn = (string)($before['turn'] ?? '');
+        $engine = GameFactory::make($room->game->key);
+
+        if (str_starts_with($turn,'user:')) {
+            $turnUserId=(int)substr($turn,5);
+            $seat=$room->players()->where('user_id',$turnUserId)->where('is_bot',false)->first();
+            if ($seat) {
+                $seat->increment('missed_turns'); $seat->refresh();
+                $before['messages'][]='⏱️ غاب اللاعب عن الدور '.min(3,(int)$seat->missed_turns).'/3.';
+                if ((int)$seat->missed_turns>=3) {
+                    $awayKey='bot:away-'.$turnUserId;
+                    $before=$this->replacePlayerKey($before,$turn,$awayKey);
+                    $before['messages'][]='🤖 خرج اللاعب مؤقتًا بعد 3 أدوار غياب، ويمكنه العودة إلى مقعده.';
+                    $seat->update(['is_bot'=>true,'bot_key'=>'away-'.$turnUserId,'connected'=>false,'missed_turns'=>0]);
+                }
+            }
+        }
+
+        $state = method_exists($engine,'onTurnTimeout') ? $engine->onTurnTimeout($before) : $this->automaticMove($engine,$before,(string)$room->game->key);
+        $state=$this->advanceAutomatedTurns($engine,$state,(string)$room->game->key);
+        $state['_revision']=(int)($before['_revision']??0)+1;
+        $progressionPopup=$this->awardProgressionTransition($progression,$room,$before,$state);
+        if($progressionPopup!==[])$state['progression_popup']=$progressionPopup;
+        $room->update(['state'=>$state,'status'=>$this->roomStatus((string)($state['phase']??'playing'))]);
+        return response()->json(['ok'=>true,'room'=>$this->roomPayload($room->fresh(['game','players.user.profile']),$request->user()->id)]);
     }
 
     public function leave(Request $request, Room $room)
     {
         $player = $room->players()->where('user_id', $request->user()->id)->first();
         abort_unless($player, 403, 'أنت لست داخل هذه الغرفة');
-        $player->update(['connected' => false]);
-        return response()->json(['ok' => true, 'message' => 'تمت مغادرة الغرفة دون خصم توكنز.']);
+        $state=$room->state?:[]; $counts=(array)($state['manual_leave_counts']??[]);
+        $counts[(string)$request->user()->id]=min(3,(int)($counts[(string)$request->user()->id]??0)+1);
+        $state['manual_leave_counts']=$counts;
+        $state['messages'][]='🚪 غادر '.$request->user()->username.' الغرفة ('.$counts[(string)$request->user()->id].'/3).';
+        $room->update(['state'=>$state]); $player->update(['connected'=>false]);
+        return response()->json(['ok'=>true,'message'=>'تمت مغادرة الغرفة دون خصم توكنز.','returns_remaining'=>max(0,3-$counts[(string)$request->user()->id])]);
     }
 
     public function chat(Request $request, Room $room)

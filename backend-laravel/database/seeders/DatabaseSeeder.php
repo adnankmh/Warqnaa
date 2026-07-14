@@ -17,6 +17,37 @@ class DatabaseSeeder extends Seeder { public function run(): void {
    Wallet::updateOrCreate(['user_id'=>$u->id],['tokens'=>$tokens,'gems'=>0]);
  }
 
+ // V0.5 QA player group: created only for local/testing or when explicitly enabled.
+ // Never enable WARQNA_SEED_DEMO_USERS on a public production database.
+ if (app()->environment('local', 'testing') || filter_var(env('WARQNA_SEED_DEMO_USERS', false), FILTER_VALIDATE_BOOL)) {
+   $v05Players = [
+     ['Adel','adel@warqna.local','Warqna10!',8,'🇵🇸'],
+     ['Bayan','bayan@warqna.local','Warqna11!',14,'🇯🇴'],
+     ['Kenan','kenan@warqna.local','Warqna12!',21,'🇵🇸'],
+     ['Jamil','jamil@warqna.local','Warqna13!',29,'🇪🇬'],
+     ['Raad','raad@warqna.local','Warqna14!',37,'🇮🇶'],
+     ['Asim','asim@warqna.local','Warqna15!',45,'🇵🇸'],
+     ['Hossam','hossam@warqna.local','Warqna16!',53,'🇯🇴'],
+     ['Janan','janan@warqna.local','Warqna17!',61,'🇵🇸'],
+     ['Hoor','hoor@warqna.local','Warqna18!',69,'🇪🇬'],
+     ['Shahd','shahd@warqna.local','Warqna19!',77,'🇸🇦'],
+     ['Hala','hala@warqna.local','Warqna20!',85,'🇵🇸'],
+     ['Qamar','qamar@warqna.local','Warqna21!',95,'🇯🇴'],
+   ];
+   $qaClub = Club::updateOrCreate(
+     ['name'=>'Warqna QA Club'],
+     ['owner_id'=>$admin->id,'logo'=>'🛡️','description'=>'Local and CI quality-assurance players','visibility'=>'private','level'=>12,'capacity'=>50,'league_tier'=>'gold']
+   );
+   ClubMember::updateOrCreate(['club_id'=>$qaClub->id,'user_id'=>$admin->id],['role'=>'owner','permissions'=>['all'=>true],'weekly_points'=>0,'total_points'=>0]);
+   foreach ($v05Players as [$username,$email,$password,$level,$flag]) {
+     $u=User::updateOrCreate(['email'=>$email],['username'=>$username,'password'=>Hash::make($password),'is_admin'=>false,'is_banned'=>false]);
+     Profile::updateOrCreate(['user_id'=>$u->id],['display_name'=>$username,'avatar'=>$flag,'country_code'=>'PS','country_name'=>'Palestine','level'=>$level,'xp'=>$level*1800,'games_played'=>$level*18,'wins'=>$level*9,'name_color'=>'#38bdf8','chat_color'=>'#f8fafc','pasha_days'=>0,'badge'=>'qa']);
+     Wallet::updateOrCreate(['user_id'=>$u->id],['tokens'=>max(10000,$level*5000),'gems'=>0]);
+     ClubMember::updateOrCreate(['club_id'=>$qaClub->id,'user_id'=>$u->id],['role'=>'member','permissions'=>[],'weekly_points'=>$level*10,'total_points'=>$level*100]);
+   }
+ }
+
+
  
  // v131 only 15 working games: deactivate games outside curated stable catalog.
  if (\Illuminate\Support\Facades\Schema::hasTable('games')) { DB::table('games')->whereNotIn('key', ['tarneeb', 'tarneeb_41', 'tarneeb_61', 'syrian_tarneeb', 'tarneeb_400', 'hand', 'hand_partner', 'saudi_hand', 'pinochle', 'banakil', 'solitaire_multiplayer', 'trix', 'trix_partner', 'trix_complex', 'baloot', 'domino', 'basra', 'jackaroo', 'backgammon', 'chess'])->update(['active'=>false,'updated_at'=>now()]); DB::table('games')->whereIn('key', ['tarneeb', 'tarneeb_41', 'tarneeb_61', 'syrian_tarneeb', 'tarneeb_400', 'hand', 'hand_partner', 'saudi_hand', 'pinochle', 'banakil', 'solitaire_multiplayer', 'trix', 'trix_partner', 'trix_complex', 'baloot', 'domino', 'basra', 'jackaroo', 'backgammon', 'chess'])->update(['active'=>true,'updated_at'=>now()]); }

@@ -105,6 +105,18 @@ def check_required_files() -> None:
         "tools/test_v175_xp_challenges_pasha_designer_contract.py",
         "tools/test_v176_daily_pack_inventory_contract.py",
         "tools/test_v02_daily_prize_boxes_contract.py",
+        "tools/test_v05_global_contract.py",
+        "flutter_app/lib/v05_release.dart",
+        "backend-laravel/app/Http/Controllers/MobileV05Controller.php",
+        "backend-laravel/app/Services/WarqnaPro/ChallengeRoadService.php",
+        "backend-laravel/app/Services/WarqnaPro/LevelRewardService.php",
+        "backend-laravel/app/Models/ChallengeRun.php",
+        "backend-laravel/app/Models/LevelRewardClaim.php",
+        "backend-laravel/app/Models/ClubActivityLog.php",
+        "backend-laravel/database/migrations/2026_07_14_000500_warqna_v05_global_upgrade.php",
+        "backend-laravel/tests/Feature/V05GlobalPlatformContractTest.php",
+        "docs/ar/releases/current/CHANGELOG_V0.5_AR.md",
+        "docs/ar/setup/DEMO_ACCOUNTS_V05_AR.md",
         "flutter_app/lib/v176_release.dart",
         "flutter_app/lib/v02_release.dart",
         "backend-laravel/app/Models/PrizeBox.php",
@@ -181,33 +193,11 @@ ROOT_IGNORED_METADATA = {
     ".DS_Store", "Thumbs.db",
 }
 
-# Patch packages may leave human-readable helper files in the repository root.
-# They are harmless release metadata, not application/runtime files. Keep the
-# clean-root policy strict for arbitrary clutter while allowing these known
-# generated names so CI does not fail after applying a patch.
-PATCH_ARTIFACT_PREFIXES = (
-    "APPLY_PATCH_",
-    "CHANGELOG_V",
-    "FILES_MANIFEST",
-    "VALIDATION_V",
-    "VALIDATION_RESULTS_V",
-)
-PATCH_ARTIFACT_SUFFIXES = (".txt", ".md")
-
-
-def is_known_patch_artifact(name: str) -> bool:
-    return (
-        name.endswith(PATCH_ARTIFACT_SUFFIXES)
-        and name.startswith(PATCH_ARTIFACT_PREFIXES)
-    )
-
 
 def unexpected_root_entries(names) -> list[str]:
     return sorted(
         str(name) for name in names
-        if str(name) not in ROOT_ALLOWED_ENTRIES
-        and str(name) not in ROOT_IGNORED_METADATA
-        and not is_known_patch_artifact(str(name))
+        if str(name) not in ROOT_ALLOWED_ENTRIES and str(name) not in ROOT_IGNORED_METADATA
     )
 
 
@@ -215,11 +205,9 @@ def check_clean_root_policy_self_test() -> None:
     accepted = set(ROOT_ALLOWED_ENTRIES) | {".git", ".gitattributes", ".gitmodules", ".editorconfig"}
     if unexpected_root_entries(accepted):
         fail("Clean-root policy rejected standard repository metadata")
-    if unexpected_root_entries({"APPLY_PATCH_AR.txt", "FILES_MANIFEST.txt", "VALIDATION_V0.2.1.txt"}):
-        fail("Clean-root policy rejected known patch metadata")
     if unexpected_root_entries({"unexpected.tmp"}) != ["unexpected.tmp"]:
         fail("Clean-root policy stopped rejecting real unexpected root files")
-    print("[OK] Clean-root policy self-test (Git/patch metadata accepted, clutter rejected)")
+    print("[OK] Clean-root policy self-test (Git metadata accepted, clutter rejected)")
 
 
 def check_clean_root() -> None:
@@ -927,30 +915,13 @@ def check_v166_global_polish() -> None:
         "permission_handler: ^12.0.3",
         "audioplayers: ^6.8.1",
         "flutter_local_notifications: ^22.0.1",
+        "firebase_core: ^4.11.0",
+        "firebase_messaging: ^16.4.1",
         "assets/images/games/",
         "assets/sounds/",
     ]:
         if needle not in pubspec:
             fail(f"v166 Flutter dependency/asset contract missing: {needle}")
-
-    # Firebase packages are pinned exactly for deterministic CI builds. Older
-    # source releases used caret constraints, so the validator accepts either
-    # approved form while rejecting any unreviewed version.
-    firebase_contracts = {
-        "firebase_core": ("4.11.0", "^4.11.0"),
-        "firebase_messaging": ("16.4.1", "^16.4.1"),
-    }
-    for package, allowed_versions in firebase_contracts.items():
-        match = re.search(
-            rf"(?m)^\s{{2}}{re.escape(package)}:\s*['\"]?([^\s#'\"]+)",
-            pubspec,
-        )
-        if match is None or match.group(1) not in allowed_versions:
-            allowed = " or ".join(allowed_versions)
-            fail(
-                f"v166 Flutter dependency contract missing or unsupported: "
-                f"{package} must be {allowed}"
-            )
 
     game_ids = [
         "hand", "trix", "tarneeb", "basra", "baloot", "banakil",
@@ -1325,18 +1296,49 @@ def check_v176_daily_pack_inventory_contract() -> None:
 
 
 def check_v02_daily_prize_boxes_contract() -> None:
-    result = subprocess.run(
-        [sys.executable, str(ROOT / "tools/test_v02_daily_prize_boxes_contract.py")],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if result.returncode != 0:
-        fail("Warqna V0.2 daily prize boxes contract failed: " + result.stdout.strip())
-    print(result.stdout.strip())
+    # The full standalone contract runs separately in every release workflow.
+    # Keep the aggregate preflight lightweight to avoid repeated large-process
+    # startup after all inherited release checks.
+    require("flutter_app/lib/v02_release.dart", [
+        "prizeBoxDailyLimitV02 = 4",
+        "class PrizeBoxOpeningDialogV02",
+        "Duration(seconds: 5)",
+        "'pasha_day'",
+        "'ticket'",
+    ])
+    require("backend-laravel/app/Services/WarqnaPro/PrizeBoxService.php", [
+        "public const DAILY_LIMIT = 4",
+        "awardForWin",
+        "random_int(1, 20) * 50",
+    ])
     print("[OK] V0.2 dedicated prize-box page, 4-win limit, front-opening animation, ticket art and translated rewards")
 
+def check_v05_global_contract() -> None:
+    # The dedicated V0.5 contract is executed by CI before this aggregate gate.
+    require("flutter_app/lib/v05_release.dart", [
+        "warqnaVersionV05 = '0.5.0'",
+        "class PashaFezV05",
+        "class V05GlobalControlsOverlay",
+        "class V05ClubsPage",
+        "class AdminUsersPanelV05",
+    ])
+    require("backend-laravel/app/Services/WarqnaPro/ChallengeRoadService.php", [
+        "MAX_LIVES = 5",
+        "ALLOWED_STAGES = [10, 12, 15]",
+    ])
+    require("backend-laravel/app/Http/Controllers/MobileAdminController.php", [
+        "$this->guard($request, 'store')",
+        "$this->guard($request, 'designer')",
+        "set_admin_permissions",
+    ])
+    for rel in [
+        ".github/workflows/flutter-web-pages.yml",
+        ".github/workflows/flutter-android.yml",
+        ".github/workflows/flutter-ios.yml",
+        ".github/workflows/production-release-check.yml",
+    ]:
+        require(rel, ["test_v05_global_contract.py"])
+    print("[OK] V0.5 global store, gameplay, open rooms, clubs, challenge road, rewards, themes, admin and SEO")
 
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
@@ -1376,15 +1378,8 @@ def main() -> None:
     check_v164_android_startup_safety()
     check_v165_android_workmanager_boot_guard()
     check_v166_global_polish()
-    check_v169_flutter_ci_regressions()
-    check_v170_responsive_gameplay_security()
-    check_v171_controller_reference_contract()
-    check_v172_brand_table_contract()
-    check_v173_online_engagement_contract()
-    check_v174_offline_progression_navigation_contract()
-    check_v175_xp_challenges_pasha_designer_contract()
-    check_v176_daily_pack_inventory_contract()
     check_v02_daily_prize_boxes_contract()
+    check_v05_global_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

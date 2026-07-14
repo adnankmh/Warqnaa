@@ -60,18 +60,14 @@ Map<String, int> decodeIntMap(String? raw) {
 
 const List<(String, String, Color)> v151ThemeOptions = <(String, String, Color)>[
   ('dark', 'داكن فاخر', Color(0xffffcf67)),
-  ('emerald', 'زمردي ملكي', Color(0xff10b981)),
+  ('light', 'فاتح', Color(0xff315fbd)),
   ('royal', 'أزرق ملكي', Color(0xff3b82f6)),
-  ('purple', 'بنفسجي أسطوري', Color(0xffa855f7)),
-  ('classic', 'كلاسيكي دافئ', Color(0xffb77a42)),
-  ('crimson', 'قرمزي أسطوري', Color(0xffef334f)),
-  ('midnight', 'منتصف الليل', Color(0xff4f86ff)),
-  ('aurora', 'الشفق الفاخر', Color(0xff67e8f9)),
-  ('obsidian', 'أوبسيديان', Color(0xff6b7280)),
-  ('rose_gold', 'روز غولد', Color(0xfffb7185)),
-  ('desert', 'رمال الصحراء', Color(0xffd97706)),
-  ('forest', 'الغابة الملكية', Color(0xff16a34a)),
-  ('ice', 'الكريستال الجليدي', Color(0xff38bdf8)),
+  ('sky', 'أزرق سماوي', Color(0xff38bdf8)),
+  ('emerald', 'أخضر زمردي', Color(0xff10b981)),
+  ('green_light', 'أخضر فاتح', Color(0xff22c55e)),
+  ('gold', 'ذهبي', Color(0xffffcf67)),
+  ('purple', 'بنفسجي', Color(0xffa855f7)),
+  ('pink_light', 'وردي فاتح', Color(0xffec4899)),
 ];
 
 const List<String> v151AccentColors = <String>[

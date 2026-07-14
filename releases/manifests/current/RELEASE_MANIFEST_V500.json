@@ -1,0 +1,18 @@
+{
+  "version": "0.5.0",
+  "build": 500,
+  "display": "V0.5",
+  "type": "full-global-release",
+  "features": [
+    "server-authoritative store purchases and wallet validation",
+    "original red Pasha fez across the product",
+    "favorite home games and open-room player previews",
+    "club identity, delegated permissions and activity logs",
+    "challenge road with five lives and 10, 12 or 15 stages",
+    "level-up rewards and four daily victory prize boxes",
+    "fair strength-balanced dealing and missed-turn substitution",
+    "global language, theme and font controls",
+    "Adnan super-admin and delegated administration",
+    "web SEO and full-screen responsive gameplay"
+  ]
+}

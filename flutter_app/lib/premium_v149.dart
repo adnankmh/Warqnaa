@@ -40,14 +40,23 @@ class BotProfile {
 }
 
 const botProfiles = <BotProfile>[
-  BotProfile(id: 'asem', nameAr: 'عاصم', nameEn: 'Asem', seed: 11, level: 72, difficulty: BotDifficulty.pro, primary: Color(0xff2563eb), secondary: Color(0xff38bdf8), styleAr: 'تكتيكي متوازن', styleEn: 'Balanced tactician'),
-  BotProfile(id: 'jameel', nameAr: 'جميل', nameEn: 'Jameel', seed: 23, level: 68, difficulty: BotDifficulty.pro, primary: Color(0xff0f766e), secondary: Color(0xff34d399), styleAr: 'دفاعي وصبور', styleEn: 'Patient defender'),
-  BotProfile(id: 'layla_ai', nameAr: 'ليلى', nameEn: 'Layla', seed: 37, level: 76, difficulty: BotDifficulty.master, primary: Color(0xff7c3aed), secondary: Color(0xffd8b4fe), styleAr: 'قراءة متقدمة', styleEn: 'Advanced reader'),
-  BotProfile(id: 'samer_ai', nameAr: 'سامر', nameEn: 'Samer', seed: 41, level: 64, difficulty: BotDifficulty.pro, primary: Color(0xffb45309), secondary: Color(0xfffacc15), styleAr: 'هجومي ذكي', styleEn: 'Smart aggressor'),
-  BotProfile(id: 'nour_ai', nameAr: 'نور', nameEn: 'Nour', seed: 53, level: 70, difficulty: BotDifficulty.pro, primary: Color(0xffbe185d), secondary: Color(0xfffb7185), styleAr: 'إدارة أوراق دقيقة', styleEn: 'Precise hand control'),
-  BotProfile(id: 'basel_ai', nameAr: 'باسل', nameEn: 'Basel', seed: 67, level: 81, difficulty: BotDifficulty.master, primary: Color(0xff991b1b), secondary: Color(0xfff87171), styleAr: 'ضغط محسوب', styleEn: 'Calculated pressure'),
-  BotProfile(id: 'omar_ai', nameAr: 'عمر', nameEn: 'Omar', seed: 79, level: 74, difficulty: BotDifficulty.pro, primary: Color(0xff1d4ed8), secondary: Color(0xff93c5fd), styleAr: 'شريك موثوق', styleEn: 'Reliable partner'),
-  BotProfile(id: 'sara_ai', nameAr: 'سارة', nameEn: 'Sara', seed: 89, level: 78, difficulty: BotDifficulty.master, primary: Color(0xff9333ea), secondary: Color(0xfff0abfc), styleAr: 'مناورة احترافية', styleEn: 'Professional maneuvering'),
+  BotProfile(id: 'adnan_ai', nameAr: 'عدنان', nameEn: 'Adnan', seed: 11, level: 74, difficulty: BotDifficulty.pro, primary: Color(0xff2563eb), secondary: Color(0xff38bdf8), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'bayan_ai', nameAr: 'بيان', nameEn: 'Bayan', seed: 17, level: 68, difficulty: BotDifficulty.pro, primary: Color(0xff0f766e), secondary: Color(0xff34d399), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'kenan_ai', nameAr: 'كنان', nameEn: 'Kenan', seed: 23, level: 72, difficulty: BotDifficulty.pro, primary: Color(0xff7c3aed), secondary: Color(0xffd8b4fe), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'jameel_ai', nameAr: 'جميل', nameEn: 'Jamil', seed: 29, level: 64, difficulty: BotDifficulty.pro, primary: Color(0xffb45309), secondary: Color(0xfffacc15), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'raad_ai', nameAr: 'رعد', nameEn: 'Raad', seed: 31, level: 79, difficulty: BotDifficulty.master, primary: Color(0xffbe185d), secondary: Color(0xfffb7185), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'asim_ai', nameAr: 'عاصم', nameEn: 'Asim', seed: 37, level: 76, difficulty: BotDifficulty.master, primary: Color(0xff991b1b), secondary: Color(0xfff87171), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'moatasem_ai', nameAr: 'معتصم', nameEn: 'Moatasem', seed: 41, level: 70, difficulty: BotDifficulty.pro, primary: Color(0xff1d4ed8), secondary: Color(0xff93c5fd), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'hossam_ai', nameAr: 'حسام', nameEn: 'Hossam', seed: 43, level: 75, difficulty: BotDifficulty.pro, primary: Color(0xff9333ea), secondary: Color(0xfff0abfc), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'janan_ai', nameAr: 'جنان', nameEn: 'Janan', seed: 47, level: 66, difficulty: BotDifficulty.pro, primary: Color(0xff0e7490), secondary: Color(0xff67e8f9), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'hoor_ai', nameAr: 'حور', nameEn: 'Hoor', seed: 53, level: 71, difficulty: BotDifficulty.pro, primary: Color(0xffbe123c), secondary: Color(0xfffda4af), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'jannat_ai', nameAr: 'جنات', nameEn: 'Jannat', seed: 59, level: 77, difficulty: BotDifficulty.master, primary: Color(0xff047857), secondary: Color(0xff6ee7b7), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'alaa_ai', nameAr: 'آلاء', nameEn: 'Alaa', seed: 61, level: 69, difficulty: BotDifficulty.pro, primary: Color(0xff6d28d9), secondary: Color(0xffc4b5fd), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'afnan_ai', nameAr: 'أفنان', nameEn: 'Afnan', seed: 67, level: 73, difficulty: BotDifficulty.pro, primary: Color(0xffc2410c), secondary: Color(0xfffdba74), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'shahd_ai', nameAr: 'شهد', nameEn: 'Shahd', seed: 71, level: 80, difficulty: BotDifficulty.master, primary: Color(0xffa21caf), secondary: Color(0xfff5d0fe), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'hala_ai', nameAr: 'حلا', nameEn: 'Hala', seed: 73, level: 65, difficulty: BotDifficulty.pro, primary: Color(0xff0369a1), secondary: Color(0xff7dd3fc), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'shatha_ai', nameAr: 'شذى', nameEn: 'Shatha', seed: 79, level: 78, difficulty: BotDifficulty.master, primary: Color(0xff9f1239), secondary: Color(0xfffda4af), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
+  BotProfile(id: 'qamar_ai', nameAr: 'قمر', nameEn: 'Qamar', seed: 83, level: 82, difficulty: BotDifficulty.master, primary: Color(0xff4338ca), secondary: Color(0xffa5b4fc), styleAr: 'لعب عادل وقراءة تكتيكية', styleEn: 'Fair tactical play'),
 ];
 
 class Bot3DAvatar extends StatelessWidget {
@@ -279,7 +288,7 @@ const reactionCatalog = <ReactionItem>[
   ReactionItem('nervous', '😬', 'mood', 'متوتر', 'Nervous'),
   ReactionItem('confused', '😵‍💫', 'mood', 'محتار', 'Confused', animated: true),
   ReactionItem('silent', '🤐', 'mood', 'صامت', 'Silent'),
-  ReactionItem('pasha', '🎩', 'pasha', 'باشا', 'Pasha', animated: true),
+  ReactionItem('pasha', '🟥', 'pasha', 'باشا', 'Pasha', animated: true),
   ReactionItem('lion', '🦁', 'pasha', 'الأسد', 'Lion', animated: true),
   ReactionItem('eagle', '🦅', 'pasha', 'النسر', 'Eagle', animated: true),
   ReactionItem('palace', '🏰', 'pasha', 'القصر', 'Palace'),

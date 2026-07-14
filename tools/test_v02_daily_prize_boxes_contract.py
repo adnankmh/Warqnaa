@@ -27,8 +27,13 @@ def require(rel: str, *needles: str) -> str:
 
 def main() -> None:
     meta = json.loads((ROOT / "RELEASE_VERSION.json").read_text(encoding="utf-8"))
-    if not str(meta.get("version", "")).startswith("0.2."):
-        fail("release metadata is not in the V0.2 line")
+    version_parts = str(meta.get("version", "0.0.0")).split(".")
+    try:
+        major, minor = int(version_parts[0]), int(version_parts[1])
+    except (ValueError, IndexError):
+        fail("release metadata is invalid")
+    if (major, minor) < (0, 2):
+        fail("release predates the V0.2 prize-box foundation")
 
     main_dart = require(
         "flutter_app/lib/main.dart",

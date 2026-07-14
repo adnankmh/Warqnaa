@@ -125,7 +125,7 @@ class PashaHatV173 extends StatelessWidget {
   const PashaHatV173({super.key, required this.controller, this.width = 44, this.height, this.fit = BoxFit.contain});
   @override
   Widget build(BuildContext context) {
-    return Image.asset('assets/images/pasha.png', width: width, height: height ?? width * .68, fit: BoxFit.contain, filterQuality: FilterQuality.high, errorBuilder: (_, __, ___) => const Text('🎩'));
+    return Image.asset('assets/images/pasha.png', width: width, height: height ?? width * .68, fit: BoxFit.contain, filterQuality: FilterQuality.high, errorBuilder: (_, __, ___) => _RedFezFallbackV05(width: width, height: height ?? width * .68));
   }
 }
 

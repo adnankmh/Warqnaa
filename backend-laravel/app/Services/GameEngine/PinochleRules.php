@@ -3,6 +3,7 @@ namespace App\Services\GameEngine;
 
 class PinochleRules extends HandRules
 {
+    protected function firstMeldMinimum(): int|float { return 0; }
 
     protected function points($cards): int|float
     {
@@ -19,9 +20,9 @@ class PinochleRules extends HandRules
 
     public function initialState(array $players,array $options=[]): array
     {
-        $players=array_values($players); $deck=DeckFactory::pinochle();
+        $players=array_values($players);
         // بناكل كما في الألعاب العربية: 104 ورقة + جوكرين، 2 والجوكر أوراق مساعدة، و18 ورقة غالبًا لكل لاعب.
-        $cardsEach=count($players)<=2?18:min(18,intdiv(max(1,count($deck)-1),max(1,count($players))));
+        $cardsEach=count($players)<=2?18:18; $deck=DeckFactory::pinochle(true,count($players),$cardsEach); $cardsEach=min($cardsEach,intdiv(max(1,count($deck)-1),max(1,count($players))));
         [$hands,$deck]=$this->deal($players,$deck,$cardsEach); $discard=[]; if($deck)$discard[]=array_shift($deck)->id();
         $prevScores=$options['previous_scores'] ?? array_fill_keys($players,0); $round=(int)($options['round'] ?? 1);
         return ['phase'=>'playing','game_type'=>'banakil','players'=>$players,'teams'=>$this->teams($players),'turn'=>$players[0]??null,'hands'=>$hands,'deck'=>array_map(fn($c)=>$c->id(),$deck),'discard'=>$discard,

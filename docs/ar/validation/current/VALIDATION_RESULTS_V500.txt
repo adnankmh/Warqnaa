@@ -1,0 +1,28 @@
+Warqna V0.5.0+500 — Source Validation Summary
+Date: 2026-07-14
+
+PASSED
+- Release metadata consistency: 0.5.0+500
+- Clean project-root policy
+- No merge-conflict markers or corrupt text controls
+- 11 dedicated Python feature/CI contracts
+- Aggregate source-package preflight
+- PHP syntax: 275 files
+- Dart syntax parse (tree-sitter): 28 files
+- JSON syntax: 44 files
+- YAML syntax/structure: 15 files
+- Shell syntax: 32 files
+- V0.5 contract: store, gameplay, rooms, clubs, challenges, rewards, themes, admin and SEO
+- V0.2 inherited prize-box and ticket assets contract
+- Versioned release launchers and GitHub Actions contract
+
+RUNTIME CHECKS DEFERRED TO GITHUB ACTIONS
+- flutter analyze
+- flutter test
+- flutter build web --release
+- flutter build apk/appbundle --release
+- composer install
+- php artisan migrate:fresh --seed
+- php artisan test
+
+Reason: Flutter SDK, Dart SDK, Composer and Laravel vendor dependencies are not installed in the artifact-preparation container. The workflows are configured to run those checks automatically after Push origin.

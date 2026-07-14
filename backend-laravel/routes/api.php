@@ -14,7 +14,8 @@ use App\Http\Controllers\{
     MobileAuthRecoveryController,
     SocialAuthController,
     MobilePushController,
-    MobileEngagementController
+    MobileEngagementController,
+    MobileV05Controller
 };
 
 // Backward-compatible public aliases for older Flutter/PWA builds. They
@@ -59,6 +60,13 @@ Route::prefix('mobile/v1')->group(function () {
         Route::post('/challenges/{challengeKey}/activate', [MobileEngagementController::class, 'activateChallenge'])->middleware('throttle:warqna-sensitive');
         Route::post('/challenges/{challengeKey}/claim', [MobileEngagementController::class, 'claimChallenge'])->middleware('throttle:warqna-sensitive');
         Route::post('/competitions/{competitionKey}/join', [MobileEngagementController::class, 'joinCompetition'])->middleware('throttle:warqna-sensitive');
+        Route::get('/v05/challenge-road', [MobileV05Controller::class, 'challenge']);
+        Route::post('/v05/challenge-road/start', [MobileV05Controller::class, 'startChallenge'])->middleware('throttle:warqna-sensitive');
+        Route::get('/v05/clubs', [MobileV05Controller::class, 'clubs']);
+        Route::get('/v05/clubs/{club}', [MobileV05Controller::class, 'club']);
+        Route::patch('/v05/clubs/{club}', [MobileV05Controller::class, 'updateClub'])->middleware('throttle:warqna-sensitive');
+        Route::patch('/v05/clubs/{club}/members/{member}', [MobileV05Controller::class, 'updateMember'])->middleware('throttle:warqna-sensitive');
+        Route::get('/v05/clubs/{club}/logs', [MobileV05Controller::class, 'logs']);
 
         Route::get('/account/export', [MobileAccountController::class, 'export'])->middleware('throttle:warqna-sensitive');
         Route::get('/account/sessions', [MobileAccountController::class, 'sessions']);

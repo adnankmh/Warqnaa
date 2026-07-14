@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.2.2');
-const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 178);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.5.0');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 500);
 
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})
@@ -189,11 +189,28 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> voiceControls(String code, {required bool muted, required bool deafened}) =>
       patch('/games/session/$code/voice/controls', {'muted': muted, 'deafened': deafened});
   Future<Map<String, dynamic>> voiceLeave(String code) => post('/games/session/$code/voice/leave', const {});
+  Future<Map<String, dynamic>> challengeRoadV05() => get('/v05/challenge-road');
+  Future<Map<String, dynamic>> startChallengeRoadV05(String game, {int stages = 15}) => post('/v05/challenge-road/start', {'game': game, 'stages': stages});
+  Future<Map<String, dynamic>> clubsV05() => get('/v05/clubs');
+  Future<Map<String, dynamic>> clubV05(int clubId) => get('/v05/clubs/$clubId');
+  Future<Map<String, dynamic>> updateClubV05(int clubId, Map<String, dynamic> payload) => patch('/v05/clubs/$clubId', payload);
+  Future<Map<String, dynamic>> updateClubMemberV05(int clubId, int memberId, {required String role, required Map<String, bool> permissions}) =>
+      patch('/v05/clubs/$clubId/members/$memberId', {'role': role, 'permissions': permissions});
+  Future<Map<String, dynamic>> clubLogsV05(int clubId) => get('/v05/clubs/$clubId/logs');
+
   Future<Map<String, dynamic>> adminDashboard() => get('/admin/dashboard');
-  Future<Map<String, dynamic>> adminUserAction(int userId, String action, {String? amount}) =>
+  Future<Map<String, dynamic>> adminUserAction(
+    int userId,
+    String action, {
+    int? amount,
+    int? level,
+    Map<String, bool>? permissions,
+  }) =>
       post('/admin/users/$userId/action', {
         'action': action,
         if (amount != null) 'amount': amount,
+        if (level != null) 'level': level,
+        if (permissions != null) 'permissions': permissions,
       });
   Future<Map<String, dynamic>> adminDesignerEntitiesV173() => get('/admin/designer');
   Future<Map<String, dynamic>> upsertAdminDesignerEntityV173({

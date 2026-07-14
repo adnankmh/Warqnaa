@@ -207,7 +207,7 @@ class MobileSocialController extends Controller
     public function transfer(Request $request, WalletService $wallet, ProductionConfigService $productionConfig)
     {
         abort_unless($productionConfig->enabled('token_transfers', true), 503, 'تحويل التوكنز متوقف مؤقتًا.');
-        $data = $request->validate(['receiver' => 'required|string|max:120', 'amount' => 'required|integer|min:1|max:1000000000000']);
+        $data = $request->validate(['receiver' => 'required|string|max:120', 'amount' => 'required|integer|min:10|max:1000000000000']);
         $sender = $request->user();
         $receiver = User::where('username', $data['receiver'])->orWhere('email', $data['receiver'])->first();
         abort_unless($receiver, 404, 'لم يتم العثور على المستلم');

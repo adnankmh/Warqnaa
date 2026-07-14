@@ -241,7 +241,8 @@ class ResponsiveAccountStatsV170 extends StatelessWidget {
             onTap: () => showWallet(context, controller),
           ),
           _AccountMetricV170(
-            icon: '🎩',
+            icon: '',
+            leading: const PashaFezV05(size: 25),
             label: L.t(controller.localeCode, 'vip'),
             value: '${controller.vipDays} ${L.t(controller.localeCode, 'days')}',
             details: controller.vipDays > 0 ? 'مزايا الباشا فعّالة' : 'اضغط للترقية',
@@ -266,10 +267,11 @@ class _AccountMetricV170 extends StatelessWidget {
   final String label;
   final String value;
   final String details;
+  final Widget? leading;
   final double? progress;
   final Color? accent;
   final VoidCallback onTap;
-  const _AccountMetricV170({required this.icon,required this.label,required this.value,required this.details,required this.onTap,this.progress,this.accent});
+  const _AccountMetricV170({required this.icon,required this.label,required this.value,required this.details,required this.onTap,this.leading,this.progress,this.accent});
   @override
   Widget build(BuildContext context)=>InkWell(
     onTap:onTap,
@@ -278,7 +280,7 @@ class _AccountMetricV170 extends StatelessWidget {
       constraints:const BoxConstraints(minHeight:94),
       padding:const EdgeInsets.all(11),
       child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[
-        Row(children:[Text(icon,style:const TextStyle(fontSize:18)),const SizedBox(width:5),Expanded(child:Text(label,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white60,fontSize:10,fontWeight:FontWeight.w800)))]),
+        Row(children:[leading ?? Text(icon,style:const TextStyle(fontSize:18)),const SizedBox(width:5),Expanded(child:Text(label,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white60,fontSize:10,fontWeight:FontWeight.w800)))]),
         const SizedBox(height:4),
         FittedBox(fit:BoxFit.scaleDown,alignment:AlignmentDirectional.centerStart,child:Text(value,maxLines:1,style:TextStyle(fontWeight:FontWeight.w900,fontSize:17,color:accent))),
         const SizedBox(height:3),
@@ -355,7 +357,7 @@ class ProductCardV170 extends StatelessWidget {
           ]),
           const SizedBox(height:7),
           Expanded(child:Container(width:double.infinity,padding:EdgeInsets.all(isPasha?6:0),decoration:BoxDecoration(color:Colors.black.withValues(alpha:.14),borderRadius:BorderRadius.circular(20)),child:Center(child:isPasha
-              ? Image.asset('assets/images/pasha.png',fit:BoxFit.contain,width:double.infinity,height:double.infinity,filterQuality:FilterQuality.high,errorBuilder:(_,__,___)=>const Text('🎩',style:TextStyle(fontSize:72)))
+              ? Image.asset('assets/images/pasha.png',fit:BoxFit.contain,width:double.infinity,height:double.infinity,filterQuality:FilterQuality.high,errorBuilder:(_,__,___)=>const _RedFezFallbackV05(width:96,height:70))
               : InkWell(onTap:()=>showProductPreview(context,controller,product),borderRadius:BorderRadius.circular(20),child:Center(child:_CompactProductPreview(controller:controller,product:product)))))),
           const SizedBox(height:9),
           Text(controller.nameFor(product),textAlign:TextAlign.center,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16,height:1.25)),
@@ -366,7 +368,7 @@ class ProductCardV170 extends StatelessWidget {
           if (expiryLabel != null) ...[const SizedBox(height:5), Container(padding:const EdgeInsets.symmetric(horizontal:9,vertical:5),decoration:BoxDecoration(color:Colors.orangeAccent.withValues(alpha:.12),borderRadius:BorderRadius.circular(20),border:Border.all(color:Colors.orangeAccent.withValues(alpha:.35))),child:Text('⌛ $expiryLabel',textAlign:TextAlign.center,style:const TextStyle(color:Colors.orangeAccent,fontSize:10,fontWeight:FontWeight.w900)))],
           const SizedBox(height:8),
           if (isPasha)
-            SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:() async { if(owned && !product.reusable){ controller.activateProduct(product); showToast(context,'تم تفعيل ${controller.nameFor(product)}.'); return; } final confirmed=await showDialog<bool>(context:context,builder:(dialogContext)=>AlertDialog(icon:Image.asset('assets/images/pasha.png',height:100,fit:BoxFit.contain),title:Text(controller.nameFor(product)),content:Text('${controller.descriptionFor(product)}\n\nالسعر: ${formatNumber(controller.priceFor(product))} توكن'),actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),child:Text(owned?'تفعيل':'شراء'))])); if(confirmed==true && context.mounted){ if(owned){controller.activateProduct(product);showToast(context,'تم التفعيل.');}else{final ok=await controller.buy(product);if(context.mounted)showToast(context,ok?'تم شراء الباشا وتفعيله.':'تعذر الشراء. تحقق من الاتصال والرصيد.');}} },icon:const Icon(Icons.workspace_premium),label:Text(owned?'تفعيل الباشا':'شراء الباشا'),style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(50))))
+            SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:() async { if(owned && !product.reusable){ controller.activateProduct(product); showToast(context,'تم تفعيل ${controller.nameFor(product)}.'); return; } final confirmed=await showDialog<bool>(context:context,builder:(dialogContext)=>AlertDialog(icon:Image.asset('assets/images/pasha.png',height:100,fit:BoxFit.contain),title:Text(controller.nameFor(product)),content:Text('${controller.descriptionFor(product)}\n\nالسعر: ${formatNumber(controller.priceFor(product))} توكن'),actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),child:Text(owned?'تفعيل':'شراء'))])); if(confirmed==true && context.mounted){ if(owned){controller.activateProduct(product);showToast(context,'تم التفعيل.');}else{final ok=await controller.buy(product);if(context.mounted)showToast(context,ok?'تم شراء الباشا وتفعيله.':(controller.lastPurchaseErrorV05 ?? V05Text.t(controller.localeCode,'storePurchaseUnavailable')));}} },icon:const Icon(Icons.workspace_premium),label:Text(owned?'تفعيل الباشا':'شراء الباشا'),style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(50))))
           else
             Row(children:[Expanded(child:OutlinedButton.icon(onPressed:()=>showProductPreview(context,controller,product),icon:const Icon(Icons.visibility_outlined,size:17),label:Text(L.t(controller.localeCode,'preview'),maxLines:1,overflow:TextOverflow.ellipsis),style:OutlinedButton.styleFrom(minimumSize:const Size.fromHeight(48),padding:const EdgeInsets.symmetric(horizontal:8)))),const SizedBox(width:7),Expanded(child:FilledButton(onPressed:() async { if(owned && !product.reusable){controller.activateProduct(product);showToast(context,'تم تفعيل ${controller.nameFor(product)}.');return;}await showProductPreview(context,controller,product);},style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(48),padding:const EdgeInsets.symmetric(horizontal:8)),child:FittedBox(child:Text(owned&&!product.reusable?'تفعيل':L.t(controller.localeCode,'buy'),style:const TextStyle(fontWeight:FontWeight.w900)))))]),
         ]),
@@ -431,6 +433,9 @@ Future<void> showPublicPlayerProfileV170(BuildContext context, AppController con
         clubPoints: int.tryParse(map['club_points']?.toString() ?? '') ?? friend.clubPoints,
         nameColor: map['name_color']?.toString() ?? friend.nameColor,
         badge: map['badge']?.toString() ?? friend.badge,
+        clubName: map['club'] is Map ? (map['club'] as Map)['name']?.toString() : friend.clubName,
+        clubLogo: map['club'] is Map ? (map['club'] as Map)['logo']?.toString() : friend.clubLogo,
+        clubImage: map['club'] is Map ? (map['club'] as Map)['image_url']?.toString() : friend.clubImage,
       );
     } catch (_) {}
   }
@@ -491,6 +496,23 @@ Future<void> showPublicPlayerProfileV170(BuildContext context, AppController con
           ]),
         ),
       ),
+      if (visible.clubName != null && visible.clubName!.trim().isNotEmpty) ...[
+        const SizedBox(height: 10),
+        PremiumPanel(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(children: <Widget>[
+              ClubIdentityV05(club: <String, dynamic>{'name': visible.clubName, 'logo': visible.clubLogo, 'image_url': visible.clubImage}, size: 58),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                const Text('النادي / المجموعة', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                Text(visible.clubName!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+              ])),
+              const Icon(Icons.verified_rounded, color: Colors.lightBlueAccent),
+            ]),
+          ),
+        ),
+      ],
       const SizedBox(height: 10),
       PremiumPanel(
         child: Padding(
@@ -499,7 +521,7 @@ Future<void> showPublicPlayerProfileV170(BuildContext context, AppController con
             Icon(visible.online ? Icons.circle : Icons.circle_outlined, size: 13, color: visible.online ? Colors.greenAccent : Colors.white38),
             const SizedBox(width: 8),
             Expanded(child: Text(visible.online ? 'متصل الآن' : visible.activity, style: const TextStyle(fontWeight: FontWeight.w800))),
-            if (visible.pashaDays > 0) Flexible(child: Text('🎩 باشا ${visible.pashaDays} يوم', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900))),
+            if (visible.pashaDays > 0) Flexible(child: Text('باشا ${visible.pashaDays} يوم', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900))),
           ]),
         ),
       ),
