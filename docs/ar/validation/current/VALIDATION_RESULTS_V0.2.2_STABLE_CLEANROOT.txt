@@ -1,0 +1,30 @@
+Warqna V0.2.2+178 — Stable Clean-Root Correction
+Date: 2026-07-14
+
+Implemented corrections:
+- Fixed tools/validate_release.py so known patch metadata files are accepted while arbitrary root clutter remains rejected.
+- Added the exact regression case used by GitHub Actions:
+  APPLY_PATCH_AR.md
+  CHANGELOG_V0.2.1_AR.md
+  FILES_MANIFEST.txt
+  VALIDATION_V0.2.1.txt
+- Preserved rejection of unknown files such as rogue.txt.
+- Pinned Firebase dependencies for deterministic Flutter CI:
+  firebase_core 4.11.0
+  firebase_messaging 16.4.1
+- Updated the release validator to accept the approved exact or legacy caret Firebase constraints.
+
+Validation completed in the build environment:
+- tools/validate_release.py: PASS, including final v178 preflight line.
+- 10 Python release/feature contract tests: PASS.
+- Exact user clean-root regression case: PASS.
+- PHP syntax audit: PASS (305 PHP files).
+- Bash syntax audit: PASS (31 shell files).
+- JSON parsing: PASS (43 files).
+- YAML parsing: PASS (15 files).
+- Dart delimiter/static contract checks: PASS.
+
+Unavailable in this build environment:
+- flutter analyze / flutter test / APK / AAB / Web compilation, because Flutter SDK is not installed locally.
+- php artisan test, because Composer dependencies/vendor are not available locally.
+These remain enabled in GitHub Actions and are the authoritative runtime checks after upload.

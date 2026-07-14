@@ -1,9 +1,0 @@
-Warqna V0.2.3 Flutter Analyzer Hotfix
-
-انسخ مجلد flutter_app الموجود هنا إلى جذر مشروع Warqnaa ووافق على استبدال الملفات الثلاثة.
-ثم Commit to main وبعدها Push origin من GitHub Desktop.
-
-الإصلاحات:
-- حذف الدالة غير المستخدمة _roomPlayerAsFriend.
-- إضافة دالة XP مشتركة xpNeededForLevelV175 للاستخدام خارج AppController.
-- إصلاح وسيط online الإلزامي في لاعب لوحة الصدارة.

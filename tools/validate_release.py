@@ -181,11 +181,33 @@ ROOT_IGNORED_METADATA = {
     ".DS_Store", "Thumbs.db",
 }
 
+# Patch packages may leave human-readable helper files in the repository root.
+# They are harmless release metadata, not application/runtime files. Keep the
+# clean-root policy strict for arbitrary clutter while allowing these known
+# generated names so CI does not fail after applying a patch.
+PATCH_ARTIFACT_PREFIXES = (
+    "APPLY_PATCH_",
+    "CHANGELOG_V",
+    "FILES_MANIFEST",
+    "VALIDATION_V",
+    "VALIDATION_RESULTS_V",
+)
+PATCH_ARTIFACT_SUFFIXES = (".txt", ".md")
+
+
+def is_known_patch_artifact(name: str) -> bool:
+    return (
+        name.endswith(PATCH_ARTIFACT_SUFFIXES)
+        and name.startswith(PATCH_ARTIFACT_PREFIXES)
+    )
+
 
 def unexpected_root_entries(names) -> list[str]:
     return sorted(
         str(name) for name in names
-        if str(name) not in ROOT_ALLOWED_ENTRIES and str(name) not in ROOT_IGNORED_METADATA
+        if str(name) not in ROOT_ALLOWED_ENTRIES
+        and str(name) not in ROOT_IGNORED_METADATA
+        and not is_known_patch_artifact(str(name))
     )
 
 
@@ -193,9 +215,11 @@ def check_clean_root_policy_self_test() -> None:
     accepted = set(ROOT_ALLOWED_ENTRIES) | {".git", ".gitattributes", ".gitmodules", ".editorconfig"}
     if unexpected_root_entries(accepted):
         fail("Clean-root policy rejected standard repository metadata")
+    if unexpected_root_entries({"APPLY_PATCH_AR.txt", "FILES_MANIFEST.txt", "VALIDATION_V0.2.1.txt"}):
+        fail("Clean-root policy rejected known patch metadata")
     if unexpected_root_entries({"unexpected.tmp"}) != ["unexpected.tmp"]:
         fail("Clean-root policy stopped rejecting real unexpected root files")
-    print("[OK] Clean-root policy self-test (Git metadata accepted, clutter rejected)")
+    print("[OK] Clean-root policy self-test (Git/patch metadata accepted, clutter rejected)")
 
 
 def check_clean_root() -> None:
@@ -909,9 +933,9 @@ def check_v166_global_polish() -> None:
         if needle not in pubspec:
             fail(f"v166 Flutter dependency/asset contract missing: {needle}")
 
-    # Firebase is deliberately pinned exactly for deterministic CI.  Older
-    # releases used caret constraints, so the release gate accepts both forms
-    # while still requiring the approved versions.
+    # Firebase packages are pinned exactly for deterministic CI builds. Older
+    # source releases used caret constraints, so the validator accepts either
+    # approved form while rejecting any unreviewed version.
     firebase_contracts = {
         "firebase_core": ("4.11.0", "^4.11.0"),
         "firebase_messaging": ("16.4.1", "^16.4.1"),

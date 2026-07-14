@@ -1,0 +1,16 @@
+طريقة تركيب النسخة المقسمة إلى جزأين
+
+1) أغلق GitHub Desktop وXAMPP مؤقتاً.
+2) احتفظ بنسخة احتياطية من C:\xampp\htdocs\Warqnaa ومن مجلد .git المخفي.
+3) افتح ملف PART-1 واستخرج محتوياته مباشرة داخل C:\xampp\htdocs\Warqnaa.
+4) افتح ملف PART-2 واستخرج محتوياته إلى المجلد نفسه.
+5) وافق على دمج المجلدات. لا يوجد ملف مشروع مكرر بين الجزأين.
+6) لا تنشئ مجلداً إضافياً مثل Warqnaa\Warqna-V0.2.2.
+7) افتح GitHub Desktop ثم Commit to main ثم Push origin.
+8) راقب Actions: Production Release Gate ثم Backend CI ثم Web ثم Android.
+
+المسارات الصحيحة بعد الدمج:
+C:\xampp\htdocs\Warqnaa\.github
+C:\xampp\htdocs\Warqnaa\flutter_app
+C:\xampp\htdocs\Warqnaa\backend-laravel
+C:\xampp\htdocs\Warqnaa\tools
