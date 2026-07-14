@@ -40,7 +40,7 @@ class MobileApiController extends Controller
             'ok' => true,
             'message' => 'تم إنشاء الحساب بنجاح',
             'token' => $token,
-            'user' => $user->fresh()->load('profile','clubMembership.club','adminDelegation')->publicProfile(),
+            'user' => $user->fresh('profile')->publicProfile(),
             'wallet' => $this->walletPayload($user),
         ], 201);
     }
@@ -65,7 +65,7 @@ class MobileApiController extends Controller
         return response()->json([
             'ok' => true,
             'token' => $user->createToken('mobile', ['*'], now()->addDays(30))->plainTextToken,
-            'user' => $user->load('profile','clubMembership.club','adminDelegation')->publicProfile(),
+            'user' => $user->load('profile')->publicProfile(),
             'wallet' => $this->walletPayload($user),
             'streak_reward' => $streakReward,
             'account_reactivated' => $reactivated,
@@ -78,7 +78,7 @@ class MobileApiController extends Controller
         $catalog->sync();
         $user = $this->ensurePrimaryAdmin($request->user());
         $user->update(['last_seen_at'=>now()]);
-        $user->load('profile', 'wallet', 'clubMembership.club', 'adminDelegation');
+        $user->load('profile', 'wallet');
         return response()->json([
             'ok' => true,
             'user' => $user->publicProfile(),
@@ -121,7 +121,7 @@ class MobileApiController extends Controller
     public function profile(Request $request)
     {
         $user = $this->ensurePrimaryAdmin($request->user());
-        $user->load('profile', 'wallet', 'clubMembership.club', 'adminDelegation');
+        $user->load('profile', 'wallet');
         return response()->json(['ok' => true, 'user' => $user->publicProfile(), 'wallet' => $this->walletPayload($user)]);
     }
 
@@ -162,7 +162,7 @@ class MobileApiController extends Controller
         if (isset($data['pasha_style'])) $profile->pasha_style = 'red';
         $profile->save();
 
-        return response()->json(['ok' => true, 'message' => 'تم تحديث الملف الشخصي', 'user' => $request->user()->fresh()->load('profile','clubMembership.club','adminDelegation')->publicProfile()]);
+        return response()->json(['ok' => true, 'message' => 'تم تحديث الملف الشخصي', 'user' => $request->user()->fresh('profile')->publicProfile()]);
     }
 
     public function wallet(Request $request)
@@ -183,24 +183,13 @@ class MobileApiController extends Controller
         ]);
     }
 
-    public function purchase(Request $request, WalletService $wallet)
+    public function purchase(Request $request, WalletService $wallet, StoreCatalogService $catalog)
     {
         $data = $request->validate(['key' => 'required|string|max:120', 'confirmed' => 'required|accepted']);
         $user = $request->user();
+        $catalog->sync();
         $item = StoreItem::where('key', $data['key'])->where('active', true)->first();
-        if (!$item) {
-            // Older installations may not have synchronized the current mobile
-            // catalog yet. Sync once, then resolve the same server-owned key.
-            app(StoreCatalogService::class)->sync();
-            $item = StoreItem::where('key', $data['key'])->where('active', true)->first();
-        }
-        if (!$item) {
-            return response()->json([
-                'ok'=>false,
-                'message'=>'عنصر المتجر غير متزامن مع الخادم. حدّث قاعدة البيانات ثم أعد المحاولة.',
-                'wallet'=>$this->walletPayload($user),
-            ], 404);
-        }
+        if (!$item) return response()->json(['ok'=>false,'message'=>'هذا العنصر غير متاح حالياً أو لم تتم مزامنته مع المتجر.'], 404);
         if ($item->category === 'competition_ticket') {
             $denomination = (int) data_get($item->payload, 'denomination', 0);
             abort_if($denomination <= 0, 422, 'فئة التذكرة غير صحيحة.');
@@ -219,32 +208,20 @@ class MobileApiController extends Controller
                         $wallet->credit($admin, (int)$item->price, 'store_revenue', ['buyer_id'=>$user->id,'store_item_id'=>$item->id,'key'=>$item->key]);
                     }
                 });
-            } catch (\RuntimeException $exception) {
-                return response()->json([
-                    'ok'=>false,
-                    'message'=>$exception->getMessage()==='Insufficient tokens' ? 'رصيد التوكنز على الخادم غير كافٍ.' : 'تعذر إكمال شراء التذكرة.',
-                    'wallet'=>$this->walletPayload($user->fresh()),
-                ], 422);
+            } catch (\RuntimeException) {
+                return response()->json(['ok'=>false,'message'=>'رصيد التوكنز غير كافٍ'], 422);
             }
             return response()->json([
                 'ok'=>true,'message'=>'تم شراء تذكرة المنافسة','wallet'=>$this->walletPayload($user->fresh()),
-                'charged_price'=>(string)$item->price,
                 'tickets'=>CompetitionTicket::where('user_id',$user->id)->pluck('quantity','denomination')->map(fn($value)=>(int)$value)->all(),
             ]);
         }
-        $timedReusable = in_array($item->category, ['pasha','xp_booster','name_color','text_color','table','profile_cover'], true)
-            && (int)($item->duration_days ?? 0) > 0;
-        $alreadyOwned = $user->inventoryItems()->where('store_item_id', $item->id)->exists();
-        if ($alreadyOwned && !$timedReusable) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'العنصر مملوك مسبقاً ويمكن تفعيله من مقتنياتي.',
-                'wallet' => $this->walletPayload($user),
-            ], 409);
-        }
+        $renewable = (bool) $item->duration_days || in_array($item->category, ['pasha','xp_booster'], true);
+        $existingInventory = $user->inventoryItems()->where('store_item_id', $item->id)->latest('id')->first();
+        if ($existingInventory && !$renewable) return response()->json(['ok' => false, 'message' => 'العنصر مملوك مسبقاً ويمكن تفعيله من المقتنيات.'], 409);
 
         try {
-            $inventory = DB::transaction(function () use ($user, $item, $wallet, $timedReusable) {
+            $inventory = DB::transaction(function () use ($user, $item, $wallet, $renewable, $existingInventory) {
                 $wallet->debit($user, (int) $item->price, 'store_purchase', [
                     'store_item_id' => $item->id,
                     'key' => $item->key,
@@ -268,14 +245,13 @@ class MobileApiController extends Controller
                         ->update(['active' => false]);
                 }
 
-                $existing = $timedReusable
-                    ? $user->inventoryItems()->where('store_item_id', $item->id)->latest('id')->first()
-                    : null;
-                $baseExpiry = $existing?->expires_at && $existing->expires_at->isFuture() ? $existing->expires_at : now();
-                $expiresAt = $item->duration_days ? $baseExpiry->copy()->addDays((int)$item->duration_days) : null;
-                if ($existing) {
-                    $existing->update(['active'=>true,'activated_at'=>now(),'expires_at'=>$expiresAt]);
-                    $inventory = $existing->fresh();
+                $baseExpiry = $existingInventory?->expires_at && $existingInventory->expires_at->isFuture()
+                    ? $existingInventory->expires_at->copy()
+                    : now();
+                $expiresAt = $item->duration_days ? $baseExpiry->addDays((int) $item->duration_days) : null;
+                if ($renewable && $existingInventory) {
+                    $existingInventory->update(['active'=>true,'activated_at'=>now(),'expires_at'=>$expiresAt]);
+                    $inventory = $existingInventory->fresh();
                 } else {
                     $inventory = $user->inventoryItems()->create([
                         'store_item_id' => $item->id,
@@ -288,18 +264,13 @@ class MobileApiController extends Controller
                 $this->activateStoreItem($user, $item);
                 return $inventory;
             });
-        } catch (\RuntimeException $exception) {
-            return response()->json([
-                'ok' => false,
-                'message' => $exception->getMessage() === 'Insufficient tokens' ? 'رصيد التوكنز على الخادم غير كافٍ.' : 'تعذر إكمال عملية الشراء.',
-                'wallet' => $this->walletPayload($user->fresh()),
-            ], 422);
+        } catch (\RuntimeException) {
+            return response()->json(['ok' => false, 'message' => 'رصيد التوكنز غير كافٍ'], 422);
         }
 
         return response()->json([
             'ok' => true,
             'message' => 'تم الشراء والتفعيل بنجاح',
-            'charged_price' => (string)$item->price,
             'wallet' => $this->walletPayload($user->fresh()),
             'profile' => $user->profile?->fresh(),
             'inventory_item' => $inventory->load('storeItem'),

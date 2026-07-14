@@ -2,7 +2,7 @@
   "scripts": {
     "socket": "node server/index.js",
     "socket:dev": "nodemon server/index.js",
-    "cap:init": "npx cap init \"Warqna Zone\" \"com.warqna.zone\" --web-dir=public",
+    "cap:init": "npx cap init \"Warqnaa\" \"com.warqna.zone\" --web-dir=public",
     "cap:add:android": "npx cap add android",
     "cap:sync": "npx cap sync android",
     "apk:prepare": "npm install && npm run cap:sync",
@@ -28,5 +28,5 @@
   },
   "name": "warqna-zone",
   "version": "1.39.0",
-  "description": "Warqna Zone Laravel PWA and Android cloud-build wrapper without local Android Studio"
+  "description": "Warqnaa Laravel PWA and Android cloud-build wrapper without local Android Studio"
 }

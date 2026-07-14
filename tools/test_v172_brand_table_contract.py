@@ -90,7 +90,7 @@ def main() -> None:
     if "assets/images/brand/warqna_logo.png" not in topbar:
         fail("Top bar does not display the Warqna brand")
     web = (ROOT / "flutter_app/web/index.html").read_text(encoding="utf-8")
-    if '<img src="icons/Icon-192.png" alt="Warqna">' not in web:
+    if '<img src="icons/Icon-192.png" alt="Warqnaa">' not in web:
         fail("Web install card does not use the new brand icon")
 
     backend = BACKEND.read_text(encoding="utf-8")

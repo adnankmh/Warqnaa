@@ -3,10 +3,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>@yield('title','Warqna Zone | منصة ألعاب ورق عربية')</title>
-    <meta name="description" content="Warqna Zone منصة ألعاب ورق عربية اجتماعية: طرنيب، هاند، بناكل، بلوت، تركس، دومينو وطاولة مع غرف، مجموعات، منافسات ومتجر.">
+    <title>@yield('title','Warqnaa | منصة ألعاب ورق عربية')</title>
+    <meta name="description" content="Warqnaa منصة ألعاب ورق عربية اجتماعية: طرنيب، هاند، بناكل، بلوت، تركس، دومينو وطاولة مع غرف، مجموعات، منافسات ومتجر.">
     <meta name="keywords" content="ألعاب ورق, طرنيب, هاند, بناكل, بلوت, تركس, دومينو, طاولة, Warqna">
-    <meta property="og:title" content="Warqna Zone">
+    <meta property="og:title" content="Warqnaa">
     <meta property="og:description" content="منصة ألعاب ورق عربية احترافية وآمنة وممتعة.">
     <meta name="theme-color" content="#0B3F1D">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -21,7 +21,7 @@
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:type" content="website">
     <script type="application/ld+json">
-    {"@context":"https://schema.org","@type":"WebApplication","name":"Warqna Zone","applicationCategory":"GameApplication","operatingSystem":"Web","inLanguage":"ar","description":"منصة ألعاب ورق عربية اجتماعية احترافية"}
+    {"@context":"https://schema.org","@type":"WebApplication","name":"Warqnaa","applicationCategory":"GameApplication","operatingSystem":"Web","inLanguage":"ar","description":"منصة ألعاب ورق عربية اجتماعية احترافية"}
     </script>
     <link rel="stylesheet" href="/assets/css/app.css?v=139-mobile-app-no-studio">
     <link rel="stylesheet" href="/assets/css/mobile-app.css?v=139-mobile-app-no-studio">

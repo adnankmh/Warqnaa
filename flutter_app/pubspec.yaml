@@ -1,7 +1,7 @@
 name: warqna_mobile
 publish_to: none
-description: Warqna premium social card games app for Android, iOS and Web.
-version: 0.2.5+181
+description: Warqnaa premium social card games app for Android, iOS and Web.
+version: 0.3.0+180
 
 environment:
   sdk: '>=3.10.0 <4.0.0'
@@ -18,20 +18,18 @@ dependencies:
   shared_preferences: ^2.3.2
   image_picker: ^1.2.3
   url_launcher: ^6.3.2
-  # V0.2.5 compatibility pins. Upgrade only in a tested migration branch.
-  google_mobile_ads: ^9.0.0
-  flutter_webrtc: ^1.5.2
+  google_mobile_ads: 7.0.0
+  flutter_webrtc: 1.4.0
   permission_handler: ^12.0.3
   audioplayers: ^6.8.1
   flutter_local_notifications: ^22.0.1
-  firebase_core: ^4.12.1
-  # 16.4.2 is a broken upstream publish (FirebasePlugin is missing).
-  firebase_messaging: ^16.4.3
+  firebase_core: 4.11.0
+  firebase_messaging: 16.4.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true

@@ -15,7 +15,7 @@ const cfgPath = path.join(process.cwd(), 'capacitor.config.json');
 const cfg = fs.existsSync(cfgPath) ? JSON.parse(fs.readFileSync(cfgPath, 'utf8')) : {};
 
 cfg.appId = cfg.appId || 'com.warqna.zone';
-cfg.appName = cfg.appName || 'Warqna Zone';
+cfg.appName = cfg.appName || 'Warqnaa';
 cfg.webDir = cfg.webDir || 'public';
 cfg.server = cfg.server || {};
 cfg.server.androidScheme = 'https';

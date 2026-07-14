@@ -1,6 +1,17 @@
 part of 'main.dart';
 
 /// Exact level-transition XP contract imported from XPs.xlsx for levels 1..100.
+
+/// Returns the authoritative XP required to advance from [currentLevel].
+/// Shared by controller logic and top-level profile/card helpers.
+int xpNeededForLevelV175(int currentLevel) {
+  final safe = currentLevel.clamp(1, 200).toInt();
+  final exact = xpRequirementsV175[safe];
+  if (exact != null) return exact;
+  final extra = safe - 100;
+  return (xpRequirementsV175[100]! * math.pow(1.12, extra)).round();
+}
+
 const Map<int, int> xpRequirementsV175 = <int, int>{
   1: 80,
   2: 98,
@@ -115,6 +126,8 @@ class ChallengeCenterV175 extends StatefulWidget {
 class _ChallengeCenterV175State extends State<ChallengeCenterV175> {
   bool loading = true;
   String? error;
+  String selectedRoadGame = 'tarneeb';
+  int selectedRoadStages = 12;
   List<Map<String, dynamic>> challenges = <Map<String, dynamic>>[];
 
   static const List<Map<String, dynamic>> fallback = <Map<String, dynamic>>[
@@ -131,7 +144,7 @@ class _ChallengeCenterV175State extends State<ChallengeCenterV175> {
 
   Future<void> _load() async {
     if (!widget.controller.serverConnected) {
-      if (mounted) setState(() { challenges = fallback.map(Map<String,dynamic>.from).toList(); loading = false; error = 'التقدم والمطالبة بالمكافآت يحتاجان اتصالاً بالخادم.'; });
+      if (mounted) setState(() { challenges = fallback.map(Map<String,dynamic>.from).toList(); loading = false; error = 'وضع محلي فعّال: مسار المراحل والمكافآت محفوظ على هذا الجهاز.'; });
       return;
     }
     try {
@@ -145,7 +158,17 @@ class _ChallengeCenterV175State extends State<ChallengeCenterV175> {
 
   Future<void> _action(Map<String,dynamic> item, bool claim) async {
     final key=item['key']?.toString() ?? '';
-    if (key.isEmpty || !widget.controller.serverConnected) return;
+    if (key.isEmpty) return;
+    if (!widget.controller.serverConnected) {
+      if (claim) {
+        showToast(context, 'المكافآت المحلية تُضاف تلقائياً بعد الفوز بكل مرحلة.');
+      } else {
+        widget.controller.joinChallenge(key);
+        if (mounted) setState(() => item['activated'] = true);
+        showToast(context, 'تم تفعيل التحدي محلياً.');
+      }
+      return;
+    }
     setState(() => loading=true);
     try {
       final data = claim ? await widget.controller.api.claimChallengeV175(key) : await widget.controller.api.activateChallengeV175(key);
@@ -155,6 +178,19 @@ class _ChallengeCenterV175State extends State<ChallengeCenterV175> {
       widget.controller.refreshUi();
     } on ApiException catch(e) { if(mounted) { setState(() => loading=false); showToast(context,e.message); } }
     catch (_) { if(mounted) { setState(() => loading=false); showToast(context,'تعذر تنفيذ العملية الآن.'); } }
+  }
+
+  void _startRoad() {
+    widget.controller.startChallengeRoad(selectedRoadGame, selectedRoadStages);
+    setState(() {});
+    showToast(context, 'بدأ مسار ${L.t(widget.controller.localeCode, selectedRoadGame)} بـ$selectedRoadStages مرحلة و5 محاولات.');
+  }
+
+  void _playRoadStage() {
+    final gameId = widget.controller.challengeRoadGame ?? selectedRoadGame;
+    final game = gamesCatalog.firstWhere((item) => item.id == gameId, orElse: () => gamesCatalog.first);
+    Navigator.pop(context);
+    showCreateRoom(context, widget.controller, game);
   }
 
   String _label(dynamic value) {
@@ -167,7 +203,25 @@ class _ChallengeCenterV175State extends State<ChallengeCenterV175> {
     if (loading && challenges.isEmpty) return const Padding(padding: EdgeInsets.all(36), child: Center(child:CircularProgressIndicator()));
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children:[
       Row(children:[const Expanded(child:Text('مركز التحديات الاحترافي',style:TextStyle(fontSize:22,fontWeight:FontWeight.w900))),Chip(label:Text('🔥 ${widget.controller.challengeStreakV173}'))]),
-      const Text('تحديات يومية وأسبوعية وموسمية، بتقدم محفوظ على الخادم ومكافآت توكنز وخبرة قابلة للمطالبة مرة واحدة.',style:TextStyle(color:Colors.white60,height:1.5)),
+      const Text('اختر اللعبة وطول المسار. كل خسارة تستهلك محاولة، وكل فوز يفتح مرحلة ومكافأة حتى الجائزة الختامية.',style:TextStyle(color:Colors.white60,height:1.5)),
+      const SizedBox(height:10),
+      PremiumPanel(child:Padding(padding:const EdgeInsets.all(13),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+        Row(children:[const Text('🛤️',style:TextStyle(fontSize:34)),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('مسار المراحل',style:TextStyle(fontSize:16,fontWeight:FontWeight.w900)),Text(widget.controller.challengeRoadGame==null?'ابدأ مساراً جديداً':'${L.t(widget.controller.localeCode,widget.controller.challengeRoadGame!)} • المرحلة ${widget.controller.challengeRoadStage + (widget.controller.challengeRoadCompleted?0:1)} من ${widget.controller.challengeRoadTotal}',style:const TextStyle(color:Colors.white60,fontSize:10))])),Text('❤️ ${widget.controller.challengeRoadAttempts}/5',style:const TextStyle(fontWeight:FontWeight.w900,color:Colors.redAccent))]),
+        const SizedBox(height:10),
+        if(widget.controller.challengeRoadGame==null || widget.controller.challengeRoadCompleted || widget.controller.challengeRoadAttempts==0) ...[
+          DropdownButtonFormField<String>(value:selectedRoadGame,isExpanded:true,decoration:const InputDecoration(labelText:'اللعبة'),items:gamesCatalog.map((game)=>DropdownMenuItem(value:game.id,child:Text('${game.icon} ${L.t(widget.controller.localeCode,game.id)}'))).toList(),onChanged:(value){if(value!=null)setState(()=>selectedRoadGame=value);}),
+          const SizedBox(height:8),
+          SegmentedButton<int>(segments:const [ButtonSegment(value:10,label:Text('10 مراحل')),ButtonSegment(value:12,label:Text('12 مرحلة')),ButtonSegment(value:15,label:Text('15 مرحلة'))],selected:<int>{selectedRoadStages},onSelectionChanged:(value)=>setState(()=>selectedRoadStages=value.first)),
+          const SizedBox(height:9),
+          FilledButton.icon(onPressed:_startRoad,icon:const Icon(Icons.flag_rounded),label:const Text('بدء المسار بخمس محاولات')),
+        ] else ...[
+          ClipRRect(borderRadius:BorderRadius.circular(99),child:LinearProgressIndicator(value:(widget.controller.challengeRoadStage/widget.controller.challengeRoadTotal).clamp(0.0,1.0).toDouble(),minHeight:11)),
+          const SizedBox(height:7),
+          Text('مكافأة المرحلة القادمة: 🪙 ${formatNumber(widget.controller.challengeRoadRewardForStage(widget.controller.challengeRoadStage+1))}',style:const TextStyle(color:Colors.amberAccent,fontWeight:FontWeight.w800)),
+          const SizedBox(height:8),
+          Row(children:[Expanded(child:FilledButton.icon(onPressed:_playRoadStage,icon:const Icon(Icons.play_arrow_rounded),label:const Text('ابدأ المرحلة'))),const SizedBox(width:7),OutlinedButton(onPressed:(){widget.controller.resetChallengeRoad();setState((){});},child:const Text('إعادة'))]),
+        ],
+      ]))),
       if(error!=null) Padding(padding:const EdgeInsets.only(top:8),child:Container(padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Colors.orange.withValues(alpha:.12),borderRadius:BorderRadius.circular(14),border:Border.all(color:Colors.orangeAccent.withValues(alpha:.35))),child:Text(error!,style:const TextStyle(fontSize:11)))),
       const SizedBox(height:12),
       ...challenges.map((item){
@@ -196,5 +250,5 @@ class _ChallengeCenterV175State extends State<ChallengeCenterV175> {
 }
 
 void showChallengesV175(BuildContext context, AppController controller) {
-  showChallengeHubV025(context, controller);
+  showPremiumSheet(context, child: ChallengeCenterV175(controller: controller));
 }

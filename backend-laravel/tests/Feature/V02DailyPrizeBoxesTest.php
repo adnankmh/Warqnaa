@@ -78,7 +78,7 @@ class V02DailyPrizeBoxesTest extends TestCase
         $pashaBox = $service->awardForWin($user, 'reward-pasha', 'tarneeb');
         $service->open($user, $pashaBox, [
             'type' => 'pasha_day', 'value' => '1', 'duration_hours' => 24,
-            'rarity' => 'legendary', 'icon' => '👑', 'label_ar' => 'يوم باشا',
+            'rarity' => 'legendary', 'icon' => '🎩', 'label_ar' => 'يوم باشا',
             'store_item_key' => 'daily_prize_pasha_day_v02',
         ]);
         $this->assertSame('red', $user->profile()->first()->pasha_style);

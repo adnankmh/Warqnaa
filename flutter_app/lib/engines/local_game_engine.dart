@@ -1,14 +1,12 @@
 import 'dart:math';
 
-import 'fair_deal.dart';
-
 /// Offline/local fallback engine used by the Flutter Web/PWA build.
 ///
 /// The authoritative online mode remains the Laravel engine. This local engine
 /// keeps every curated card game playable when the app is hosted on GitHub
 /// Pages or opened without a backend connection.
 class LocalGameSession {
-  LocalGameSession({required this.gameId, required this.humanName, this.localeCode = 'ar', this.difficulty = 'pro', int playerCount = 4, int? seed})
+  LocalGameSession({required this.gameId, required this.humanName, this.difficulty = 'pro', this.localeCode = 'ar', int playerCount = 4, int? seed})
       : requestedPlayerCount = playerCount,
         _random = Random(seed) {
     _setup();
@@ -16,8 +14,8 @@ class LocalGameSession {
 
   final String gameId;
   final String humanName;
-  final String localeCode;
   final String difficulty;
+  final String localeCode;
   final int requestedPlayerCount;
   final Random _random;
 
@@ -42,14 +40,21 @@ class LocalGameSession {
   ];
   static const _balootRanks = <String>['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
   static const _suits = <String>['C', 'D', 'S', 'H'];
-  static const _botNamesAr = <String>['عدنان','بيان','كنان','جميل','رعد','عاصم','معتصم','حسام','جنان','حور','جنات','آلاء','أفنان','شهد','حلا','شذى','قمر'];
-  static const _botNamesEn = <String>['Adnan','Bayan','Kenan','Jameel','Raad','Asem','Moatasem','Hossam','Janan','Hoor','Jannat','Alaa','Afnan','Shahd','Hala','Shatha','Qamar'];
+  static const _botNamesAr = <String>[
+    'عدنان', 'بيان', 'كنان', 'جميل', 'رعد', 'عاصم', 'معتصم', 'حسام',
+    'جنان', 'حور', 'جنات', 'آلاء', 'أفنان', 'شهد', 'حلا', 'شذى', 'قمر',
+  ];
+  static const _botNamesEn = <String>[
+    'Adnan', 'Bayan', 'Kenan', 'Jameel', 'Raad', 'Asem', 'Motasem', 'Hossam',
+    'Janan', 'Hoor', 'Jannat', 'Alaa', 'Afnan', 'Shahd', 'Hala', 'Shatha', 'Qamar',
+  ];
   List<String> get _botNames => localeCode == 'ar' ? _botNamesAr : _botNamesEn;
 
   final List<List<String>> _hands = <List<String>>[];
   final List<String> _deck = <String>[];
   final List<String> _discard = <String>[];
   final List<List<String>> _melds = <List<String>>[];
+  final Set<int> _openedRummySeats = <int>{};
   final List<String> _table = <String>[];
   final Map<int, String> _trick = <int, String>{};
   final Map<int, int> _tricksWon = <int, int>{0: 0, 1: 0, 2: 0, 3: 0};
@@ -104,6 +109,7 @@ class LocalGameSession {
     _deck.clear();
     _discard.clear();
     _melds.clear();
+    _openedRummySeats.clear();
     _table.clear();
     _trick.clear();
     _messages.clear();
@@ -160,7 +166,7 @@ class LocalGameSession {
         _hands[seat].add(_deck.removeLast());
       }
     }
-    _balancePremiumHands(mode: _isBaloot ? 'baloot' : 'trick');
+    _balancePremiumHands();
     for (final hand in _hands) {
       _sortHand(hand);
     }
@@ -183,12 +189,27 @@ class LocalGameSession {
     }
   }
 
-  void _balancePremiumHands({String mode = 'trick'}) {
-    final balanced = FairDealBalancer.balanceCodes(_hands, mode: mode);
-    for (var seat = 0; seat < _hands.length; seat++) {
-      _hands[seat]
-        ..clear()
-        ..addAll(balanced[seat]);
+  void _balancePremiumHands() {
+    bool high(String card) {
+      final rank = _cardRank(card);
+      return rank == 'A' || rank == 'K' || rank == 'Q';
+    }
+    int highCount(List<String> hand) => hand.where(high).length;
+    for (var receiver = 0; receiver < _hands.length; receiver++) {
+      var guard = 0;
+      while (highCount(_hands[receiver]) < 2 && guard++ < 12) {
+        int? donor;
+        for (var index = 0; index < _hands.length; index++) {
+          if (index != receiver && highCount(_hands[index]) > 3) { donor = index; break; }
+        }
+        if (donor == null) break;
+        final donorHighIndex = _hands[donor].indexWhere(high);
+        final receiverLowIndex = _hands[receiver].indexWhere((card) => !high(card));
+        if (donorHighIndex < 0 || receiverLowIndex < 0) break;
+        final temp = _hands[receiver][receiverLowIndex];
+        _hands[receiver][receiverLowIndex] = _hands[donor][donorHighIndex];
+        _hands[donor][donorHighIndex] = temp;
+      }
     }
   }
 
@@ -197,19 +218,27 @@ class LocalGameSession {
     for (var seat = 0; seat < playerCount; seat++) {
       _hands.add(<String>[]);
     }
-    for (var card = 0; card < 14; card++) {
+    final cardsEach = gameId == 'banakil' ? 18 : 14;
+    for (var card = 0; card < cardsEach; card++) {
       for (var seat = 0; seat < playerCount; seat++) {
         _hands[seat].add(_deck.removeLast());
       }
     }
-    _balancePremiumHands(mode: 'rummy');
+    if (gameId == 'banakil') {
+      // The starter receives card 19 and must discard before the draw cycle.
+      _hands[0].add(_deck.removeLast());
+      phase = 'discard';
+      enginePhase = 'discard';
+      _messages.add('بناكل: معك 19 ورقة. ارمِ ورقة أولاً، ثم اسحب ونزّل مجموعات من 3 أوراق فأكثر دون حد أدنى.');
+    } else {
+      _discard.add(_deck.removeLast());
+      phase = 'draw';
+      enginePhase = 'draw';
+      _messages.add('هاند: اسحب، ثم نزّل مجموعة أو عدة مجموعات بقيمة 51 نقطة على الأقل في النزول الأول، وبعدها ارمِ ورقة.');
+    }
     for (final hand in _hands) {
       _sortHand(hand);
     }
-    _discard.add(_deck.removeLast());
-    phase = 'draw';
-    enginePhase = 'draw';
-    _messages.add('اسحب من الرزمة أو المكشوف، نزّل المجموعات، ثم ارمِ ورقة.');
   }
 
   void _setupBasra() {
@@ -217,7 +246,6 @@ class LocalGameSession {
     _hands.add(<String>[]);
     _hands.add(<String>[]);
     _dealBasraHands();
-    _balancePremiumHands(mode: 'trick');
     for (var i = 0; i < 4; i++) {
       _table.add(_deck.removeLast());
     }
@@ -808,11 +836,17 @@ class LocalGameSession {
       if (!_isValidMeld(cards) || !_containsAll(_hands[0], cards)) {
         throw StateError('المجموعة المختارة غير قانونية.');
       }
+      final openingRequired = gameId == 'banakil' ? 0 : 51;
+      final meldPoints = _rummyPoints(cards);
+      if (!_openedRummySeats.contains(0) && meldPoints < openingRequired) {
+        throw StateError('مجموع النزول الأول يجب أن يبلغ $openingRequired نقطة على الأقل.');
+      }
       for (final card in cards) {
         _hands[0].remove(card);
       }
       _melds.add(cards);
-      _messages.add('$humanName نزّل مجموعة من ${cards.length} أوراق.');
+      _openedRummySeats.add(0);
+      _messages.add('$humanName نزّل مجموعة من ${cards.length} أوراق بقيمة $meldPoints.');
       if (_hands[0].isEmpty) {
         _finishRummy(0);
       }
@@ -842,7 +876,9 @@ class LocalGameSession {
     if (_deck.isNotEmpty) {
       _hands[seat].add(_deck.removeLast());
     }
-    final suggestions = _meldSuggestions(_hands[seat])..sort((a, b) => b.length.compareTo(a.length));
+    final suggestions = _meldSuggestions(_hands[seat])
+      ..removeWhere((meld) => !_openedRummySeats.contains(seat) && gameId != 'banakil' && _rummyPoints(meld) < 51)
+      ..sort((a, b) => _rummyPoints(b).compareTo(_rummyPoints(a)));
     final meldThreshold = _easyAi ? .72 : _normalAi ? .35 : _masterAi ? .02 : .15;
     if (suggestions.isNotEmpty && _random.nextDouble() > meldThreshold) {
       final meld = suggestions.first;
@@ -850,7 +886,8 @@ class LocalGameSession {
         _hands[seat].remove(card);
       }
       _melds.add(meld);
-      _messages.add('${_seatName(seat)} نزّل مجموعة.');
+      _openedRummySeats.add(seat);
+      _messages.add('${_seatName(seat)} نزّل مجموعة بقيمة ${_rummyPoints(meld)}.');
     }
     if (_hands[seat].isEmpty) {
       _finishRummy(seat);
@@ -948,28 +985,70 @@ class LocalGameSession {
   }
 
   bool _isValidMeld(List<String> cards) {
-    if (cards.length < 3) {
+    if (cards.length < 3 || cards.length > 13) {
       return false;
     }
-    final natural = cards.where((card) => !card.startsWith('JOKER')).toList();
-    if (natural.length < 2) {
+
+    final jokerCount = cards.where((card) => card.startsWith('JOKER')).length;
+    final twoCount = gameId == 'banakil' ? cards.where((card) => _cardRank(card) == '2').length : 0;
+    if (gameId == 'banakil' && (jokerCount > 1 || twoCount > 1)) {
       return false;
     }
+    final natural = cards.where((card) {
+      if (card.startsWith('JOKER')) return false;
+      return gameId != 'banakil' || _cardRank(card) != '2';
+    }).toList();
+    if (natural.isEmpty) {
+      return false;
+    }
+    final wildCount = jokerCount + twoCount;
+
     final sameRank = natural.every((card) => _cardRank(card) == _cardRank(natural.first));
     if (sameRank) {
+      if (gameId == 'banakil') {
+        final rank = _cardRank(natural.first);
+        final suits = natural.map(_cardSuit).toSet();
+        return (rank == '3' || rank == 'A') &&
+            suits.length == natural.length &&
+            natural.length + wildCount <= 4;
+      }
       return true;
     }
+
     final sameSuit = natural.every((card) => _cardSuit(card) == _cardSuit(natural.first));
     if (!sameSuit) {
       return false;
     }
     final values = natural.map((card) => _standardRanks.indexOf(_cardRank(card))).toList()..sort();
-    for (var i = 1; i < values.length; i++) {
-      if (values[i] - values[i - 1] > 1 + cards.where((card) => card.startsWith('JOKER')).length) {
-        return false;
-      }
+    if (values.toSet().length != values.length) {
+      return false;
     }
-    return true;
+    var missing = 0;
+    for (var i = 1; i < values.length; i++) {
+      missing += values[i] - values[i - 1] - 1;
+    }
+    return missing <= wildCount;
+  }
+
+  int _rummyPoints(List<String> cards) {
+    if (gameId == 'banakil') {
+      // Half-points are stored doubled to keep the offline engine integer-only.
+      var doubled = 0;
+      for (final card in cards) {
+        final rank = _cardRank(card);
+        if (rank == 'JOKER') {
+          doubled += 8;
+        } else if (rank == '2') {
+          doubled += 4;
+        } else if (rank == '3' || rank == '4' || rank == '5' || rank == '6') {
+          doubled += 1;
+        } else {
+          doubled += 2;
+        }
+      }
+      return doubled;
+    }
+    return cards.fold<int>(0, (sum, card) => sum + _cardPoints(card));
   }
 
   void _basraAction(String action, Map<String, dynamic> payload) {

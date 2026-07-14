@@ -1,0 +1,9 @@
+Warqnaa V0.3 / v180
+- Python feature/source contracts: PASS (11)
+- Version contract: PASS (0.3.0+180)
+- PHP syntax: PASS (308 files)
+- Engine adapters: PASS (18)
+- Dedicated rule cores: PASS
+- Banakil hidden-state regression: PASS
+- JSON/YAML/XML/Dart/source-conflict static validation: PASS
+- Flutter/Composer runtime stages: delegated to included GitHub Actions because SDKs were unavailable in packaging environment.

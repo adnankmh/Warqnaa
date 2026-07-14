@@ -141,7 +141,7 @@ foreach($labels as $k=>$v){ if($k!=='inventory' && (($items[$k] ?? collect())->c
         </div>
         <div class="product-info-v127">
          <h3>{{ $name }}</h3>
-         <p>{{ $item->description['ar'] ?? 'مقتنى فاخر داخل Warqna Zone' }}</p>
+         <p>{{ $item->description['ar'] ?? 'مقتنى فاخر داخل Warqnaa' }}</p>
         </div>
         <div class="product-actions-v127">
          <span class="price">@if($cat==='pasha')<img class="pasha-price-icon-v134" src="/assets/store/basha1.png" alt="باشا">@endif 🪙 {{ number_format($item->price) }}</span>

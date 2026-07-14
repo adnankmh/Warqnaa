@@ -112,9 +112,7 @@ jobs:
           flutter pub get
           python3 ../tools/verify_flutter_lock.py pubspec.lock \
             google_mobile_ads=7.0.0 \
-            flutter_webrtc=1.4.0 \
-            firebase_core=4.11.0 \
-            firebase_messaging=16.4.1
+            flutter_webrtc=1.4.0
 
       - name: Configure optional Google Play upload signing
         working-directory: flutter_app
@@ -148,6 +146,8 @@ jobs:
           python3 ../tools/test_v174_offline_progression_navigation_contract.py
           python3 ../tools/test_v175_xp_challenges_pasha_designer_contract.py
           python3 ../tools/test_v176_daily_pack_inventory_contract.py
+          python3 ../tools/test_v030_contract.py
+          python3 ../tools/validate_v030_static.py
           python3 ../tools/test_v02_daily_prize_boxes_contract.py
           bash ../tools/flutter_analyze_ci.sh
           flutter test

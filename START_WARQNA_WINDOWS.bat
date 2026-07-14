@@ -1,2 +1,2 @@
 @echo off
-call "%~dp0scripts\windows\current\START_WARQNA_V181_WINDOWS.bat"
+call "%~dp0scripts\windows\current\START_WARQNA_V180_WINDOWS.bat"

@@ -18,7 +18,7 @@ def main():
     if len(entries)!=100 or len({int(k) for k,v in entries})!=100: fail('Dart XP table must contain 100 unique levels')
     main=req('flutter_app/lib/main.dart',"if (p.category == 'pasha_style') return false;",'_loginOrCreateLocalFallback','queueNavigationRoute','openPendingNavigationRoute')
     if "('pasha_style', 'ألوان الطربوش')" in main: fail('Pasha color tab still visible')
-    v170=req('flutter_app/lib/v170_global.dart',"Image.asset('assets/images/pasha.png'",'final isPasha','_pashaAction','Premium3DButtonV025')
+    v170=req('flutter_app/lib/v170_global.dart',"Image.asset('assets/images/pasha.png'",'final isPasha',"label:Text(owned?'تفعيل الباشا':'شراء الباشا')")
     req('flutter_app/lib/v173_global.dart',"Image.asset('assets/images/pasha.png'",'المصمم الشامل V0.2','level_xp','feature_flag','showChallengesV175')
     req('backend-laravel/app/Services/WarqnaPro/ChallengeService.php','function activate','function record','function claim')
     req('backend-laravel/app/Services/WarqnaPro/DailyPackService.php','public static function catalog','legendary','2500','5000')

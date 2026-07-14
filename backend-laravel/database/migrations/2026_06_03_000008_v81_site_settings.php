@@ -25,7 +25,7 @@ return new class extends Migration {
    ['tournaments_enabled','1','bool','modules','تشغيل المسابقات'],
    ['chat_enabled','1','bool','modules','تشغيل الدردشة'],
    ['support_enabled','1','bool','modules','تشغيل الدعم'],
-   ['homepage_headline','Warqna Zone','string','content','عنوان الصفحة الرئيسية'],
+   ['homepage_headline','Warqnaa','string','content','عنوان الصفحة الرئيسية'],
    ['maintenance_message','الموقع قيد التطوير والتحسين','string','content','رسالة الصيانة'],
   ];
   foreach($defaults as [$key,$value,$type,$group,$label]) DB::table('site_settings')->updateOrInsert(['key'=>$key],['value'=>$value,'type'=>$type,'group'=>$group,'label'=>$label,'created_at'=>$now,'updated_at'=>$now]);

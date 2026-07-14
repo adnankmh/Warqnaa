@@ -1,6 +1,6 @@
 <?php
 return [
- 'brand'=>['name_ar'=>'ورقنا زون','name_en'=>'Warqna Zone','slogan_ar'=>'منصة الورق الاجتماعية الفاخرة'],
+ 'brand'=>['name_ar'=>'ورقنا','name_en'=>'Warqnaa','slogan_ar'=>'منصة الورق الاجتماعية الفاخرة'],
  'palette'=>[
   'velvet_green'=>'#0B3F1D','green_light'=>'#145C2F','royal_gold'=>'#D4AF37','ivory'=>'#F5F5DC','night'=>'#020617',
   'ruby'=>'#7F1D1D','ocean'=>'#075985','galaxy'=>'#312E81','desert'=>'#78350F'

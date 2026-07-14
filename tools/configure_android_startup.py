@@ -100,7 +100,7 @@ def main() -> None:
     for name, required in FEATURES:
         ensure_feature(root, name, required)
 
-    application.set(A + "label", "Warqna")
+    application.set(A + "label", "Warqnaa")
     application.set(A + "hardwareAccelerated", "true")
     application.set(
         A + "usesCleartextTraffic",

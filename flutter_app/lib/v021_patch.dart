@@ -1,14 +1,5 @@
 part of 'main.dart';
 
-
-int xpNeededForLevelPatchV025(int currentLevel) {
-  final safe = currentLevel.clamp(1, 200).toInt();
-  final exact = xpRequirementsV175[safe];
-  if (exact != null) return exact;
-  final extra = safe - 100;
-  return (xpRequirementsV175[100]! * math.pow(1.12, extra)).round();
-}
-
 /// Patch V0.2.1: unified player-profile navigation and responsive card hands.
 /// Any reusable player identity can call [openPlayerProfileV021].
 Future<void> openPlayerProfileV021(
@@ -86,7 +77,7 @@ LocalFriend botProfileFriendV021(BotProfile profile, String locale) => LocalFrie
       gamesPlayed: 2500 + profile.seed * 21,
       wins: 1450 + profile.seed * 12,
       xp: profile.level * 820,
-      xpNext: xpNeededForLevelPatchV025(profile.level),
+      xpNext: xpNeededForLevelV175(profile.level),
       roundPoints: profile.level * 44,
       tournamentPoints: profile.level * 17,
       clubPoints: profile.level * 9,

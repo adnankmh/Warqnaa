@@ -3,7 +3,7 @@ return [
  'apk_ready'=>true,
  'wrapper'=>'capacitor',
  'app_id'=>'com.warqna.zone',
- 'app_name'=>'Warqna Zone',
+ 'app_name'=>'Warqnaa',
  'start_url'=>'/games?source=mobile_app',
  'orientation'=>'any',
  'offline_page'=>'/offline.html',

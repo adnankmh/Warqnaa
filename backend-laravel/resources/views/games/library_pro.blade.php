@@ -2,7 +2,7 @@
 @section('content')
 <section class="pro-hero-v118">
  <div>
-  <h1>🎮 مكتبة ألعاب Warqna Zone الاحترافية</h1>
+  <h1>🎮 مكتبة ألعاب Warqnaa الاحترافية</h1>
   <p>منصة ألعاب ورق ورقعة اجتماعية، مبنية بمحركات عائلات: اللمّات، التجميع، العقود، الرقعة والنرد.</p>
  </div>
  <a class="btn primary" href="{{ route('games') }}">فتح كل الألعاب</a>

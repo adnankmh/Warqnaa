@@ -1,0 +1,43 @@
+Warqnaa V0.3 Validation Report
+==============================
+Release: 0.3.0+180 (V0.3)
+
+Passed checks
+-------------
+- 11 Python source/feature contract suites: PASS
+- Release-version consistency: PASS (0.3.0+180)
+- PHP syntax lint: PASS for 308 PHP files
+- Engine adapter initialization: PASS for 18 engines
+- Dedicated rule-core regression tests: PASS
+- Banakil V0.3 regression and hidden-state tests: PASS
+- Static configuration/source validation: PASS
+  * JSON files parsed: 44
+  * YAML files parsed: 15
+  * XML files parsed: 2
+  * Dart files delimiter/reference scan: 27
+  * Source files scanned for unresolved Git conflicts: 429
+
+Environment limitations
+-----------------------
+Flutter/Dart SDK and Composer were not installed in the packaging environment.
+Therefore flutter analyze, flutter test, Flutter Web/APK/AAB compilation,
+Composer install, Laravel PHPUnit, migrations and runtime browser/device tests
+must be executed through the included GitHub Actions or on a prepared machine.
+
+Production prerequisites
+------------------------
+- Deploy Laravel over HTTPS and set WARQNA_API_URL for authoritative multiplayer.
+- Configure production database, cache, sessions, queues, mail and CORS.
+- Replace sample AdMob identifiers with approved production identifiers.
+- Configure Android/iOS signing secrets.
+- Disable or secure demo accounts before public launch.
+
+Two-part package integrity
+--------------------------
+- Complementary archives: PASS
+- Overlapping paths between parts: none
+- Combined extraction file count: 1415
+- Full SHA-256 comparison after extraction: PASS
+- Approximate archive sizes: 56.0 MiB and 56.2 MiB
+- Final archive checksums are printed by tools/package_v030.py and may change
+  whenever any source or documentation file is updated before final packaging.

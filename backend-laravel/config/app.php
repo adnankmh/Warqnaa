@@ -1,6 +1,6 @@
 <?php
 return [
-    'name' => env('APP_NAME', 'Warqna Zone'),
+    'name' => env('APP_NAME', 'Warqnaa'),
     'env' => env('APP_ENV', 'local'),
     'debug' => (bool) env('APP_DEBUG', true),
     'url' => env('APP_URL', 'http://localhost'),

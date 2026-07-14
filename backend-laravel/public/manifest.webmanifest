@@ -1,7 +1,7 @@
 {
-  "name": "Warqna Zone | ورقنا زون",
-  "short_name": "Warqna",
-  "description": "تطبيق Warqna Zone لألعاب الورق الاجتماعية، جاهز PWA و Android Cloud Build بدون Android Studio.",
+  "name": "Warqnaa | ورقنا",
+  "short_name": "Warqnaa",
+  "description": "تطبيق Warqnaa لألعاب الورق الاجتماعية، جاهز PWA و Android Cloud Build بدون Android Studio.",
   "start_url": "/games?source=mobile_app",
   "scope": "/",
   "display": "standalone",

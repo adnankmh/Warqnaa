@@ -3438,7 +3438,7 @@
     const empty=grid.querySelector('.empty-store-v127'); if(empty) empty.remove();
     const payload=item.payload||{};
     const name=item.name||item.key||'عنصر';
-    const icon=payload.preview_icon || (item.category==='pasha'?'👑':'🎁');
+    const icon=payload.preview_icon || (item.category==='pasha'?'🎩':'🎁');
     const html=`<article class="store-product-card-v127 inventory-owned inventory-new-v133" data-category="inventory" data-name="${esc((name+' '+(item.key||'')).toLowerCase())}">
       <div class="product-preview-v127 type-${esc(item.category||'generic')}"><div class="shop-icon product-generic-v127">${esc(icon)}</div></div>
       <div class="product-info-v127"><h3>${esc(name)}</h3><p>${esc(item.category||'')}</p></div>
@@ -3691,7 +3691,7 @@
 
   function polishStoreCards(){
     $$('.store-product-card-v127[data-category="pasha"] .product-actions-v127 button[onclick*="previewStoreItem"]').forEach(b=>b.remove());
-    $$('.store-product-card-v127[data-category="card_back"] .product-info-v127 p').forEach(p=>{ if(!p.textContent.trim()) p.textContent='مقتنى فاخر داخل Warqna Zone'; });
+    $$('.store-product-card-v127[data-category="card_back"] .product-info-v127 p').forEach(p=>{ if(!p.textContent.trim()) p.textContent='مقتنى فاخر داخل Warqnaa'; });
   }
   function polishAdminStore(){
     const first=$('[data-store-admin-tab].active')||$('[data-store-admin-tab]');

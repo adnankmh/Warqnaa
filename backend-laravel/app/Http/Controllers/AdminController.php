@@ -93,7 +93,7 @@ class AdminController
         ]);
         SiteSetting::setValue('default_theme',$data['default_theme'],'string','appearance','الثيم الافتراضي');
         foreach(['force_global_theme','store_enabled','clubs_enabled','tournaments_enabled','chat_enabled','support_enabled','auto_start_game','round_score_popup','table_uploads_enabled','card_back_uploads_enabled','tarneeb_only_panel','large_bot_seats'] as $key) SiteSetting::setValue($key,$r->boolean($key),'bool','modules',$key);
-        SiteSetting::setValue('homepage_headline',$data['homepage_headline'] ?? 'Warqna Zone','string','content','عنوان الصفحة الرئيسية');
+        SiteSetting::setValue('homepage_headline',$data['homepage_headline'] ?? 'Warqnaa','string','content','عنوان الصفحة الرئيسية');
         SiteSetting::setValue('hero_subtitle',$data['hero_subtitle'] ?? 'منصة ألعاب ورق اجتماعية احترافية','string','content','النص الفرعي الرئيسي');
         SiteSetting::setValue('global_announcement',$data['global_announcement'] ?? '','string','content','إعلان عام أعلى الموقع');
         SiteSetting::setValue('maintenance_message',$data['maintenance_message'] ?? '','string','content','رسالة الصيانة');

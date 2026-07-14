@@ -1,0 +1,15 @@
+{
+  "version": "0.3.0",
+  "build": 180,
+  "display": "V0.3",
+  "type": "professional-feature-release",
+  "name": "Warqnaa V0.3",
+  "fixes": [
+    "offline and server-authoritative store purchases with precise errors",
+    "red Pasha fez identity and nine built-in themes",
+    "open rooms, challenge road, level rewards, demo accounts and rewarded-ad preview",
+    "club identity, granular permissions and auditable activity log",
+    "Hand opening 51 and Banakil 18+19 meld/layoff corrections",
+    "primary-admin-only no-code designer and improved SEO metadata"
+  ]
+}

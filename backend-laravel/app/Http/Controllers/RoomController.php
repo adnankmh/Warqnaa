@@ -493,6 +493,12 @@ class RoomController
   $state['speed']=$fixedSpeed;
   $state['turn_timeout_seconds']=$fixedTimeout;
   $copy=$state; $copy['hand']=$state['hands'][$myKey] ?? []; if(!empty($state['score_popups'][$myKey])) $copy['score_popup']=$state['score_popups'][$myKey];
+  if(isset($copy['deck']) && is_array($copy['deck'])) $copy['deck_count']=count($copy['deck']);
+  if(isset($copy['boneyard']) && is_array($copy['boneyard'])) $copy['boneyard_count']=count($copy['boneyard']);
+  unset(
+   $copy['_global_engine'], $copy['_tarneeb_v2'], $copy['deck'], $copy['boneyard'], $copy['seed'],
+   $copy['plain_room_password'], $copy['kicked_user_ids'], $copy['banned_user_ids'], $copy['disconnected_replacements']
+  );
   $copy['legal_cards']=[];
   if(($state['phase'] ?? '')==='playing' && !empty($copy['hand'])){
    try{ $engine=\App\Services\GameEngine\GameFactory::make($state['game'] ?? ($state['game_type'] ?? 'tarneeb')); foreach($copy['hand'] as $c){ if($engine->validate($state,$myKey,'play_card',['card'=>$c]) || in_array(($state['game_type']??''),['hand','banakil','konkan'],true)) $copy['legal_cards'][]=$c; } }catch(\Throwable $e){ $copy['legal_cards']=$copy['hand']; }

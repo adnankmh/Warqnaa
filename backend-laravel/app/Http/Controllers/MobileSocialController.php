@@ -30,7 +30,7 @@ class MobileSocialController extends Controller
     public function search(Request $request)
     {
         $query = trim((string) $request->query('q', ''));
-        $users = User::with('profile','clubMembership.club','adminDelegation')
+        $users = User::with('profile')
             ->where('id', '!=', $request->user()->id)
             ->when($query !== '', fn ($q) => $q->where(function ($q) use ($query) {
                 $q->where('username', 'like', '%' . $query . '%')
@@ -45,7 +45,7 @@ class MobileSocialController extends Controller
     public function profile(Request $request, User $user)
     {
         $this->assertNotBlocked($request->user()->id, $user->id);
-        return response()->json(['ok' => true, 'user' => $this->userPayload($user->load('profile','clubMembership.club','adminDelegation'))]);
+        return response()->json(['ok' => true, 'user' => $this->userPayload($user->load('profile'))]);
     }
 
     public function inviteToRoom(Request $request, User $user, FirebasePushService $push)
@@ -226,14 +226,14 @@ class MobileSocialController extends Controller
                 }
             });
         } catch (\Throwable) {
-            return response()->json(['ok' => false, 'message' => 'الرصيد غير كافٍ. المطلوب شامل رسوم التحويل: ' . number_format($total)], 422);
+            return response()->json(['ok' => false, 'message' => 'الرصيد غير كافٍ. المطلوب مع رسوم التحويل: ' . number_format($total)], 422);
         }
 
         $freshWallet = $sender->wallet()->firstOrFail();
 
         return response()->json([
             'ok' => true,
-            'message' => 'تم إرسال ' . number_format((int) $data['amount']) . ' توكنز وخصم رسوم تحويل ' . $feePercent . '%.',
+            'message' => 'تم إرسال ' . number_format((int) $data['amount']) . ' توكنز، وخصم رسوم تحويل ' . $feePercent . '% بقيمة ' . number_format($fee) . '.',
             'amount' => (int) $data['amount'],
             'fee' => $fee,
             'total_debited' => $total,
@@ -267,6 +267,7 @@ class MobileSocialController extends Controller
     {
         if (!$user) return [];
         $profile = $user->profile;
+        $membership = $user->clubMembership()->with('club')->first();
         return [
             'id' => $user->id,
             'username' => $user->username,
@@ -284,12 +285,12 @@ class MobileSocialController extends Controller
             'round_points' => (int) ($profile?->round_points ?? 0),
             'tournament_points' => (int) ($profile?->tournament_points ?? 0),
             'club_points' => (int) ($profile?->club_points ?? 0),
-            'club' => $user->clubMembership?->club ? [
-                'id'=>$user->clubMembership->club->id,
-                'name'=>$user->clubMembership->club->name,
-                'logo'=>$user->clubMembership->club->logo,
-                'level'=>(int)$user->clubMembership->club->level,
-                'role'=>$user->clubMembership->role,
+            'club' => $membership?->club ? [
+                'id' => $membership->club->id,
+                'name' => $membership->club->name,
+                'logo' => $membership->club->logo,
+                'level' => (int) $membership->club->level,
+                'role' => $membership->role,
             ] : null,
             'online' => $user->last_seen_at?->gt(now()->subMinutes(3)) ?? false,
         ];

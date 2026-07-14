@@ -11,13 +11,28 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ورقنا">
-  <meta name="description" content="منصة ورقنا للألعاب الورقية الاجتماعية والبطولات والتحديات.">
+  <meta name="description" content="Warqnaa ورقنا: منصة ألعاب ورق اجتماعية عربية للطرنيب والهاند والبناكل والتركس والبلوت، مع غرف مفتوحة، مجموعات، بطولات وتحديات.">
+  <meta name="keywords" content="ورقنا, Warqnaa, ألعاب ورق, طرنيب, هاند, بناكل, تركس, بلوت, ألعاب جماعية, ألعاب عربية">
+  <meta name="author" content="Warqnaa">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="https://adnankmh.github.io/Warqnaa/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ar_PS">
+  <meta property="og:site_name" content="Warqnaa — ورقنا">
+  <meta property="og:title" content="Warqnaa — ورقنا | ألعاب ورق اجتماعية">
+  <meta property="og:description" content="العب الطرنيب والهاند والبناكل والتركس والبلوت في غرف اجتماعية وتحديات وبطولات.">
+  <meta property="og:url" content="https://adnankmh.github.io/Warqnaa/">
+  <meta property="og:image" content="https://adnankmh.github.io/Warqnaa/icons/Icon-512.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Warqnaa — ورقنا">
+  <meta name="twitter:description" content="منصة ألعاب ورق اجتماعية عربية حديثة.">
+  <meta name="twitter:image" content="https://adnankmh.github.io/Warqnaa/icons/Icon-512.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" href="icons/Icon-192.png">
   <link rel="manifest" href="manifest.json">
-  <title>ورقنا | Warqna</title>
+  <title>Warqnaa — ورقنا | ألعاب ورق اجتماعية عربية</title>
   <style>
-    html,body{margin:0;width:100%;height:100%;background:#05111f;overflow:hidden;font-family:Arial,sans-serif}
+    html,body{margin:0;width:100%;min-width:100%;height:100%;min-height:100%;background:#05111f;overflow:hidden;overscroll-behavior:none;font-family:Arial,sans-serif}body>flt-glass-pane,body>flutter-view,flt-glass-pane,flutter-view{width:100%!important;height:100%!important;inset:0!important}
     #install-card{position:fixed;z-index:99999;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));display:none;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(240,194,94,.48);border-radius:18px;background:linear-gradient(135deg,rgba(8,30,53,.97),rgba(4,18,34,.97));color:#fff;box-shadow:0 18px 45px rgba(0,0,0,.48);backdrop-filter:blur(16px)}
     #install-card .mark{width:45px;height:45px;border-radius:14px;background:#0a604a;display:grid;place-items:center;border:1px solid #eec35f;overflow:hidden}#install-card .mark img{width:100%;height:100%;object-fit:contain}
     #install-card .copy{flex:1;min-width:0}.copy b{display:block;font-size:14px}.copy span{display:block;color:#b9c5d3;font-size:11px;margin-top:3px;line-height:1.35}
@@ -29,7 +44,7 @@
 </head>
 <body>
   <div id="install-card">
-    <div class="mark"><img src="icons/Icon-192.png" alt="Warqna"></div>
+    <div class="mark"><img src="icons/Icon-192.png" alt="Warqnaa"></div>
     <div class="copy"><b>ثبّت تطبيق ورقنا</b><span>افتحه من الشاشة الرئيسية بملء الشاشة مثل التطبيق.</span></div>
     <button id="install-now">تثبيت</button><button id="install-close" aria-label="إغلاق">✕</button>
   </div>
@@ -54,6 +69,7 @@
     if (isIOS && !standalone && localStorage.getItem('warqna-ios-dismissed') !== '1') setTimeout(()=>iosTip.style.display='block',2500);
     window.addEventListener('appinstalled', () => { installCard.style.display='none'; iosTip.style.display='none'; });
   </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Warqnaa — ورقنا","alternateName":"ورقنا","url":"https://adnankmh.github.io/Warqnaa/","image":"https://adnankmh.github.io/Warqnaa/icons/Icon-512.png","description":"منصة ألعاب ورق اجتماعية عربية تشمل الطرنيب والهاند والبناكل والتركس والبلوت.","applicationCategory":"GameApplication","operatingSystem":"Web, Android, iOS","inLanguage":["ar","en","de","tr","fr","es"],"genre":["Card game","Social game"]}</script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

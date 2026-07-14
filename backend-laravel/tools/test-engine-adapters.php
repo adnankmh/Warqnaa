@@ -4,6 +4,7 @@
  * Run from backend-laravel with: php tools/test-engine-adapters.php
  */
 $base = dirname(__DIR__) . '/app/Services/GameEngine';
+require_once dirname(__DIR__) . '/app/Services/WarqnaPro/PlayActionNormalizer.php';
 foreach ([
     'GameRuleContract.php',
     'Card.php',
