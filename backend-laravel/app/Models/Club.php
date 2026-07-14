@@ -5,10 +5,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Club extends Model
 {
-    protected $casts = ['settings'=>'array'];
     protected $fillable = [
         'owner_id','name','level','weekly_points','total_points','treasury',
-        'capacity','league_tier','description','logo','visibility','image_url','banner_url','settings',
+        'capacity','league_tier','description','logo','visibility',
     ];
 
     public function members(){ return $this->hasMany(ClubMember::class); }

@@ -1,0 +1,26 @@
+طريقة تطبيق Warqna V0.2.2 PATCH ONLY
+=====================================
+
+1) احتفظ بنسخة احتياطية من مشروع V0.2/V0.2.1 الحالي وقاعدة البيانات.
+2) فك ملف Warqna-V0.2.2-PATCH-ONLY.zip في جذر المشروع.
+3) وافق على استبدال الملفات الموجودة، ولا تحذف أي ملف غير موجود داخل Patch.
+
+Laravel:
+--------
+cd backend-laravel
+composer install
+php artisan migrate --force
+php artisan optimize:clear
+php artisan test
+
+Flutter:
+--------
+cd ../flutter_app
+flutter pub get
+flutter analyze
+flutter test
+
+ثم شغّل GitHub Actions والبناء المطلوب قبل النشر.
+
+ملاحظة مهمة:
+GitHub Pages يستضيف Flutter Web فقط. ميزات الرصيد والشراء والغرف العامة والصلاحيات وسجل النادي تحتاج عنوان Laravel فعلياً في WARQNA_API_URL.

@@ -1,12 +1,14 @@
 import 'dart:math';
 
+import 'fair_deal.dart';
+
 /// Offline/local fallback engine used by the Flutter Web/PWA build.
 ///
 /// The authoritative online mode remains the Laravel engine. This local engine
 /// keeps every curated card game playable when the app is hosted on GitHub
 /// Pages or opened without a backend connection.
 class LocalGameSession {
-  LocalGameSession({required this.gameId, required this.humanName, this.difficulty = 'pro', int playerCount = 4, int? seed})
+  LocalGameSession({required this.gameId, required this.humanName, this.localeCode = 'ar', this.difficulty = 'pro', int playerCount = 4, int? seed})
       : requestedPlayerCount = playerCount,
         _random = Random(seed) {
     _setup();
@@ -14,6 +16,7 @@ class LocalGameSession {
 
   final String gameId;
   final String humanName;
+  final String localeCode;
   final String difficulty;
   final int requestedPlayerCount;
   final Random _random;
@@ -39,7 +42,9 @@ class LocalGameSession {
   ];
   static const _balootRanks = <String>['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
   static const _suits = <String>['C', 'D', 'S', 'H'];
-  static const _botNames = <String>['سامر', 'ليلى', 'جميل', 'نور', 'رامي'];
+  static const _botNamesAr = <String>['عدنان','بيان','كنان','جميل','رعد','عاصم','معتصم','حسام','جنان','حور','جنات','آلاء','أفنان','شهد','حلا','شذى','قمر'];
+  static const _botNamesEn = <String>['Adnan','Bayan','Kenan','Jameel','Raad','Asem','Moatasem','Hossam','Janan','Hoor','Jannat','Alaa','Afnan','Shahd','Hala','Shatha','Qamar'];
+  List<String> get _botNames => localeCode == 'ar' ? _botNamesAr : _botNamesEn;
 
   final List<List<String>> _hands = <List<String>>[];
   final List<String> _deck = <String>[];
@@ -155,7 +160,7 @@ class LocalGameSession {
         _hands[seat].add(_deck.removeLast());
       }
     }
-    _balancePremiumHands();
+    _balancePremiumHands(mode: _isBaloot ? 'baloot' : 'trick');
     for (final hand in _hands) {
       _sortHand(hand);
     }
@@ -178,27 +183,12 @@ class LocalGameSession {
     }
   }
 
-  void _balancePremiumHands() {
-    bool high(String card) {
-      final rank = _cardRank(card);
-      return rank == 'A' || rank == 'K' || rank == 'Q';
-    }
-    int highCount(List<String> hand) => hand.where(high).length;
-    for (var receiver = 0; receiver < _hands.length; receiver++) {
-      var guard = 0;
-      while (highCount(_hands[receiver]) < 2 && guard++ < 12) {
-        int? donor;
-        for (var index = 0; index < _hands.length; index++) {
-          if (index != receiver && highCount(_hands[index]) > 3) { donor = index; break; }
-        }
-        if (donor == null) break;
-        final donorHighIndex = _hands[donor].indexWhere(high);
-        final receiverLowIndex = _hands[receiver].indexWhere((card) => !high(card));
-        if (donorHighIndex < 0 || receiverLowIndex < 0) break;
-        final temp = _hands[receiver][receiverLowIndex];
-        _hands[receiver][receiverLowIndex] = _hands[donor][donorHighIndex];
-        _hands[donor][donorHighIndex] = temp;
-      }
+  void _balancePremiumHands({String mode = 'trick'}) {
+    final balanced = FairDealBalancer.balanceCodes(_hands, mode: mode);
+    for (var seat = 0; seat < _hands.length; seat++) {
+      _hands[seat]
+        ..clear()
+        ..addAll(balanced[seat]);
     }
   }
 
@@ -212,6 +202,7 @@ class LocalGameSession {
         _hands[seat].add(_deck.removeLast());
       }
     }
+    _balancePremiumHands(mode: 'rummy');
     for (final hand in _hands) {
       _sortHand(hand);
     }
@@ -226,6 +217,7 @@ class LocalGameSession {
     _hands.add(<String>[]);
     _hands.add(<String>[]);
     _dealBasraHands();
+    _balancePremiumHands(mode: 'trick');
     for (var i = 0; i < 4; i++) {
       _table.add(_deck.removeLast());
     }

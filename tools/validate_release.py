@@ -105,18 +105,18 @@ def check_required_files() -> None:
         "tools/test_v175_xp_challenges_pasha_designer_contract.py",
         "tools/test_v176_daily_pack_inventory_contract.py",
         "tools/test_v02_daily_prize_boxes_contract.py",
-        "tools/test_v05_global_contract.py",
-        "flutter_app/lib/v05_release.dart",
-        "backend-laravel/app/Http/Controllers/MobileV05Controller.php",
-        "backend-laravel/app/Services/WarqnaPro/ChallengeRoadService.php",
-        "backend-laravel/app/Services/WarqnaPro/LevelRewardService.php",
-        "backend-laravel/app/Models/ChallengeRun.php",
-        "backend-laravel/app/Models/LevelRewardClaim.php",
-        "backend-laravel/app/Models/ClubActivityLog.php",
-        "backend-laravel/database/migrations/2026_07_14_000500_warqna_v05_global_upgrade.php",
-        "backend-laravel/tests/Feature/V05GlobalPlatformContractTest.php",
-        "docs/ar/releases/current/CHANGELOG_V0.5_AR.md",
-        "docs/ar/setup/DEMO_ACCOUNTS_V05_AR.md",
+        "tools/test_v022_economy_rooms_clubs_engines_contract.py",
+        "tools/test_v025_complete_contract.py",
+        "flutter_app/lib/v025_release.dart",
+        "flutter_app/lib/engines/fair_deal.dart",
+        "backend-laravel/app/Services/GameEngine/FairDealBalancer.php",
+        "backend-laravel/app/Services/WarqnaPro/ChallengeJourneyService.php",
+        "backend-laravel/app/Services/Progression/LevelRewardService.php",
+        "backend-laravel/app/Http/Controllers/MobileChallengeJourneyController.php",
+        "backend-laravel/database/migrations/2026_07_13_140000_v025_absence_challenge_level_rewards.php",
+        "backend-laravel/database/seeders/DemoPlayersV025Seeder.php",
+        "backend-laravel/tests/Unit/V025FairDealBalancerTest.php",
+        "docs/ar/product/DEMO_ACCOUNTS_V025_AR.md",
         "flutter_app/lib/v176_release.dart",
         "flutter_app/lib/v02_release.dart",
         "backend-laravel/app/Models/PrizeBox.php",
@@ -181,8 +181,9 @@ def check_required_files() -> None:
 
 
 ROOT_ALLOWED_ENTRIES = {
-    ".github", ".gitignore", "CHECK_WARQNA_WINDOWS.bat", "README.md",
+    ".github", ".gitignore", "CHECK_WARQNA_WINDOWS.bat", "CHECK_QUALITY_GATE_WINDOWS.bat", "README.md",
     "RELEASE_VERSION.json", "START_HERE_AR.md", "START_WARQNA_WINDOWS.bat",
+    "FIX_FLUTTER_COMPILE_WINDOWS.bat", "RUN_FLUTTER_WEB_V025.bat",
     "assets", "backend-laravel", "docs", "flutter_app", "releases", "scripts", "tools",
 }
 
@@ -361,7 +362,13 @@ def check_secrets() -> None:
 
 def check_flutter_lock_verification() -> None:
     pubspec = read("flutter_app/pubspec.yaml")
-    for needle in ["google_mobile_ads: 7.0.0", "flutter_webrtc: 1.4.0"]:
+    for needle in [
+        "google_mobile_ads: 7.0.0",
+        "flutter_webrtc: 1.4.0",
+        "flutter_lints: 4.0.0",
+        "firebase_core: 4.11.0",
+        "firebase_messaging: 16.4.1",
+    ]:
         if needle not in pubspec:
             fail(f"Pinned Flutter dependency missing: {needle}")
 
@@ -370,6 +377,8 @@ def check_flutter_lock_verification() -> None:
         "python3 ../tools/verify_flutter_lock.py pubspec.lock",
         "google_mobile_ads=7.0.0",
         "flutter_webrtc=1.4.0",
+        "firebase_core=4.11.0",
+        "firebase_messaging=16.4.1",
         "name: warqna-v${{ steps.release.outputs.build }}-android",
     ]:
         if needle not in workflow:
@@ -915,8 +924,8 @@ def check_v166_global_polish() -> None:
         "permission_handler: ^12.0.3",
         "audioplayers: ^6.8.1",
         "flutter_local_notifications: ^22.0.1",
-        "firebase_core: ^4.11.0",
-        "firebase_messaging: ^16.4.1",
+        "firebase_core: 4.11.0",
+        "firebase_messaging: 16.4.1",
         "assets/images/games/",
         "assets/sounds/",
     ]:
@@ -1296,49 +1305,46 @@ def check_v176_daily_pack_inventory_contract() -> None:
 
 
 def check_v02_daily_prize_boxes_contract() -> None:
-    # The full standalone contract runs separately in every release workflow.
-    # Keep the aggregate preflight lightweight to avoid repeated large-process
-    # startup after all inherited release checks.
-    require("flutter_app/lib/v02_release.dart", [
-        "prizeBoxDailyLimitV02 = 4",
-        "class PrizeBoxOpeningDialogV02",
-        "Duration(seconds: 5)",
-        "'pasha_day'",
-        "'ticket'",
-    ])
-    require("backend-laravel/app/Services/WarqnaPro/PrizeBoxService.php", [
-        "public const DAILY_LIMIT = 4",
-        "awardForWin",
-        "random_int(1, 20) * 50",
-    ])
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v02_daily_prize_boxes_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna V0.2 daily prize boxes contract failed: " + result.stdout.strip())
+    print(result.stdout.strip())
     print("[OK] V0.2 dedicated prize-box page, 4-win limit, front-opening animation, ticket art and translated rewards")
 
-def check_v05_global_contract() -> None:
-    # The dedicated V0.5 contract is executed by CI before this aggregate gate.
-    require("flutter_app/lib/v05_release.dart", [
-        "warqnaVersionV05 = '0.5.0'",
-        "class PashaFezV05",
-        "class V05GlobalControlsOverlay",
-        "class V05ClubsPage",
-        "class AdminUsersPanelV05",
-    ])
-    require("backend-laravel/app/Services/WarqnaPro/ChallengeRoadService.php", [
-        "MAX_LIVES = 5",
-        "ALLOWED_STAGES = [10, 12, 15]",
-    ])
-    require("backend-laravel/app/Http/Controllers/MobileAdminController.php", [
-        "$this->guard($request, 'store')",
-        "$this->guard($request, 'designer')",
-        "set_admin_permissions",
-    ])
-    for rel in [
-        ".github/workflows/flutter-web-pages.yml",
-        ".github/workflows/flutter-android.yml",
-        ".github/workflows/flutter-ios.yml",
-        ".github/workflows/production-release-check.yml",
-    ]:
-        require(rel, ["test_v05_global_contract.py"])
-    print("[OK] V0.5 global store, gameplay, open rooms, clubs, challenge road, rewards, themes, admin and SEO")
+
+def check_v022_economy_rooms_clubs_engines_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v022_economy_rooms_clubs_engines_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna V0.2.2 economy/rooms/clubs/engines contract failed: " + result.stdout.strip())
+    print(result.stdout.strip())
+    print("[OK] V0.2.2 server economy, public rooms, club permissions, delegated admin and rummy engine contracts")
+
+
+
+def check_v025_complete_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v025_complete_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna V0.2.5 complete contract failed: " + result.stdout.strip())
+    print(result.stdout.strip())
+    print("[OK] V0.2.5 fair play, challenge journey, level rewards, localized bots, admin tools and ads")
 
 def check_dart_structure() -> None:
     for path in (ROOT / "flutter_app/lib").rglob("*.dart"):
@@ -1378,8 +1384,17 @@ def main() -> None:
     check_v164_android_startup_safety()
     check_v165_android_workmanager_boot_guard()
     check_v166_global_polish()
+    check_v169_flutter_ci_regressions()
+    check_v170_responsive_gameplay_security()
+    check_v171_controller_reference_contract()
+    check_v172_brand_table_contract()
+    check_v173_online_engagement_contract()
+    check_v174_offline_progression_navigation_contract()
+    check_v175_xp_challenges_pasha_designer_contract()
+    check_v176_daily_pack_inventory_contract()
     check_v02_daily_prize_boxes_contract()
-    check_v05_global_contract()
+    check_v022_economy_rooms_clubs_engines_contract()
+    check_v025_complete_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")

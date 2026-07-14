@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.5.0');
-const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 500);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.2.5');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 181);
 
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})
@@ -28,6 +28,7 @@ class WarqnaApiClient {
 
   String baseUrl;
   String? token;
+  String localeCode = 'ar';
 
   String get webBaseUrl => baseUrl.replaceFirst(RegExp(r'/api/mobile/v1$'), '');
 
@@ -49,6 +50,8 @@ class WarqnaApiClient {
         'X-Warqna-Version': warqnaAppVersion,
         'X-Warqna-Build': '$warqnaAppBuild',
         'X-Request-ID': 'app-${DateTime.now().microsecondsSinceEpoch}',
+        'X-Locale': localeCode,
+        'Accept-Language': localeCode,
         if (token != null && token!.isNotEmpty) 'Authorization': 'Bearer $token',
       };
 
@@ -135,6 +138,9 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> joinCompetitionV173(String competitionKey, int fee) => post('/competitions/$competitionKey/join', {'entry_fee': fee, 'entry_mode': 'auto'});
   Future<Map<String, dynamic>> activateChallengeV175(String challengeKey) => post('/challenges/$challengeKey/activate', const {});
   Future<Map<String, dynamic>> claimChallengeV175(String challengeKey) => post('/challenges/$challengeKey/claim', const {});
+  Future<Map<String, dynamic>> challengeJourneyV025() => get('/challenge-journey');
+  Future<Map<String, dynamic>> startChallengeJourneyV025(String gameKey, int stagesTotal) => post('/challenge-journey/start', {'game_key': gameKey, 'stages_total': stagesTotal});
+  Future<Map<String, dynamic>> recordChallengeJourneyResultV025(bool won, String clientResultId, String gameKey) => post('/challenge-journey/result', {'won': won, 'client_result_id': clientResultId, 'game_key': gameKey});
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> payload) => patch('/profile', payload);
   Future<Map<String, dynamic>> registerPushDevice(String token) => post('/push/devices', {'token': token, 'platform': platform, 'app_version': warqnaAppVersion, 'app_build': warqnaAppBuild});
   Future<Map<String, dynamic>> removePushDevice(String token) => deleteWithBody('/push/devices', {'token': token});
@@ -189,28 +195,11 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> voiceControls(String code, {required bool muted, required bool deafened}) =>
       patch('/games/session/$code/voice/controls', {'muted': muted, 'deafened': deafened});
   Future<Map<String, dynamic>> voiceLeave(String code) => post('/games/session/$code/voice/leave', const {});
-  Future<Map<String, dynamic>> challengeRoadV05() => get('/v05/challenge-road');
-  Future<Map<String, dynamic>> startChallengeRoadV05(String game, {int stages = 15}) => post('/v05/challenge-road/start', {'game': game, 'stages': stages});
-  Future<Map<String, dynamic>> clubsV05() => get('/v05/clubs');
-  Future<Map<String, dynamic>> clubV05(int clubId) => get('/v05/clubs/$clubId');
-  Future<Map<String, dynamic>> updateClubV05(int clubId, Map<String, dynamic> payload) => patch('/v05/clubs/$clubId', payload);
-  Future<Map<String, dynamic>> updateClubMemberV05(int clubId, int memberId, {required String role, required Map<String, bool> permissions}) =>
-      patch('/v05/clubs/$clubId/members/$memberId', {'role': role, 'permissions': permissions});
-  Future<Map<String, dynamic>> clubLogsV05(int clubId) => get('/v05/clubs/$clubId/logs');
-
   Future<Map<String, dynamic>> adminDashboard() => get('/admin/dashboard');
-  Future<Map<String, dynamic>> adminUserAction(
-    int userId,
-    String action, {
-    int? amount,
-    int? level,
-    Map<String, bool>? permissions,
-  }) =>
+  Future<Map<String, dynamic>> adminUserAction(int userId, String action, {String? amount}) =>
       post('/admin/users/$userId/action', {
         'action': action,
         if (amount != null) 'amount': amount,
-        if (level != null) 'level': level,
-        if (permissions != null) 'permissions': permissions,
       });
   Future<Map<String, dynamic>> adminDesignerEntitiesV173() => get('/admin/designer');
   Future<Map<String, dynamic>> upsertAdminDesignerEntityV173({
@@ -298,4 +287,29 @@ class WarqnaApiClient {
     }
     return data;
   }
+
+  Future<Map<String, dynamic>> adminDelegationsV022() => get('/admin/delegations');
+
+  Future<Map<String, dynamic>> updateAdminDelegationV022(int userId, List<String> permissions) =>
+      patch('/admin/delegations/$userId', <String, dynamic>{'permissions': permissions});
+
+  Future<Map<String, dynamic>> removeAdminDelegationV022(int userId) =>
+      delete('/admin/delegations/$userId');
+
+  Future<Map<String, dynamic>> clubsV022() => get('/clubs');
+
+  Future<Map<String, dynamic>> myClubV022() => get('/clubs/mine');
+
+  Future<Map<String, dynamic>> clubActivityV022(int clubId) => get('/clubs/$clubId/activity');
+
+  Future<Map<String, dynamic>> updateClubMemberV022({
+    required int clubId,
+    required int membershipId,
+    required String role,
+    required List<String> permissions,
+  }) => patch('/clubs/$clubId/members/$membershipId', <String, dynamic>{
+        'role': role,
+        'permissions': permissions,
+      });
+
 }

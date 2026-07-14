@@ -12,8 +12,22 @@ const Map<String, Map<String, Object>> demoAccounts = <String, Map<String, Objec
   'omar': <String, Object>{'password': 'Omar12345', 'name': 'عمر', 'coins': '68000', 'admin': false, 'level': 27},
   'sara': <String, Object>{'password': 'Sara12345', 'name': 'سارة', 'coins': '72000', 'admin': false, 'level': 29},
   'basel': <String, Object>{'password': 'Basel12345', 'name': 'باسل', 'coins': '84000', 'admin': false, 'level': 33},
-  'hala': <String, Object>{'password': 'Hala12345', 'name': 'هالة', 'coins': '61000', 'admin': false, 'level': 25},
+  'hala': <String, Object>{'password': 'Warqna025!', 'name': 'حلا', 'coins': '320000', 'admin': false, 'level': 58},
   'yazan': <String, Object>{'password': 'Yazan12345', 'name': 'يزن', 'coins': '79000', 'admin': false, 'level': 30},
+  'bayan': <String, Object>{'password': 'Warqna025!', 'name': 'بيان', 'coins': '18000', 'admin': false, 'level': 8},
+  'kenan': <String, Object>{'password': 'Warqna025!', 'name': 'كنان', 'coins': '26000', 'admin': false, 'level': 12},
+  'raad': <String, Object>{'password': 'Warqna025!', 'name': 'رعد', 'coins': '65000', 'admin': false, 'level': 24},
+  'asem': <String, Object>{'password': 'Warqna025!', 'name': 'عاصم', 'coins': '90000', 'admin': false, 'level': 31},
+  'moatasem': <String, Object>{'password': 'Warqna025!', 'name': 'معتصم', 'coins': '130000', 'admin': false, 'level': 38},
+  'hossam': <String, Object>{'password': 'Warqna025!', 'name': 'حسام', 'coins': '190000', 'admin': false, 'level': 45},
+  'janan': <String, Object>{'password': 'Warqna025!', 'name': 'جنان', 'coins': '33000', 'admin': false, 'level': 15},
+  'hoor': <String, Object>{'password': 'Warqna025!', 'name': 'حور', 'coins': '56000', 'admin': false, 'level': 22},
+  'jannat': <String, Object>{'password': 'Warqna025!', 'name': 'جنات', 'coins': '81000', 'admin': false, 'level': 29},
+  'alaa': <String, Object>{'password': 'Warqna025!', 'name': 'آلاء', 'coins': '115000', 'admin': false, 'level': 36},
+  'afnan': <String, Object>{'password': 'Warqna025!', 'name': 'أفنان', 'coins': '170000', 'admin': false, 'level': 43},
+  'shahd': <String, Object>{'password': 'Warqna025!', 'name': 'شهد', 'coins': '240000', 'admin': false, 'level': 50},
+  'shatha': <String, Object>{'password': 'Warqna025!', 'name': 'شذى', 'coins': '430000', 'admin': false, 'level': 66},
+  'qamar': <String, Object>{'password': 'Warqna025!', 'name': 'قمر', 'coins': '600000', 'admin': false, 'level': 75},
 };
 
 String demoAvatarFor(String username) => switch (username.trim().toLowerCase()) {
@@ -59,15 +73,15 @@ Map<String, int> decodeIntMap(String? raw) {
 }
 
 const List<(String, String, Color)> v151ThemeOptions = <(String, String, Color)>[
-  ('dark', 'داكن فاخر', Color(0xffffcf67)),
-  ('light', 'فاتح', Color(0xff315fbd)),
-  ('royal', 'أزرق ملكي', Color(0xff3b82f6)),
+  ('dark', 'غامق', Color(0xffffcf67)),
+  ('light', 'فاتح', Color(0xff64748b)),
+  ('blue', 'أزرق', Color(0xff2563eb)),
   ('sky', 'أزرق سماوي', Color(0xff38bdf8)),
-  ('emerald', 'أخضر زمردي', Color(0xff10b981)),
-  ('green_light', 'أخضر فاتح', Color(0xff22c55e)),
-  ('gold', 'ذهبي', Color(0xffffcf67)),
-  ('purple', 'بنفسجي', Color(0xffa855f7)),
-  ('pink_light', 'وردي فاتح', Color(0xffec4899)),
+  ('green', 'أخضر', Color(0xff059669)),
+  ('light_green', 'أخضر فاتح', Color(0xff84cc16)),
+  ('gold', 'ذهبي', Color(0xffd4a72c)),
+  ('purple', 'بنفسجي', Color(0xff9333ea)),
+  ('light_pink', 'وردي فاتح', Color(0xfff9a8d4)),
 ];
 
 const List<String> v151AccentColors = <String>[

@@ -1,12 +1,32 @@
 {
+  "release": "Warqna V0.2.2",
   "version": "0.2.2",
   "build": 178,
-  "display": "V0.2.2",
-  "type": "full-corrected-release",
-  "fixes": [
-    "clean project root",
-    "Laravel User factory support",
-    "club visibility and permission schema compatibility",
-    "V0.2.1 feature patch merged"
-  ]
+  "full": "0.2.2+178",
+  "display_release": "V0.2.2",
+  "name": "Warqna V0.2.2 Economy Rooms Clubs Engines Patch",
+  "distribution": "patch-only",
+  "features": [
+    "server_authoritative_store_purchase",
+    "reusable_timed_store_items",
+    "public_rooms_with_player_avatars",
+    "global_player_profile_navigation",
+    "club_identity_and_activity_log",
+    "granular_club_member_permissions",
+    "delegated_platform_admin_permissions",
+    "hand_and_banakil_opening_51_melds",
+    "responsive_full_hand_without_horizontal_scroll",
+    "home_favorite_games_one_to_four",
+    "free_and_store_theme_split",
+    "red_original_pasha_asset_contract",
+    "token_transfer_minimum_and_fee",
+    "leaderboard_and_chat_layout_polish"
+  ],
+  "files": {
+    "start": "docs/ar/releases/current/START_HERE_V178_AR.md",
+    "release_notes": "docs/ar/releases/current/RELEASE_NOTES_V178_AR.md",
+    "github": "docs/ar/deployment/GITHUB_UPLOAD_V178_AR.md",
+    "quality": "docs/ar/reports/current/QUALITY_REPORT_V178_AR.md",
+    "validation": "docs/ar/validation/current/VALIDATION_RESULTS_V178.txt"
+  }
 }

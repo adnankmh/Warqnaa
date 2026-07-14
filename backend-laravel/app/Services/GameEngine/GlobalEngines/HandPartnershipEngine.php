@@ -18,6 +18,8 @@ class HandPartnershipEngine extends GlobalCardEngineCore
             'rounds' => 5,
             'cardsEach' => 14,
             'opening' => 51,
+            'wildTwos' => false,
+            'wildValue' => 20,
             'targetScore' => 41,
             'targetOptions' => [],
             'minBid' => 7,

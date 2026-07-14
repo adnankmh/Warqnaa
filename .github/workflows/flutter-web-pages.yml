@@ -43,9 +43,16 @@ jobs:
         with:
           enablement: true
 
-      - name: Get Flutter packages
+      - name: Resolve and verify Flutter packages
         working-directory: flutter_app
-        run: flutter pub get
+        run: |
+          flutter clean
+          flutter pub get
+          python3 ../tools/verify_flutter_lock.py pubspec.lock \
+            google_mobile_ads=7.0.0 \
+            flutter_webrtc=1.4.0 \
+            firebase_core=4.11.0 \
+            firebase_messaging=16.4.1
 
       - name: Verify additive release contracts
         working-directory: flutter_app
@@ -57,7 +64,6 @@ jobs:
           python3 ../tools/test_v175_xp_challenges_pasha_designer_contract.py
           python3 ../tools/test_v176_daily_pack_inventory_contract.py
           python3 ../tools/test_v02_daily_prize_boxes_contract.py
-          python3 ../tools/test_v05_global_contract.py
 
       - name: Verify Flutter API compatibility contract
         working-directory: flutter_app

@@ -15,7 +15,8 @@ use App\Http\Controllers\{
     SocialAuthController,
     MobilePushController,
     MobileEngagementController,
-    MobileV05Controller
+    MobileClubController,
+    MobileChallengeJourneyController
 };
 
 // Backward-compatible public aliases for older Flutter/PWA builds. They
@@ -59,14 +60,10 @@ Route::prefix('mobile/v1')->group(function () {
         Route::post('/packs/daily/open', [MobileEngagementController::class, 'openDailyPack'])->middleware('throttle:warqna-sensitive');
         Route::post('/challenges/{challengeKey}/activate', [MobileEngagementController::class, 'activateChallenge'])->middleware('throttle:warqna-sensitive');
         Route::post('/challenges/{challengeKey}/claim', [MobileEngagementController::class, 'claimChallenge'])->middleware('throttle:warqna-sensitive');
+        Route::get('/challenge-journey', [MobileChallengeJourneyController::class, 'show']);
+        Route::post('/challenge-journey/start', [MobileChallengeJourneyController::class, 'start'])->middleware('throttle:warqna-sensitive');
+        Route::post('/challenge-journey/result', [MobileChallengeJourneyController::class, 'result'])->middleware('throttle:warqna-sensitive');
         Route::post('/competitions/{competitionKey}/join', [MobileEngagementController::class, 'joinCompetition'])->middleware('throttle:warqna-sensitive');
-        Route::get('/v05/challenge-road', [MobileV05Controller::class, 'challenge']);
-        Route::post('/v05/challenge-road/start', [MobileV05Controller::class, 'startChallenge'])->middleware('throttle:warqna-sensitive');
-        Route::get('/v05/clubs', [MobileV05Controller::class, 'clubs']);
-        Route::get('/v05/clubs/{club}', [MobileV05Controller::class, 'club']);
-        Route::patch('/v05/clubs/{club}', [MobileV05Controller::class, 'updateClub'])->middleware('throttle:warqna-sensitive');
-        Route::patch('/v05/clubs/{club}/members/{member}', [MobileV05Controller::class, 'updateMember'])->middleware('throttle:warqna-sensitive');
-        Route::get('/v05/clubs/{club}/logs', [MobileV05Controller::class, 'logs']);
 
         Route::get('/account/export', [MobileAccountController::class, 'export'])->middleware('throttle:warqna-sensitive');
         Route::get('/account/sessions', [MobileAccountController::class, 'sessions']);
@@ -95,6 +92,11 @@ Route::prefix('mobile/v1')->group(function () {
         Route::patch('/games/session/{room:code}/voice/controls', [MobileVoiceController::class, 'controls'])->middleware('throttle:60,1');
         Route::post('/games/session/{room:code}/voice/leave', [MobileVoiceController::class, 'leave'])->middleware('throttle:30,1');
 
+        Route::get('/clubs', [MobileClubController::class, 'index']);
+        Route::get('/clubs/mine', [MobileClubController::class, 'mine']);
+        Route::get('/clubs/{club}/activity', [MobileClubController::class, 'activity']);
+        Route::patch('/clubs/{club}/members/{member}', [MobileClubController::class, 'updateMember']);
+
         Route::get('/social', [MobileSocialController::class, 'index']);
         Route::get('/social/search', [MobileSocialController::class, 'search']);
         Route::get('/social/users/{user}/profile', [MobileSocialController::class, 'profile']);
@@ -110,6 +112,9 @@ Route::prefix('mobile/v1')->group(function () {
         Route::post('/social/transfer', [MobileSocialController::class, 'transfer'])->middleware('throttle:warqna-sensitive');
 
         Route::get('/admin/dashboard', [MobileAdminController::class, 'dashboard']);
+        Route::get('/admin/delegations', [MobileAdminController::class, 'delegations']);
+        Route::patch('/admin/delegations/{user}', [MobileAdminController::class, 'updateDelegation']);
+        Route::delete('/admin/delegations/{user}', [MobileAdminController::class, 'deleteDelegation']);
         Route::patch('/admin/games/{game}', [MobileAdminController::class, 'updateGame']);
         Route::patch('/admin/store/{item}', [MobileAdminController::class, 'updateStore']);
         Route::post('/admin/users/{user}/action', [MobileAdminController::class, 'userAction']);

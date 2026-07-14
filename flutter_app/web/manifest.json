@@ -6,7 +6,7 @@
   "scope": ".",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
-  "orientation": "landscape-primary",
+  "orientation": "any",
   "background_color": "#05111f",
   "theme_color": "#071b2f",
   "lang": "ar",

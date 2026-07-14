@@ -202,7 +202,7 @@ class PrizeBoxService
     public static function catalog(): array
     {
         return [
-            ['weight' => 15, 'type' => 'pasha_day', 'value' => '1', 'duration_hours' => 24, 'rarity' => 'legendary', 'icon' => '🎩', 'label_ar' => 'يوم باشا', 'store_item_key' => 'daily_prize_pasha_day_v02'],
+            ['weight' => 15, 'type' => 'pasha_day', 'value' => '1', 'duration_hours' => 24, 'rarity' => 'legendary', 'icon' => '👑', 'label_ar' => 'يوم باشا', 'store_item_key' => 'daily_prize_pasha_day_v02'],
             ['weight' => 18, 'type' => 'writing_color', 'value' => '#22d3ee', 'duration_hours' => 24, 'rarity' => 'rare', 'icon' => '✍️', 'label_ar' => 'لون كتابة لمدة يوم', 'store_item_key' => 'daily_pack_chat_cyan_24h_v176'],
             ['weight' => 18, 'type' => 'player_color', 'value' => '#facc15', 'duration_hours' => 24, 'rarity' => 'rare', 'icon' => '🎨', 'label_ar' => 'لون لاعب لمدة يوم', 'store_item_key' => 'daily_pack_name_gold_24h_v176'],
             ['weight' => 14, 'type' => 'profile_cover', 'value' => 'cover_v02_royal', 'duration_hours' => 72, 'rarity' => 'epic', 'icon' => '🖼️', 'label_ar' => 'غلاف شخصي لمدة 3 أيام', 'store_item_key' => 'daily_prize_cover_v02'],

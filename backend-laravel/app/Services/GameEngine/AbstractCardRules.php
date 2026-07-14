@@ -32,6 +32,8 @@ abstract class AbstractCardRules implements GameRuleContract
         $hands = [];
         foreach ($players as $p) $hands[$p] = [];
         for ($r=0; $r<$cardsEach; $r++) foreach ($players as $p) if ($deck) $hands[$p][] = array_shift($deck)->id();
+        $mode = str_contains(strtolower(static::class), 'hand') || str_contains(strtolower(static::class), 'pinochle') ? 'rummy' : (str_contains(strtolower(static::class), 'baloot') ? 'baloot' : 'trick');
+        $hands = FairDealBalancer::balance($hands, $mode);
         foreach ($hands as $k=>$h) $hands[$k] = $this->sortHand($h);
         return [$hands, $deck];
     }

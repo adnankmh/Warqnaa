@@ -30,7 +30,6 @@ class ProgressionService
                 'user_id'=>(int)$user->id,
                 'profile'=>$this->profileSnapshot($user),
                 'prize_box'=>$prizeBox ? app(PrizeBoxService::class)->boxPayload($prizeBox) : null,
-                'challenge_road'=>null,
             ];
         }
 
@@ -66,6 +65,7 @@ class ProgressionService
             $clubPoints = $this->clubPoints($user, $won, $mode, (bool)($context['same_club_team'] ?? false));
 
             $levelResult = $this->xpService->award($user, $awardedXp, 0, $eventType === 'match_complete' && $won, false, false);
+            $levelRewards = app(LevelRewardService::class)->grantRange($user, (int)$levelResult['old_level'], (int)$levelResult['new_level']);
             $profile->refresh();
             $profile->round_points = (int)$profile->round_points + $roundPoints;
             $profile->tournament_points = (int)$profile->tournament_points + $tournamentPoints;
@@ -97,19 +97,13 @@ class ProgressionService
                     isset($context['game']) ? (string)$context['game'] : null,
                 );
             }
-            $challengeRoad = null;
-            if ($eventType === 'match_complete' && !empty($context['game'])) {
-                $challengeRoad = app(\App\Services\WarqnaPro\ChallengeRoadService::class)->record(
-                    $user, (string)$context['game'], $won, $eventKey
-                );
-            }
 
             return $this->payload($event, false) + [
                 'user_id'=>(int)$user->id,
                 'level'=>$levelResult,
+                'level_rewards'=>$levelRewards,
                 'profile'=>$this->profileSnapshot($user),
                 'prize_box'=>$prizeBox ? app(PrizeBoxService::class)->boxPayload($prizeBox) : null,
-                'challenge_road'=>$challengeRoad,
             ];
         });
     }

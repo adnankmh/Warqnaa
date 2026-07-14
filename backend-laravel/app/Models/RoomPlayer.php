@@ -14,6 +14,9 @@ class RoomPlayer extends Model
         'is_bot',
         'connected',
         'missed_turns',
+        'manual_exit_count',
+        'absence_ejections',
+        'return_blocked',
         'voice_joined_at',
         'voice_last_seen_at',
         'voice_muted',
@@ -23,6 +26,7 @@ class RoomPlayer extends Model
     protected $casts = [
         'is_bot' => 'boolean',
         'connected' => 'boolean',
+        'return_blocked' => 'boolean',
         'voice_joined_at' => 'datetime',
         'voice_last_seen_at' => 'datetime',
         'voice_muted' => 'boolean',
