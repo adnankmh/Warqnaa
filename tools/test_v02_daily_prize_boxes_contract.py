@@ -81,7 +81,7 @@ def main() -> None:
     require(
         "backend-laravel/app/Services/WarqnaPro/PrizeBoxService.php",
         "public const DAILY_LIMIT = 4",
-        "awardForWin",
+        "awardForCompletedGame",
         "random_int(1, 20) * 50",
         "'value' => '200'",
         "pasha_style = 'red'",
@@ -95,7 +95,7 @@ def main() -> None:
         "backend-laravel/app/Services/Progression/ProgressionService.php",
         "PrizeBoxService",
         "'prize_box'",
-        "awardForWin",
+        "awardForCompletedGame",
     )
     require(
         "backend-laravel/database/migrations/2026_07_13_000200_create_v02_prize_boxes.php",
