@@ -33,6 +33,7 @@ part 'v175_release.dart';
 part 'v176_release.dart';
 part 'v02_release.dart';
 part 'v021_patch.dart';
+part 'v182_rewards.dart';
 
 final GlobalKey<NavigatorState> warqnaNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -100,6 +101,7 @@ class _WarqnaAppState extends State<WarqnaApp> {
       animation: controller,
       builder: (context, _) {
         final palette = AppPalette.fromCode(controller.themeCode);
+        final isLight = controller.themeCode == 'light';
         return MaterialApp(
           navigatorKey: warqnaNavigatorKey,
           debugShowCheckedModeBanner: false,
@@ -129,14 +131,15 @@ class _WarqnaAppState extends State<WarqnaApp> {
           },
           theme: ThemeData(
             useMaterial3: true,
-            brightness: Brightness.dark,
+            brightness: isLight ? Brightness.light : Brightness.dark,
             scaffoldBackgroundColor: palette.bg,
-            colorScheme: ColorScheme.dark(
-              primary: colorFromHex(controller.uiAccentHex),
-              secondary: palette.green,
-              surface: palette.panel,
-              error: const Color(0xffd94f4f),
-            ),
+            colorScheme: isLight
+                ? ColorScheme.light(primary: colorFromHex(controller.uiAccentHex), secondary: palette.green, surface: palette.panel, error: const Color(0xffb91c1c), onSurface: palette.text, onPrimary: Colors.white)
+                : ColorScheme.dark(primary: colorFromHex(controller.uiAccentHex), secondary: palette.green, surface: palette.panel, error: const Color(0xffd94f4f), onSurface: palette.text),
+            textTheme: ThemeData(brightness: isLight ? Brightness.light : Brightness.dark).textTheme.apply(bodyColor: palette.text, displayColor: palette.text),
+            iconTheme: IconThemeData(color: palette.text),
+            appBarTheme: AppBarTheme(backgroundColor: palette.bg, foregroundColor: palette.text, surfaceTintColor: Colors.transparent),
+            dividerColor: palette.muted.withValues(alpha: .25),
             navigationBarTheme: NavigationBarThemeData(
               backgroundColor: palette.panel.withValues(alpha: .96),
               indicatorColor: palette.gold.withValues(alpha: .16),
@@ -155,11 +158,11 @@ class _WarqnaAppState extends State<WarqnaApp> {
               fillColor: palette.panel2,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble()),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: .08)),
+                borderSide: BorderSide(color: palette.muted.withValues(alpha: .22)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(controller.uiRadius.clamp(10, 26).toDouble()),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: .08)),
+                borderSide: BorderSide(color: palette.muted.withValues(alpha: .22)),
               ),
             ),
             filledButtonTheme: FilledButtonThemeData(
@@ -238,6 +241,14 @@ class AppController extends ChangeNotifier {
   int challengeStreakV173 = 0;
   Timer? connectivityTimerV173;
   bool awayMode = false;
+  String? luckyWheelLastFreeDateV182;
+  String luckyWheelSpinDateV182 = '';
+  int luckyWheelTokenSpinsV182 = 0;
+  Map<String, dynamic>? lastLuckyWheelRewardV182;
+  BigInt adminRevenueTokensV182 = BigInt.zero;
+  final List<Map<String, dynamic>> designerOfflineEntitiesV182 = <Map<String, dynamic>>[];
+  final Map<String, List<String>> clubPermissionsV182 = <String, List<String>>{};
+  final List<Map<String, dynamic>> clubActivityV182 = <Map<String, dynamic>>[];
   final Map<String, int> gameExitCounts = <String, int>{};
   int gamesPlayed = 842;
   int wins = 514;
@@ -284,6 +295,8 @@ class AppController extends ChangeNotifier {
   int rewardedAdClaimsToday = 0;
   String? rewardedAdClaimDate;
   String? activeClub;
+  String clubImageEmojiV182 = '🛡️';
+  String clubDescriptionV182 = 'نادي احترافي داخل مجتمع ورقنا.';
   final Set<String> owned = {'emoji_fun'};
   final Map<String, int> storePriceOverrides = <String, int>{};
   final Map<String, String> storeNameOverrides = <String, String>{};
@@ -352,6 +365,8 @@ class AppController extends ChangeNotifier {
       selectedEffect = 'effect_gold_entry';
       selectedCover = 'cover_royal_gold';
       activeClub = null;
+      clubImageEmojiV182 = '🛡️';
+      clubDescriptionV182 = 'نادي احترافي داخل مجتمع ورقنا.';
       activeCompetition = null;
       activeChallenge = null;
       challengeRoadGame = null;
@@ -368,6 +383,15 @@ class AppController extends ChangeNotifier {
         ..clear()
         ..add('emoji_fun');
       gameExitCounts.clear();
+      awayMode = false;
+      luckyWheelLastFreeDateV182 = null;
+      luckyWheelSpinDateV182 = '';
+      luckyWheelTokenSpinsV182 = 0;
+      lastLuckyWheelRewardV182 = null;
+      adminRevenueTokensV182 = BigInt.zero;
+      designerOfflineEntitiesV182.clear();
+      clubPermissionsV182.clear();
+      clubActivityV182.clear();
       await prefs.setBool(initializedKey, true);
       await _saveAccountState(prefs);
       return;
@@ -405,6 +429,8 @@ class AppController extends ChangeNotifier {
     lastLoginDate = prefs.getString(_accountKey('lastLoginDate'));
     lastDailyClaimDate = prefs.getString(_accountKey('lastDailyClaimDate'));
     activeClub = prefs.getString(_accountKey('activeClub'));
+    clubImageEmojiV182 = prefs.getString(_accountKey('clubImageEmojiV182')) ?? '🛡️';
+    clubDescriptionV182 = prefs.getString(_accountKey('clubDescriptionV182')) ?? 'نادي احترافي داخل مجتمع ورقنا.';
     activeCompetition = prefs.getString(_accountKey('activeCompetition'));
     activeChallenge = prefs.getString(_accountKey('activeChallenge'));
     challengeRoadGame = prefs.getString(_accountKey('challengeRoadGame'));
@@ -422,6 +448,30 @@ class AppController extends ChangeNotifier {
     gameExitCounts
       ..clear()
       ..addAll(decodeIntMap(prefs.getString(_accountKey('gameExitCounts'))));
+    awayMode = prefs.getBool(_accountKey('awayMode')) ?? false;
+    luckyWheelLastFreeDateV182 = prefs.getString(_accountKey('luckyWheelLastFreeDateV182'));
+    luckyWheelSpinDateV182 = prefs.getString(_accountKey('luckyWheelSpinDateV182')) ?? '';
+    luckyWheelTokenSpinsV182 = prefs.getInt(_accountKey('luckyWheelTokenSpinsV182')) ?? 0;
+    final lastWheelRaw = prefs.getString(_accountKey('lastLuckyWheelRewardV182'));
+    lastLuckyWheelRewardV182 = null;
+    if (lastWheelRaw != null && lastWheelRaw.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(lastWheelRaw);
+        if (decoded is Map) lastLuckyWheelRewardV182 = Map<String, dynamic>.from(decoded);
+      } catch (_) {
+        await prefs.remove(_accountKey('lastLuckyWheelRewardV182'));
+      }
+    }
+    adminRevenueTokensV182 = BigInt.tryParse(prefs.getString(_accountKey('adminRevenueTokensV182')) ?? '') ?? BigInt.zero;
+    designerOfflineEntitiesV182
+      ..clear()
+      ..addAll(decodeMapListV176(prefs.getString(_accountKey('designerOfflineEntitiesV182'))));
+    clubPermissionsV182
+      ..clear()
+      ..addAll(decodeStringListMapV182(prefs.getString(_accountKey('clubPermissionsV182'))));
+    clubActivityV182
+      ..clear()
+      ..addAll(decodeMapListV176(prefs.getString(_accountKey('clubActivityV182'))));
     _normalizeTimedCosmetics();
   }
 
@@ -461,6 +511,8 @@ class AppController extends ChangeNotifier {
     if (lastLoginDate == null) { await prefs.remove(_accountKey('lastLoginDate')); } else { await prefs.setString(_accountKey('lastLoginDate'), lastLoginDate!); }
     if (lastDailyClaimDate == null) { await prefs.remove(_accountKey('lastDailyClaimDate')); } else { await prefs.setString(_accountKey('lastDailyClaimDate'), lastDailyClaimDate!); }
     if (activeClub == null) { await prefs.remove(_accountKey('activeClub')); } else { await prefs.setString(_accountKey('activeClub'), activeClub!); }
+    await prefs.setString(_accountKey('clubImageEmojiV182'), clubImageEmojiV182);
+    await prefs.setString(_accountKey('clubDescriptionV182'), clubDescriptionV182);
     if (activeCompetition == null) { await prefs.remove(_accountKey('activeCompetition')); } else { await prefs.setString(_accountKey('activeCompetition'), activeCompetition!); }
     if (activeChallenge == null) { await prefs.remove(_accountKey('activeChallenge')); } else { await prefs.setString(_accountKey('activeChallenge'), activeChallenge!); }
     if (challengeRoadGame == null) { await prefs.remove(_accountKey('challengeRoadGame')); } else { await prefs.setString(_accountKey('challengeRoadGame'), challengeRoadGame!); }
@@ -477,6 +529,15 @@ class AppController extends ChangeNotifier {
     await prefs.setInt(_accountKey('activeRoomTurnSeconds'), activeRoomTurnSeconds);
     await prefs.setStringList(_accountKey('owned'), owned.toList());
     await prefs.setString(_accountKey('gameExitCounts'), jsonEncode(gameExitCounts));
+    await prefs.setBool(_accountKey('awayMode'), awayMode);
+    if (luckyWheelLastFreeDateV182 == null) { await prefs.remove(_accountKey('luckyWheelLastFreeDateV182')); } else { await prefs.setString(_accountKey('luckyWheelLastFreeDateV182'), luckyWheelLastFreeDateV182!); }
+    await prefs.setString(_accountKey('luckyWheelSpinDateV182'), luckyWheelSpinDateV182);
+    await prefs.setInt(_accountKey('luckyWheelTokenSpinsV182'), luckyWheelTokenSpinsV182);
+    if (lastLuckyWheelRewardV182 == null) { await prefs.remove(_accountKey('lastLuckyWheelRewardV182')); } else { await prefs.setString(_accountKey('lastLuckyWheelRewardV182'), jsonEncode(lastLuckyWheelRewardV182)); }
+    await prefs.setString(_accountKey('adminRevenueTokensV182'), adminRevenueTokensV182.toString());
+    await prefs.setString(_accountKey('designerOfflineEntitiesV182'), jsonEncode(designerOfflineEntitiesV182));
+    await prefs.setString(_accountKey('clubPermissionsV182'), jsonEncode(clubPermissionsV182));
+    await prefs.setString(_accountKey('clubActivityV182'), jsonEncode(clubActivityV182));
   }
 
   String _offlineAliasKey(String value) => 'warqna.offline.alias.${value.trim().toLowerCase()}';
@@ -519,7 +580,7 @@ class AppController extends ChangeNotifier {
     await _loadAccountState(
       prefs,
       defaultCoins: demoProfile?['coins']?.toString() ?? (isAdmin ? '1000000000000000000' : '1500'),
-      defaultLevel: int.tryParse(demoProfile?['level']?.toString() ?? '') ?? (isAdmin ? 90 : 1),
+      defaultLevel: int.tryParse(demoProfile?['level']?.toString() ?? '') ?? (isAdmin ? 99 : 1),
       defaultVipDays: isAdmin ? 3650 : 0,
       defaultAvatar: demoAvatarFor(username),
     );
@@ -544,7 +605,7 @@ class AppController extends ChangeNotifier {
     email = mail.trim();
     isAdmin = username.toLowerCase() == 'adnan';
     await _storeOfflineCredentials(prefs, username, email, password);
-    await _loadAccountState(prefs, defaultCoins: isAdmin ? '1000000000000000000' : '1500', defaultLevel: isAdmin ? 90 : 1, defaultVipDays: isAdmin ? 3650 : 0);
+    await _loadAccountState(prefs, defaultCoins: isAdmin ? '1000000000000000000' : '1500', defaultLevel: isAdmin ? 99 : 1, defaultVipDays: isAdmin ? 3650 : 0);
     _applyLocalLoginStreak();
     authToken = null;
     api.token = null;
@@ -762,13 +823,13 @@ class AppController extends ChangeNotifier {
         isAuthenticated = true;
         serverConnected = true;
       } catch (_) {
-        await _loadAccountState(prefs, defaultCoins: isAdmin ? '1000000000000000000' : '1500', defaultLevel: isAdmin ? 90 : 1, defaultVipDays: isAdmin ? 3650 : 0);
+        await _loadAccountState(prefs, defaultCoins: isAdmin ? '1000000000000000000' : '1500', defaultLevel: isAdmin ? 99 : 1, defaultVipDays: isAdmin ? 3650 : 0);
         _applyLocalLoginStreak();
         isAuthenticated = true;
         serverConnected = false;
       }
     } else if (offlineLoggedIn && storedUsername != null && storedUsername.trim().isNotEmpty) {
-      await _loadAccountState(prefs, defaultCoins: isAdmin ? '1000000000000000000' : '1500', defaultLevel: isAdmin ? 90 : 1, defaultVipDays: isAdmin ? 3650 : 0);
+      await _loadAccountState(prefs, defaultCoins: isAdmin ? '1000000000000000000' : '1500', defaultLevel: isAdmin ? 99 : 1, defaultVipDays: isAdmin ? 3650 : 0);
       _applyLocalLoginStreak();
       isAuthenticated = true;
       serverConnected = false;
@@ -891,7 +952,7 @@ class AppController extends ChangeNotifier {
       if (streak is Map) {
         consecutiveLoginDays = int.tryParse(streak['streak']?.toString() ?? '') ?? consecutiveLoginDays;
         final awarded = int.tryParse(streak['pasha_awarded']?.toString() ?? '') ?? 0;
-        if (awarded > 0) notices.insert(0, AppNotice('🎩', 'مكافأة الاستمرارية', 'حصلت على يوم باشا مجاني بعد 3 أيام دخول متواصلة.'));
+        if (awarded > 0) notices.insert(0, AppNotice('👑', 'مكافأة الاستمرارية', 'حصلت على يوم باشا مجاني بعد 3 أيام دخول متواصلة.'));
       }
       if (data['account_reactivated'] == true) {
         notices.insert(0, AppNotice('✅', 'تمت استعادة الحساب', data['reactivation_message']?.toString() ?? 'تمت استعادة الحساب.'));
@@ -1075,7 +1136,7 @@ class AppController extends ChangeNotifier {
     championRankPointsV173 = int.tryParse(data['champion_rank_points']?.toString() ?? '') ?? championRankPointsV173;
     if (isAdmin && username.toLowerCase() == 'adnan') {
       if (coins < BigInt.parse('1000000000000000000')) coins = BigInt.parse('1000000000000000000');
-      level = math.max(level, 90);
+      level = math.max(level, 99);
       vipDays = math.max(vipDays, 3650);
     }
     _normalizeTimedCosmetics();
@@ -1104,7 +1165,7 @@ class AppController extends ChangeNotifier {
 
   void _recalculateLevel() {
     if (isAdmin) {
-      level = math.max(level, 90);
+      level = math.max(level, 99);
       xpNext = xpNeededForLevel(level);
       return;
     }
@@ -1212,7 +1273,7 @@ class AppController extends ChangeNotifier {
     lastLoginDate = todayText;
     if (consecutiveLoginDays % 3 == 0) {
       vipDays += 1;
-      notices.insert(0, AppNotice('🎩', 'يوم باشا مجاني', 'أكملت 3 أيام دخول متواصلة، وتمت إضافة يوم باشا.'));
+      notices.insert(0, AppNotice('👑', 'يوم باشا مجاني', 'أكملت 3 أيام دخول متواصلة، وتمت إضافة يوم باشا.'));
     }
   }
 
@@ -1437,6 +1498,7 @@ class AppController extends ChangeNotifier {
       // GitHub Pages/PWA has no Laravel runtime. Keep the local demo economy fully
       // functional and persistent instead of rejecting every purchase.
       coins -= BigInt.from(price);
+      if (!isPrimaryAdmin) adminRevenueTokensV182 += BigInt.from(price);
     }
 
     if (!reusable) owned.add(product.id);
@@ -1751,15 +1813,35 @@ class AppController extends ChangeNotifier {
     final next = (gameExitCounts[gameId] ?? 0) + 1;
     gameExitCounts[gameId] = next.clamp(0, 3).toInt();
     activeGame = null;
-    awayMode = false;
+    activeRoomCode = null;
+    activeRoomName = null;
+    activeRoomVoice = false;
     await _save();
     notifyListeners();
     return gameExitCounts[gameId]!;
   }
 
+  Future<void> recordInactivityEjectionV182() async {
+    // Inactivity/network ejection is not a voluntary exit and must never consume
+    // one of the player's three manual return opportunities.
+    activeGame = null;
+    activeRoomCode = null;
+    activeRoomName = null;
+    activeRoomVoice = false;
+    await _save();
+    notifyListeners();
+  }
+
+  void resetGameExitSessionV182(String gameId) {
+    if (gameExitCounts.remove(gameId) != null) {
+      unawaited(_save());
+      notifyListeners();
+    }
+  }
+
   void setAwayMode(bool value) {
-    if (value && vipDays <= 0) return;
     awayMode = value;
+    unawaited(_save());
     notifyListeners();
   }
 
@@ -1943,10 +2025,12 @@ class AppController extends ChangeNotifier {
     _recalculateLevel();
     gamesPlayed += 1;
     wins += 1;
+    resetGameExitSessionV182(gameId);
     giftRoadProgress = (giftRoadProgress + 1).clamp(0, 30).toInt();
     transactions.insert(0, TokenTransaction('مكافأة فوز', baseReward, 'الآن'));
     notices.insert(0, AppNotice(storeProductById(selectedEffect)?.icon ?? '🏆', 'فوز جديد', 'حصلت على $baseReward توكن و$xpReward XP مع تفعيل مؤثر الفوز.'));
-    awardLocalPrizeBoxV02(gameId);
+    final prizeMode = activeCompetition != null || activeChallenge != null ? 'tournament' : 'normal';
+    awardLocalPrizeBoxV02(gameId, won: true, mode: prizeMode);
     final wasRoad = activeChallenge?.startsWith('road:') == true;
     if (wasRoad) recordChallengeRoadResult(gameId, won: true, marker: 'win:$marker');
     if (!wasRoad) activeChallenge = null;
@@ -2174,6 +2258,15 @@ class ChatMessage {
   final String time;
 
   const ChatMessage(this.sender, this.body, this.mine, this.time);
+}
+
+Map<String, List<String>> decodeStringListMapV182(String? source) {
+  if (source == null || source.trim().isEmpty) return <String, List<String>>{};
+  try {
+    final decoded = jsonDecode(source);
+    if (decoded is! Map) return <String, List<String>>{};
+    return decoded.map((key, value) => MapEntry(key.toString(), value is List ? value.map((item) => item.toString()).toList() : <String>[]));
+  } catch (_) { return <String, List<String>>{}; }
 }
 
 class AppPalette {
@@ -3089,12 +3182,12 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: 'daily_pack_chat_cyan_24h_v176', category: 'chat_colors', icon: '💬', nameAr: 'صندوق الجوائز: لون كتابة سماوي', nameEn: 'Prize Box: Cyan Writing Color', descriptionAr: 'لون كتابة سماوي مؤقت من صندوق الجوائز اليومي، يظهر في مقتنياتك حتى انتهاء الصلاحية.', descriptionEn: 'A temporary cyan writing color awarded by the daily prize box.', price: 0, durationHours: 24, value: '#22d3ee', previewColor1: Color(0xff22d3ee), previewColor2: Color(0xff083344), collection: 'daily_pack_v176'),
   StoreProduct(id: 'daily_pack_xp_15x_6h_v176', category: 'boost', icon: '⚡', nameAr: 'صندوق الجوائز: مسرّع XP ×1.5', nameEn: 'Prize Box: XP Booster ×1.5', descriptionAr: 'مسرّع خبرة مؤقت لمدة 6 ساعات من صندوق الجوائز اليومي، يُضاف إلى مقتنيات المتجر مباشرة.', descriptionEn: 'A six-hour XP booster awarded by the daily prize box.', price: 0, durationHours: 6, multiplier: 1.5, previewColor1: Color(0xfff59e0b), previewColor2: Color(0xff7c2d12), collection: 'daily_pack_v176'),
   StoreProduct(id: 'daily_prize_cover_v02', category: 'covers', icon: '🖼️', nameAr: 'صندوق الجوائز: غلاف ملكي', nameEn: 'Prize Box: Royal Profile Cover', descriptionAr: 'غلاف شخصي ملكي مؤقت لمدة 3 أيام من صندوق الجوائز اليومي.', descriptionEn: 'A royal profile cover active for three days from the daily prize box.', price: 0, durationHours: 72, value: 'cover_v02_royal', previewColor1: Color(0xff581c87), previewColor2: Color(0xfffacc15), collection: 'daily_pack_v176'),
-  StoreProduct(id: "pasha_1_day_v132", category: "pasha", icon: "🎩", nameAr: "باشا يوم واحد", nameEn: "Pasha 1 Day", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 1700, durationDays: 1, value: "pasha"),
-  StoreProduct(id: "pasha_3_days_v132", category: "pasha", icon: "🎩", nameAr: "باشا 3 أيام", nameEn: "Pasha 3 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 5000, durationDays: 3, value: "pasha"),
-  StoreProduct(id: "pasha_7_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا 7 أيام", nameEn: "Pasha 7 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 10000, durationDays: 7, value: "pasha"),
-  StoreProduct(id: "pasha_30_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا 30 يوم", nameEn: "Pasha 30 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 38000, durationDays: 30, value: "pasha"),
-  StoreProduct(id: "pasha_90_days_v132", category: "pasha", icon: "🎩", nameAr: "باشا 90 يوم", nameEn: "Pasha 90 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 105000, durationDays: 90, value: "pasha"),
-  StoreProduct(id: "pasha_365_days_v128", category: "pasha", icon: "🎩", nameAr: "باشا سنة كاملة", nameEn: "Pasha 365 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 300000, durationDays: 365, value: "pasha"),
+  StoreProduct(id: "pasha_1_day_v132", category: "pasha", icon: "👑", nameAr: "باشا يوم واحد", nameEn: "Pasha 1 Day", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 1700, durationDays: 1, value: "pasha"),
+  StoreProduct(id: "pasha_3_days_v132", category: "pasha", icon: "👑", nameAr: "باشا 3 أيام", nameEn: "Pasha 3 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 5000, durationDays: 3, value: "pasha"),
+  StoreProduct(id: "pasha_7_days_v128", category: "pasha", icon: "👑", nameAr: "باشا 7 أيام", nameEn: "Pasha 7 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 10000, durationDays: 7, value: "pasha"),
+  StoreProduct(id: "pasha_30_days_v128", category: "pasha", icon: "👑", nameAr: "باشا 30 يوم", nameEn: "Pasha 30 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 38000, durationDays: 30, value: "pasha"),
+  StoreProduct(id: "pasha_90_days_v132", category: "pasha", icon: "👑", nameAr: "باشا 90 يوم", nameEn: "Pasha 90 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 105000, durationDays: 90, value: "pasha"),
+  StoreProduct(id: "pasha_365_days_v128", category: "pasha", icon: "👑", nameAr: "باشا سنة كاملة", nameEn: "Pasha 365 Days", descriptionAr: "طرد من الغرفة، شارة باشا، إنشاء مجموعات ومنافسات، ومضاعفة خبرة حسب الخطة.", descriptionEn: "Pasha badge, room controls, club and tournament privileges, and bonus XP.", price: 300000, durationDays: 365, value: "pasha"),
   StoreProduct(id: "theme_dark_premium", category: "themes", icon: "🎨", nameAr: "داكن فاخر", nameEn: "Premium Dark", descriptionAr: "ثيم كامل يغيّر الخلفيات والبطاقات والأزرار والطاولات.", descriptionEn: "A complete theme for backgrounds, panels, buttons and tables.", price: 0, value: "dark", previewColor1: Color(0xff07111f), previewColor2: Color(0xffd6aa59)),
   StoreProduct(id: "theme_crimson_legend", category: "themes", icon: "🌹", nameAr: "قرمزي أسطوري", nameEn: "Legendary Crimson", descriptionAr: "ثيم قرمزي داكن مع وهج ذهبي وبطاقات احترافية.", descriptionEn: "Deep crimson theme with gold glow and premium panels.", price: 34000, value: "crimson", previewColor1: Color(0xff21070d), previewColor2: Color(0xffef334f)),
   StoreProduct(id: "theme_midnight_elite", category: "themes", icon: "🌌", nameAr: "منتصف الليل النخبوي", nameEn: "Elite Midnight", descriptionAr: "ثيم أزرق ليلي احترافي للغرف والمتجر والملف الشخصي.", descriptionEn: "Premium midnight-blue theme for rooms, store and profile.", price: 42000, value: "midnight", previewColor1: Color(0xff020617), previewColor2: Color(0xff4f86ff)),
@@ -3148,11 +3241,11 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "table_premium_38", category: "tables", icon: "VIP", nameAr: "طاولة VIP أسود", nameEn: "Premium Table 38", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 27200, previewColor1: Color(0xfff8fafc), previewColor2: Color(0xff94a3b8)),
   StoreProduct(id: "table_premium_39", category: "tables", icon: "♚", nameAr: "طاولة رويال ماستر", nameEn: "Premium Table 39", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 27850, previewColor1: Color(0xff422006), previewColor2: Color(0xffb45309)),
   StoreProduct(id: "table_premium_40", category: "tables", icon: "🦁", nameAr: "طاولة حلبة الأساطير", nameEn: "Premium Table 40", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 28500, previewColor1: Color(0xff1f3b24), previewColor2: Color(0xff84cc16)),
-  StoreProduct(id: "table_premium_41", category: "tables", icon: "🎩", nameAr: "طاولة مخمل VIP", nameEn: "Premium Table 41", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 29150, previewColor1: Color(0xff064e3b), previewColor2: Color(0xff10b981)),
+  StoreProduct(id: "table_premium_41", category: "tables", icon: "👑", nameAr: "طاولة مخمل VIP", nameEn: "Premium Table 41", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 29150, previewColor1: Color(0xff064e3b), previewColor2: Color(0xff10b981)),
   StoreProduct(id: "table_premium_42", category: "tables", icon: "✺", nameAr: "طاولة أندلس ذهب", nameEn: "Premium Table 42", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 29800, previewColor1: Color(0xff020617), previewColor2: Color(0xfff5c542)),
   StoreProduct(id: "table_premium_43", category: "tables", icon: "✦", nameAr: "طاولة دمشق أزرق", nameEn: "Premium Table 43", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 30450, previewColor1: Color(0xff7c2d12), previewColor2: Color(0xfffbbf24)),
   StoreProduct(id: "table_premium_44", category: "tables", icon: "☪", nameAr: "طاولة قدس زيتوني", nameEn: "Premium Table 44", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 31100, previewColor1: Color(0xff0c4a6e), previewColor2: Color(0xff38bdf8)),
-  StoreProduct(id: "table_premium_45", category: "tables", icon: "🎩", nameAr: "طاولة طربوش باشا", nameEn: "Premium Table 45", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 31750, previewColor1: Color(0xff7f1d1d), previewColor2: Color(0xfff87171)),
+  StoreProduct(id: "table_premium_45", category: "tables", icon: "👑", nameAr: "طاولة طربوش باشا", nameEn: "Premium Table 45", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 31750, previewColor1: Color(0xff7f1d1d), previewColor2: Color(0xfff87171)),
   StoreProduct(id: "table_premium_46", category: "tables", icon: "◆", nameAr: "طاولة نيون أحمر", nameEn: "Premium Table 46", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 32400, previewColor1: Color(0xff581c87), previewColor2: Color(0xffc084fc)),
   StoreProduct(id: "table_premium_47", category: "tables", icon: "⬢", nameAr: "طاولة نيون أخضر", nameEn: "Premium Table 47", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 33050, previewColor1: Color(0xff0a0a0a), previewColor2: Color(0xffa3a3a3)),
   StoreProduct(id: "table_premium_48", category: "tables", icon: "💠", nameAr: "طاولة كريستال محيط", nameEn: "Premium Table 48", descriptionAr: "طاولة كبيرة منحنية بمعاينة حقيقية وتفاصيل فاخرة داخل غرفة اللعب.", descriptionEn: "Large curved game table with a live in-room preview.", price: 33700, previewColor1: Color(0xfff8fafc), previewColor2: Color(0xff94a3b8)),
@@ -3305,7 +3398,7 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "cover_rose", category: "covers", icon: "🌹", nameAr: "غلاف روز غولد", nameEn: "Rose Gold Cover", descriptionAr: "خلفية أنيقة بدرجات الوردي والذهبي.", descriptionEn: "Elegant rose and gold profile cover.", price: 12500, value: "cover_rose", previewColor1: Color(0xff4c0519), previewColor2: Color(0xfffb7185)),
   StoreProduct(id: "cover_desert", category: "covers", icon: "🏜️", nameAr: "غلاف رمال الصحراء", nameEn: "Desert Sand Cover", descriptionAr: "خلفية دافئة بطابع عربي فاخر.", descriptionEn: "Warm premium cover with an Arab-inspired look.", price: 14500, value: "cover_desert", previewColor1: Color(0xff422006), previewColor2: Color(0xffd97706)),
   StoreProduct(id: "cover_obsidian", category: "covers", icon: "🖤", nameAr: "غلاف الأوبسيديان", nameEn: "Obsidian Cover", descriptionAr: "غلاف أسود معدني للنخبة.", descriptionEn: "Metallic black elite profile cover.", price: 18000, value: "cover_obsidian", previewColor1: Color(0xff030712), previewColor2: Color(0xff374151)),
-  StoreProduct(id: "cover_pasha", category: "covers", icon: "🎩", nameAr: "غلاف قصر الباشا", nameEn: "Pasha Palace Cover", descriptionAr: "غلاف أحمر وذهبي مع هوية الطربوش.", descriptionEn: "Red and gold cover featuring the Pasha identity.", price: 24000, value: "cover_pasha", previewColor1: Color(0xff3f0a0a), previewColor2: Color(0xfff59e0b)),
+  StoreProduct(id: "cover_pasha", category: "covers", icon: "👑", nameAr: "غلاف قصر الباشا", nameEn: "Pasha Palace Cover", descriptionAr: "غلاف أحمر وذهبي مع هوية الطربوش.", descriptionEn: "Red and gold cover featuring the Pasha identity.", price: 24000, value: "cover_pasha", previewColor1: Color(0xff3f0a0a), previewColor2: Color(0xfff59e0b)),
   StoreProduct(id: "cover_cosmic", category: "covers", icon: "🪐", nameAr: "غلاف المجرة", nameEn: "Cosmic Cover", descriptionAr: "غلاف كوني أسطوري بإضاءات متحركة هادئة.", descriptionEn: "Legendary cosmic cover with subtle moving lights.", price: 32000, value: "cover_cosmic", previewColor1: Color(0xff12033a), previewColor2: Color(0xff06b6d4)),
   StoreProduct(id: "cover_elite", category: "covers", icon: "🛡️", nameAr: "غلاف النخبة البيضاء", nameEn: "White Elite Cover", descriptionAr: "غلاف فضي نظيف لأعلى المستويات.", descriptionEn: "Clean silver cover for top-level players.", price: 40000, value: "cover_elite", previewColor1: Color(0xff334155), previewColor2: Color(0xffe2e8f0)),
   StoreProduct(id: "cover_phoenix", category: "covers", icon: "🔥", nameAr: "غلاف العنقاء الذهبية", nameEn: "Golden Phoenix Cover", descriptionAr: "غلاف ناري ذهبي بانسيابية هادئة.", descriptionEn: "Golden fire cover with subtle motion.", price: 44000, value: "cover_phoenix", previewColor1: Color(0xff3b0a08), previewColor2: Color(0xffffd166)),
@@ -3721,6 +3814,8 @@ class HomePage extends StatelessWidget {
           lang: lang,
           onJoin: () => showCompetitions(context, controller),
         ),
+        const SizedBox(height: 13),
+        LuckyWheelHomeCardV182(controller: controller),
         const SizedBox(height: 13),
         PrizeBoxesHomeCardV02(
           controller: controller,
@@ -4462,7 +4557,7 @@ class GameCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.asset(gameArtAsset(game.id), fit: BoxFit.cover, errorBuilder: (_, __, ___) => Center(child: Text(game.icon, style: const TextStyle(fontSize: 46))))),
+            ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.asset(gameArtAsset(game.id), fit: BoxFit.contain, errorBuilder: (_, __, ___) => Center(child: Text(game.icon, style: const TextStyle(fontSize: 46))))),
             DecoratedBox(decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), gradient: const LinearGradient(begin: Alignment.topCenter,end: Alignment.bottomCenter,colors:[Colors.transparent,Color(0x22000000),Color(0xee03070c)]))),
             Positioned(left:8,right:8,bottom:8,child:Column(mainAxisSize:MainAxisSize.min,children:[Text(L.t(lang,game.id),textAlign:TextAlign.center,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:13,shadows:[Shadow(color:Colors.black,blurRadius:7)])),const SizedBox(height:3),Text('${formatNumber(game.players)} لاعب',style:const TextStyle(color:Colors.white70,fontSize:9,fontWeight:FontWeight.w700))])),
           ],
@@ -4560,7 +4655,7 @@ class _CompactProductPreview extends StatelessWidget {
             ? Center(child: Text(product.icon, style: const TextStyle(fontSize: 30)))
             : ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.asset(product.imageAsset!, fit: BoxFit.cover, filterQuality: FilterQuality.high),
+                child: Image.asset(product.imageAsset!, fit: BoxFit.contain, filterQuality: FilterQuality.medium),
               ),
       );
     }
@@ -4649,6 +4744,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
   @override
   void initState() {
     super.initState();
+    awayMode = widget.controller.awayMode;
     _newGame();
     timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
@@ -4676,12 +4772,12 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
 
   void _tick() {
     if (!mounted || botsActing || engine.phase == TarneebPhase.roundEnd || engine.phase == TarneebPhase.gameOver) return;
-    if (awayMode && engine.isHumanTurn) { _autoHumanAction(); return; }
+    if (awayMode && engine.isHumanTurn) { _autoHumanAction(inactive: false); return; }
     setState(() => seconds -= 1);
-    if (seconds <= 0) _autoHumanAction();
+    if (seconds <= 0) _autoHumanAction(inactive: true);
   }
 
-  Future<void> _autoHumanAction() async {
+  Future<void> _autoHumanAction({required bool inactive}) async {
     if (!engine.isHumanTurn) return;
     try {
       if (engine.phase == TarneebPhase.bidding) {
@@ -4695,16 +4791,18 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
       }
       selectedCode = null;
       seconds = 10;
-      if (awayMode) {
+      if (inactive && !awayMode) {
         autoPlayedTurns += 1;
         if (autoPlayedTurns >= 3) {
-          await widget.controller.recordGameExit('tarneeb');
+          await widget.controller.recordInactivityEjectionV182();
           if (mounted) {
-            showToast(context, 'تم إخراجك بعد ثلاث لفات غياب متتالية. يمكنك العودة ما لم تتجاوز حد الخروج.');
+            showToast(context, 'تم إخراجك بعد ثلاث لفات دون لعب. يمكنك العودة إلى المقعد نفسه؛ الغياب لا يُحسب خروجًا يدويًا.');
             Navigator.of(context).pop();
           }
           return;
         }
+      } else if (awayMode) {
+        autoPlayedTurns = 0;
       }
       _maybeAwardRoundProgress();
       _maybeRewardWin();
@@ -4765,6 +4863,10 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
       widget.controller.rewardGameWin('tarneeb');
       if (mounted) showToast(context, 'فوز رائع! تمت إضافة مكافأة الفوز وXP وطريق الهدايا.');
     } else if (!awayMode) {
+      final tournament = widget.controller.activeCompetition != null || widget.controller.activeChallenge != null;
+      widget.controller.gamesPlayed += 1;
+      widget.controller.resetGameExitSessionV182('tarneeb');
+      widget.controller.awardLocalPrizeBoxV02('tarneeb', won: false, mode: tournament ? 'tournament' : 'normal');
       widget.controller.recordChallengeRoadResult('tarneeb', won: false, marker: 'tarneeb-loss:${engine.round}:${engine.teamScores.join('-')}');
     }
   }
@@ -4963,8 +5065,8 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
                   Positioned(left: landscape ? 90 : 47, top: constraints.maxHeight * .41, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
                   Positioned(right: landscape ? 90 : 47, top: constraints.maxHeight * .41, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
                   Positioned(top: 0, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[2], letter: 'ل', botProfile: botProfiles[2], bid: _seatBid(2), onProfileTap: () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(botProfiles[2], widget.controller.localeCode)))),
-                  Positioned(left: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[1], letter: 'س', botProfile: botProfiles[3], bid: _seatBid(1), vertical: true, onProfileTap: () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(botProfiles[3], widget.controller.localeCode)))),
-                  Positioned(right: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[3], letter: 'ج', botProfile: botProfiles[1], bid: _seatBid(3), vertical: true, onProfileTap: () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(botProfiles[1], widget.controller.localeCode)))),
+                  Positioned(right: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[1], letter: 'س', botProfile: botProfiles[1], bid: _seatBid(1), vertical: true, onProfileTap: () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(botProfiles[1], widget.controller.localeCode)))),
+                  Positioned(left: 3, top: constraints.maxHeight * .34, child: PlayerSeat(name: engine.playerNames[3], letter: 'ج', botProfile: botProfiles[3], bid: _seatBid(3), vertical: true, onProfileTap: () => showPublicPlayerProfileV170(context, widget.controller, botProfileFriendV021(botProfiles[3], widget.controller.localeCode)))),
                   Positioned(bottom: compact ? 64 : 78, left: 0, right: 0, child: PlayerSeat(name: engine.playerNames[0], letter: widget.controller.displayName.isEmpty ? '?' : widget.controller.displayName.substring(0, 1), bid: _seatBid(0), nameColor: colorFromHex(widget.controller.selectedNameColor), badge: storeProductById(widget.controller.selectedBadge)?.icon, avatarEmoji: widget.controller.avatarEmoji, onProfileTap: () => showProfile(context, widget.controller))),
                   Positioned(
                     right: landscape ? 92 : 48,
@@ -5039,9 +5141,9 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
           );
           return switch (play.seat) {
             0 => Positioned(bottom: 0, left: 0, right: 0, child: Center(child: child)),
-            1 => Positioned(left: 0, top: math.max(0.0, constraints.maxHeight * .36), child: child),
+            1 => Positioned(right: 0, top: math.max(0.0, constraints.maxHeight * .36), child: child),
             2 => Positioned(top: 0, left: 0, right: 0, child: Center(child: child)),
-            _ => Positioned(right: 0, top: math.max(0.0, constraints.maxHeight * .36), child: child),
+            _ => Positioned(left: 0, top: math.max(0.0, constraints.maxHeight * .36), child: child),
           };
         }).toList(),
       ),
@@ -5519,6 +5621,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
   @override
   void initState() {
     super.initState();
+    awayMode = widget.controller.awayMode;
     WidgetsBinding.instance.addObserver(this);
     _create();
     timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
@@ -5685,14 +5788,14 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
 
   void _tick() {
     if (!mounted || loading || room == null || sending) return;
-    if (awayMode) { _timeout(); return; }
+    if (awayMode) { _timeout(inactive: false); return; }
     setState(() => seconds -= 1);
     chatPoll += 1;
     if (chatPoll >= 5) {
       chatPoll = 0;
       _loadRoomChat();
     }
-    if (seconds <= 0) _timeout();
+    if (seconds <= 0) _timeout(inactive: true);
   }
 
   void _consumeProgressionPopupV174(Map<String, dynamic> updated) {
@@ -5735,7 +5838,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
     });
   }
 
-  Future<void> _timeout() async {
+  Future<void> _timeout({bool inactive = true}) async {
     if (roomCode.isEmpty || sending) return;
     sending = true;
     try {
@@ -5745,24 +5848,40 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
         _awardLocalProgressionTransition(beforeRoom, updated);
         if (mounted) setState(() { room = Map<String, dynamic>.from(updated); seconds = turnDuration; selectedCard = null; });
       } else {
-        final data = await widget.controller.api.gameTimeout(roomCode);
+        final data = await widget.controller.api.gameTimeout(roomCode, awayMode: awayMode);
         final updated = Map<String, dynamic>.from(data['room'] as Map);
         _consumeProgressionPopupV174(updated);
         if (mounted) setState(() { room = updated; seconds = turnDuration; selectedCard = null; });
       }
-      if (awayMode) {
+      if (inactive && !awayMode) {
         autoPlayedTurns += 1;
         if (autoPlayedTurns >= 3) {
-          await widget.controller.recordGameExit(widget.game.id);
+          await widget.controller.recordInactivityEjectionV182();
           sending = false;
           if (mounted) {
-            showToast(context, 'تم إخراجك بعد ثلاث لفات غياب متتالية.');
+            showToast(context, 'تم إخراجك بعد ثلاث لفات دون لعب أو اتصال. يمكنك العودة؛ الغياب لا يُحسب خروجًا يدويًا.');
             Navigator.of(context).pop();
           }
           return;
         }
+      } else if (awayMode) {
+        autoPlayedTurns = 0;
       }
     } catch (_) {
+      if (inactive && !awayMode) {
+        autoPlayedTurns += 1;
+        if (autoPlayedTurns >= 3) {
+          await widget.controller.recordInactivityEjectionV182();
+          sending = false;
+          if (mounted) {
+            showToast(context, 'انقطع الاتصال لثلاث لفات؛ تم إخراجك مؤقتًا ويمكنك العودة إلى المقعد نفسه.');
+            Navigator.of(context).pop();
+          }
+          return;
+        }
+      } else if (awayMode) {
+        autoPlayedTurns = 0;
+      }
       if (mounted) setState(() => seconds = turnDuration);
     }
     sending = false;
@@ -5806,6 +5925,9 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
         if (mounted && floatingReaction?.id == 'local_victory_$marker') setState(() => floatingReaction = null);
       });
     } else if (afterPhase == 'finished' || afterPhase == 'game_over') {
+      widget.controller.gamesPlayed += 1;
+      widget.controller.resetGameExitSessionV182(widget.game.id);
+      widget.controller.awardLocalPrizeBoxV02(widget.game.id, won: false, mode: tournament ? 'tournament' : 'normal');
       widget.controller.recordChallengeRoadResult(widget.game.id, won: false, marker: 'local-loss:$marker');
     }
   }
@@ -6309,9 +6431,9 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
       child: seat,
     );
     if (index == 0) return Positioned(bottom: 72, left: 0, right: 0, child: interactiveSeat);
-    if (index == 1) return Positioned(left: 0, top: 180, child: interactiveSeat);
+    if (index == 1) return Positioned(right: 0, top: 180, child: interactiveSeat);
     if (index == 2) return Positioned(top: 0, left: 0, right: 0, child: interactiveSeat);
-    return Positioned(right: 0, top: 180, child: interactiveSeat);
+    return Positioned(left: 0, top: 180, child: interactiveSeat);
   }
 
   List<Widget> _trickSeatWidgets() {
@@ -6331,9 +6453,9 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
       final name=index<players.length && players[index] is Map ? ((players[index] as Map)['name']?.toString() ?? 'لاعب') : 'لاعب';
       final child=Column(mainAxisSize:MainAxisSize.min,children:[card,Container(margin:const EdgeInsets.only(top:2),padding:const EdgeInsets.symmetric(horizontal:5,vertical:2),decoration:BoxDecoration(color:Colors.black87,borderRadius:BorderRadius.circular(7)),child:Text(name,maxLines:1,style:const TextStyle(fontSize:7,fontWeight:FontWeight.w900)))]);
       if(index==0)return Positioned(bottom:132,left:0,right:0,child:Center(child:child));
-      if(index==1)return Positioned(left:96,top:176,child:child);
+      if(index==1)return Positioned(right:96,top:176,child:child);
       if(index==2)return Positioned(top:72,left:0,right:0,child:Center(child:child));
-      return Positioned(right:96,top:176,child:child);
+      return Positioned(left:96,top:176,child:child);
     }).toList();
   }
 
@@ -7192,7 +7314,7 @@ class GlowAvatar extends StatelessWidget {
           child: Container(
             alignment: Alignment.center,
             color: const Color(0xff0a1420),
-            child: bytes == null ? Text(text, style: TextStyle(fontSize: size * .43, fontWeight: FontWeight.w900)) : Image.memory(bytes!, fit: BoxFit.cover, width: size, height: size),
+            child: bytes == null ? Text(text, style: TextStyle(fontSize: size * .43, fontWeight: FontWeight.w900)) : Image.memory(bytes!, fit: BoxFit.contain, width: size, height: size),
           ),
         ),
       );
@@ -7323,7 +7445,7 @@ class PremiumListTile extends StatelessWidget {
 }
 
 Future<void> showAvatarPicker(BuildContext context, AppController controller) async {
-  const avatars = <String>['🦁','🦅','🐺','🦊','🐯','🐼','🌙','⭐','👑','🎩','🧠','🔥'];
+  const avatars = <String>['🦁','🦅','🐺','🦊','🐯','🐼','🌙','⭐','👑','👑','🧠','🔥'];
   await showPremiumSheet(context, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
     const Text('تغيير الصورة الرمزية', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
     const SizedBox(height: 12),
@@ -7506,9 +7628,9 @@ void showProfile(BuildContext context, AppController controller) {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(children: [
-                Container(width: 48, height: 48, alignment: Alignment.center, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .06), borderRadius: BorderRadius.circular(15)), child: Text(localClubLogoV03(controller.activeClub), style: const TextStyle(fontSize: 27))),
+                Container(width: 48, height: 48, alignment: Alignment.center, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .06), borderRadius: BorderRadius.circular(15)), child: Text(controller.clubImageEmojiV182, style: const TextStyle(fontSize: 27))),
                 const SizedBox(width: 10),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('النادي الحالي', style: TextStyle(color: Colors.white54, fontSize: 9)), Text(localClubNameV03(controller.activeClub), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)), const Text('تظهر هوية النادي في البروفايل وسجل المنافسات.', style: TextStyle(color: Colors.white54, fontSize: 9))])),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('النادي الحالي', style: TextStyle(color: Colors.white54, fontSize: 9)), Text(controller.activeClub ?? localClubNameV03(controller.activeClub), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)), const Text('تظهر هوية النادي في البروفايل وسجل المنافسات.', style: TextStyle(color: Colors.white54, fontSize: 9))])),
                 const Icon(Icons.verified_rounded, color: Colors.greenAccent),
               ]),
             ),
@@ -7552,7 +7674,7 @@ void showProfile(BuildContext context, AppController controller) {
         PremiumPanel(child: Padding(padding: const EdgeInsets.all(12), child: Wrap(spacing: 7, runSpacing: 7, children: [
           _AchievementChip(icon: '🏆', label: controller.wins >= 500 ? 'أسطورة الانتصارات' : 'محترف الانتصارات', unlocked: controller.wins >= 100),
           _AchievementChip(icon: '🔥', label: 'سلسلة ${controller.consecutiveLoginDays} أيام', unlocked: controller.consecutiveLoginDays >= 3),
-          _AchievementChip(icon: '🎩', label: 'عضو الباشا', unlocked: controller.vipDays > 0),
+          _AchievementChip(icon: '👑', label: 'عضو الباشا', unlocked: controller.vipDays > 0),
           _AchievementChip(icon: '🧠', label: 'خبير المحركات', unlocked: controller.level >= 50),
         ]))),
         const SizedBox(height: 10),
@@ -7829,7 +7951,7 @@ void showSettings(BuildContext context, AppController controller) {
           const ListTile(leading: Icon(Icons.restore_rounded), title: Text('مهلة استعادة الحساب'), subtitle: Text('بعد إلغاء الحساب يمكنك استعادته بمجرد تسجيل الدخول خلال 30 يوماً؛ لا تُحذف الحسابات العادية بسبب عدم النشاط.')),
           const Divider(),
           if (!controller.isAdmin) OutlinedButton.icon(onPressed: () => showCancelAccountDialog(context, controller), icon: const Icon(Icons.person_off_rounded, color: Colors.redAccent), label: Text(L.t(controller.localeCode, 'deleteAccount'), style: const TextStyle(color: Colors.redAccent))),
-          if (controller.isAdmin) const ListTile(leading: Icon(Icons.shield_outlined, color: Colors.amber), title: Text('حساب المدير محمي'), subtitle: Text('Adnan: مستوى 90+، 1000 يوم باشا، ورصيد إدارة غير محدود.')),
+          if (controller.isAdmin) const ListTile(leading: Icon(Icons.shield_outlined, color: Colors.amber), title: Text('حساب المدير محمي'), subtitle: Text('Adnan: مستوى 99، 1000 يوم باشا، ورصيد إدارة غير محدود.')),
           const SizedBox(height: 8),
           FilledButton(onPressed: () { Navigator.pop(context); showToast(context, 'تم حفظ الإعدادات وتطبيقها على التطبيق.'); }, child: Text(L.t(controller.localeCode, 'save'))),
         ],
@@ -7978,7 +8100,7 @@ void showGameLobby(BuildContext context, AppController controller, GameInfo game
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Center(child: ClipRRect(borderRadius: BorderRadius.circular(24), child: Image.asset(gameArtAsset(game.id), width: 180, height: 118, fit: BoxFit.cover))),
+        Center(child: ClipRRect(borderRadius: BorderRadius.circular(24), child: Image.asset(gameArtAsset(game.id), width: 180, height: 118, fit: BoxFit.contain))),
         const SizedBox(height: 5),
         Center(child: Text(L.t(controller.localeCode, game.id), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900))),
         Center(child: Text('${formatNumber(game.players)} لاعب متصل', style: const TextStyle(color: Colors.white60))),
@@ -8468,7 +8590,7 @@ class _ProductLivePreview extends StatelessWidget {
                   ? Center(child: Text(product.icon, style: const TextStyle(fontSize: 38)))
                   : ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(product.imageAsset!, fit: BoxFit.cover, filterQuality: FilterQuality.high),
+                      child: Image.asset(product.imageAsset!, fit: BoxFit.contain, filterQuality: FilterQuality.medium),
                     ),
             ),
           ),

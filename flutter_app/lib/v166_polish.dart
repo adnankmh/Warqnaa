@@ -110,7 +110,31 @@ class ActiveGameBanner extends StatelessWidget {
       child: InkWell(onTap:onResume, child: Container(
         margin: const EdgeInsets.fromLTRB(10, 5, 10, 3), padding: const EdgeInsets.symmetric(horizontal:12,vertical:9),
         decoration: BoxDecoration(gradient: LinearGradient(colors:[Theme.of(context).colorScheme.primary.withValues(alpha:.28),Colors.greenAccent.withValues(alpha:.08)]),borderRadius:BorderRadius.circular(16),border:Border.all(color:Theme.of(context).colorScheme.primary.withValues(alpha:.45))),
-        child: Row(children:[Image.asset(gameArtAsset(game.id),width:42,height:42,fit:BoxFit.cover),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(L.t(controller.localeCode,'activeGame'),style:const TextStyle(fontWeight:FontWeight.w900)),Text('${L.t(controller.localeCode,game.id)}${controller.activeRoomCode==null?'':' • ${controller.activeRoomCode}'}',style:const TextStyle(fontSize:10,color:Colors.white70))])),FilledButton.tonalIcon(onPressed:onResume,icon:const Icon(Icons.play_arrow_rounded,size:18),label:Text(L.t(controller.localeCode,'resumeGame'),style:const TextStyle(fontSize:10)))])
+        child: Row(children:[
+          ClipRRect(borderRadius:BorderRadius.circular(10),child:Image.asset(gameArtAsset(game.id),width:42,height:42,fit:BoxFit.contain)),
+          const SizedBox(width:10),
+          Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text(L.t(controller.localeCode,'activeGame'),style:const TextStyle(fontWeight:FontWeight.w900)),
+            Text('${L.t(controller.localeCode,game.id)}${controller.activeRoomCode==null?'':' • ${controller.activeRoomCode}'}',style:TextStyle(fontSize:10,color:Theme.of(context).colorScheme.onSurfaceVariant)),
+          ])),
+          IconButton.filledTonal(
+            tooltip:'الخروج من اللعبة',
+            onPressed:() async {
+              final leave = await showDialog<bool>(context:context,builder:(dialogContext)=>AlertDialog(
+                title:const Text('الخروج من اللعبة'),
+                content:const Text('هل تريد الخروج من اللعبة الحالية؟ يمكنك العودة ما لم تسجل ثلاث مرات خروج يدوي.'),
+                actions:<Widget>[
+                  TextButton(onPressed:()=>Navigator.pop(dialogContext,false),child:const Text('إلغاء')),
+                  FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),child:const Text('خروج')),
+                ],
+              ));
+              if(leave==true) await controller.exitActiveGameV182();
+            },
+            icon:const Icon(Icons.logout_rounded,size:18),
+          ),
+          const SizedBox(width:5),
+          FilledButton.tonalIcon(onPressed:onResume,icon:const Icon(Icons.play_arrow_rounded,size:18),label:Text(L.t(controller.localeCode,'resumeGame'),style:const TextStyle(fontSize:10))),
+        ])
       )),
     );
   }

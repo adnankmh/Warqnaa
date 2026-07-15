@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\{AdminDesignerEntity,ChallengeDefinition,CompetitionTicket,DailyPackClaim,PrizeBox,Tournament};
-use App\Services\WarqnaPro\{ChallengeService,CompetitionService,DailyPackService,PrizeBoxService};
+use App\Services\WarqnaPro\{ChallengeService,CompetitionService,DailyPackService,LuckyWheelService,PrizeBoxService};
 use Illuminate\Http\Request;
 use RuntimeException;
 
 class MobileEngagementController extends Controller
 {
-    public function center(Request $request, ChallengeService $challenges, PrizeBoxService $prizeBoxes)
+    public function center(Request $request, ChallengeService $challenges, PrizeBoxService $prizeBoxes, LuckyWheelService $wheel)
     {
         $user = $request->user();
         return response()->json([
@@ -18,6 +18,7 @@ class MobileEngagementController extends Controller
             'tickets'=>$this->tickets($user->id),
             'daily_pack'=>$this->packStatus($user->id),
             'prize_boxes'=>$prizeBoxes->center($user),
+            'lucky_wheel'=>$wheel->center($user),
             'inventory'=>$user->inventoryItems()->with('storeItem')->latest()->limit(200)->get(),
             'challenges'=>$challenges->center($user),
             'competitions'=>Tournament::whereIn('status', ['open','running'])->withCount('entries')->orderByDesc('featured')->orderBy('starts_at')->get(),
@@ -26,6 +27,23 @@ class MobileEngagementController extends Controller
         ]);
     }
 
+
+
+    public function luckyWheel(Request $request, LuckyWheelService $wheel)
+    {
+        return response()->json(['ok'=>true, ...$wheel->center($request->user())]);
+    }
+
+    public function spinLuckyWheel(Request $request, LuckyWheelService $wheel)
+    {
+        $data = $request->validate(['source'=>'nullable|in:free,tokens']);
+        try {
+            $result = $wheel->spin($request->user(), (string)($data['source'] ?? 'free'));
+        } catch (RuntimeException $e) {
+            return response()->json(['ok'=>false,'message'=>$e->getMessage()], 409);
+        }
+        return response()->json(['ok'=>true,'message'=>'تم تدوير دولاب الحظ وإضافة الجائزة إلى مكانها الصحيح.', ...$result]);
+    }
 
     public function prizeBoxes(Request $request, PrizeBoxService $prizeBoxes)
     {

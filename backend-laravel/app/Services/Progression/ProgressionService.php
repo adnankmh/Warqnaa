@@ -23,8 +23,10 @@ class ProgressionService
         if ($existing) {
             $meta = is_array($existing->meta) ? $existing->meta : [];
             $prizeBox = null;
-            if ($existing->event_type === 'match_complete' && (bool)($meta['won'] ?? false)) {
-                $prizeBox = app(PrizeBoxService::class)->awardForWin($user, $eventKey, $meta['game'] ?? null);
+            if ($existing->event_type === 'match_complete') {
+                $prizeBox = app(PrizeBoxService::class)->awardForCompletedGame(
+                    $user,$eventKey,$meta['game'] ?? null,(string)($meta['mode'] ?? $existing->mode ?? 'normal'),(bool)($meta['won'] ?? false)
+                );
             }
             return $this->payload($existing, true) + [
                 'user_id'=>(int)$user->id,
@@ -89,11 +91,13 @@ class ProgressionService
             if ($clubPoints > 0) $challenges->record($user, 'club_points', $clubPoints);
 
             $prizeBox = null;
-            if ($eventType === 'match_complete' && $won) {
-                $prizeBox = app(PrizeBoxService::class)->awardForWin(
+            if ($eventType === 'match_complete') {
+                $prizeBox = app(PrizeBoxService::class)->awardForCompletedGame(
                     $user,
                     $eventKey,
                     isset($context['game']) ? (string)$context['game'] : null,
+                    $mode,
+                    $won,
                 );
             }
 

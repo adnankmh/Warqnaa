@@ -36,6 +36,7 @@ class User extends Authenticatable
     public function competitionTickets(){ return $this->hasMany(CompetitionTicket::class); }
     public function dailyPackClaims(){ return $this->hasMany(DailyPackClaim::class); }
     public function prizeBoxes(){ return $this->hasMany(PrizeBox::class); }
+    public function luckyWheelSpins(){ return $this->hasMany(LuckyWheelSpin::class); }
     public function clubMembership(){ return $this->hasOne(ClubMember::class); }
 
     public function publicProfile(): array

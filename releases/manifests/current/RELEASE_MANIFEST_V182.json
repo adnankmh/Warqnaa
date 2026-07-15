@@ -1,0 +1,23 @@
+{
+  "version": "0.3.1",
+  "build": 182,
+  "display": "V0.3.1",
+  "type": "lucky-wheel-rewards-and-gameplay-release",
+  "name": "Warqnaa V0.3.1 Lucky Wheel & Rewards Release",
+  "features": [
+    "six-segment server-authoritative lucky wheel with free and token spins",
+    "outcome-aware prize boxes for normal and competition matches",
+    "persistent away mode and three-turn inactivity recovery without consuming manual exits",
+    "atomic store purchases with revenue credited to the primary administration account",
+    "primary-admin-only no-code designer with offline persistence and later synchronization",
+    "club identity, members, multiple permissions and activity log",
+    "counterclockwise play order with the next player on the right",
+    "light-theme contrast improvements and complete image fitting",
+    "optimized image bundle with validation of every packaged image"
+  ],
+  "admin": {
+    "username": "Adnan",
+    "level": 99,
+    "designer_access": "primary-admin-only"
+  }
+}

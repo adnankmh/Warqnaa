@@ -241,7 +241,7 @@ class ResponsiveAccountStatsV170 extends StatelessWidget {
             onTap: () => showWallet(context, controller),
           ),
           _AccountMetricV170(
-            icon: '🎩',
+            icon: '👑',
             label: L.t(controller.localeCode, 'vip'),
             value: '${controller.vipDays} ${L.t(controller.localeCode, 'days')}',
             details: controller.vipDays > 0 ? 'مزايا الباشا فعّالة' : 'اضغط للترقية',
@@ -278,11 +278,11 @@ class _AccountMetricV170 extends StatelessWidget {
       constraints:const BoxConstraints(minHeight:94),
       padding:const EdgeInsets.all(11),
       child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[
-        Row(children:[Text(icon,style:const TextStyle(fontSize:18)),const SizedBox(width:5),Expanded(child:Text(label,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white60,fontSize:10,fontWeight:FontWeight.w800)))]),
+        Row(children:[Text(icon,style:const TextStyle(fontSize:18)),const SizedBox(width:5),Expanded(child:Text(label,maxLines:1,overflow:TextOverflow.ellipsis,style:TextStyle(color:Theme.of(context).colorScheme.onSurfaceVariant,fontSize:10,fontWeight:FontWeight.w800)))]),
         const SizedBox(height:4),
         FittedBox(fit:BoxFit.scaleDown,alignment:AlignmentDirectional.centerStart,child:Text(value,maxLines:1,style:TextStyle(fontWeight:FontWeight.w900,fontSize:17,color:accent))),
         const SizedBox(height:3),
-        Text(details,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white54,fontSize:9)),
+        Text(details,maxLines:1,overflow:TextOverflow.ellipsis,style:TextStyle(color:Theme.of(context).colorScheme.onSurfaceVariant,fontSize:9)),
         if(progress!=null)...[const SizedBox(height:6),ClipRRect(borderRadius:BorderRadius.circular(20),child:LinearProgressIndicator(value:progress,minHeight:6))],
       ]),
     )),
@@ -297,38 +297,49 @@ class HomeQuickActionsV170 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lang = controller.localeCode;
-    Widget action(String icon, String label, VoidCallback tap) => Expanded(
-          child: InkWell(
-            onTap: tap,
-            borderRadius: BorderRadius.circular(17),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 86),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 11),
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: .045), borderRadius: BorderRadius.circular(17), border: Border.all(color: Colors.white10)),
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text(icon, style: const TextStyle(fontSize: 25)), const SizedBox(height: 5), FittedBox(child: Text(label, maxLines: 1, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12)))]),
-            ),
-          ),
-        );
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final border = Theme.of(context).colorScheme.outlineVariant.withValues(alpha: .65);
+    final actions = <(IconData, String, List<Color>, VoidCallback)>[
+      (Icons.bolt_rounded, L.t(lang, 'challenges'), const <Color>[Color(0xff7c3aed),Color(0xffdb2777)], () => showChallenges(context, controller)),
+      (Icons.card_giftcard_rounded, L.t(lang, 'rewards'), const <Color>[Color(0xffb45309),Color(0xffea580c)], () => showRewards(context, controller)),
+      (Icons.tune_rounded, L.t(lang, 'settings'), const <Color>[Color(0xff0369a1),Color(0xff0f766e)], () => showSettings(context, controller)),
+      (Icons.emoji_events_rounded, L.t(lang, 'competitions'), const <Color>[Color(0xffa16207),Color(0xffdc2626)], () => showCompetitions(context, controller)),
+      (Icons.shield_rounded, L.t(lang, 'clubs'), const <Color>[Color(0xff15803d),Color(0xff0f766e)], () => onTab(3)),
+      (Icons.group_rounded, L.t(lang, 'friends'), const <Color>[Color(0xff1d4ed8),Color(0xff7c3aed)], () => showFriends(context, controller)),
+    ];
     return PremiumPanel(
       child: Padding(
-        padding: const EdgeInsets.all(9),
-        child: Column(children: [
-          Row(children: [
-            action('🎯', L.t(lang, 'challenges'), () => showChallenges(context, controller)),
-            const SizedBox(width: 7),
-            action('🎁', L.t(lang, 'rewards'), () => showRewards(context, controller)),
-            const SizedBox(width: 7),
-            action('⚙️', L.t(lang, 'settings'), () => showSettings(context, controller)),
-          ]),
-          const SizedBox(height: 7),
-          Row(children: [
-            action('🏆', L.t(lang, 'competitions'), () => showCompetitions(context, controller)),
-            const SizedBox(width: 7),
-            action('🛡️', L.t(lang, 'clubs'), () => onTab(3)),
-            const SizedBox(width: 7),
-            action('👥', L.t(lang, 'friends'), () => showFriends(context, controller)),
-          ]),
-        ]),
+        padding: const EdgeInsets.all(10),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:3,crossAxisSpacing:8,mainAxisSpacing:8,childAspectRatio:1.08),
+          itemCount: actions.length,
+          itemBuilder: (context,index) {
+            final action=actions[index];
+            return InkWell(
+              onTap:action.$4,
+              borderRadius:BorderRadius.circular(20),
+              child:Ink(
+                decoration:BoxDecoration(
+                  gradient:LinearGradient(begin:Alignment.topLeft,end:Alignment.bottomRight,colors:action.$3.map((color)=>isLight?color.withValues(alpha:.92):color.withValues(alpha:.72)).toList()),
+                  borderRadius:BorderRadius.circular(20),
+                  border:Border.all(color:isLight?border:Colors.white.withValues(alpha:.18)),
+                  boxShadow:<BoxShadow>[BoxShadow(color:action.$3.first.withValues(alpha:.20),blurRadius:14,offset:const Offset(0,6))],
+                ),
+                child:Column(mainAxisAlignment:MainAxisAlignment.center,children:<Widget>[
+                  Container(
+                    width:43,height:43,
+                    decoration:BoxDecoration(shape:BoxShape.circle,color:Colors.white.withValues(alpha:.16),border:Border.all(color:Colors.white.withValues(alpha:.28))),
+                    child:Icon(action.$1,color:Colors.white,size:25),
+                  ),
+                  const SizedBox(height:7),
+                  Padding(padding:const EdgeInsets.symmetric(horizontal:4),child:FittedBox(fit:BoxFit.scaleDown,child:Text(action.$2,maxLines:1,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:12)))),
+                ]),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -355,7 +366,7 @@ class ProductCardV170 extends StatelessWidget {
           ]),
           const SizedBox(height:7),
           Expanded(child:Container(width:double.infinity,padding:EdgeInsets.all(isPasha?6:0),decoration:BoxDecoration(color:Colors.black.withValues(alpha:.14),borderRadius:BorderRadius.circular(20)),child:Center(child:isPasha
-              ? Image.asset('assets/images/pasha.png',fit:BoxFit.contain,width:double.infinity,height:double.infinity,filterQuality:FilterQuality.high,errorBuilder:(_,__,___)=>const Text('🎩',style:TextStyle(fontSize:72)))
+              ? Image.asset('assets/images/pasha.png',fit:BoxFit.contain,width:double.infinity,height:double.infinity,filterQuality:FilterQuality.high,errorBuilder:(_,__,___)=>const Text('👑',style:TextStyle(fontSize:72)))
               : InkWell(onTap:()=>showProductPreview(context,controller,product),borderRadius:BorderRadius.circular(20),child:Center(child:_CompactProductPreview(controller:controller,product:product)))))),
           const SizedBox(height:9),
           Text(controller.nameFor(product),textAlign:TextAlign.center,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16,height:1.25)),
@@ -515,7 +526,7 @@ Future<void> showPublicPlayerProfileV170(BuildContext context, AppController con
             Icon(visible.online ? Icons.circle : Icons.circle_outlined, size: 13, color: visible.online ? Colors.greenAccent : Colors.white38),
             const SizedBox(width: 8),
             Expanded(child: Text(visible.online ? 'متصل الآن' : visible.activity, style: const TextStyle(fontWeight: FontWeight.w800))),
-            if (visible.pashaDays > 0) Flexible(child: Text('🎩 باشا ${visible.pashaDays} يوم', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900))),
+            if (visible.pashaDays > 0) Flexible(child: Text('👑 باشا ${visible.pashaDays} يوم', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900))),
           ]),
         ),
       ),
@@ -599,12 +610,12 @@ class OpenRoomCardV170 extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(children: [
-          ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.asset(gameArtAsset(game.id), width: 72, height: 72, fit: BoxFit.cover)),
+          ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.asset(gameArtAsset(game.id), width: 72, height: 72, fit: BoxFit.contain)),
           const SizedBox(width: 11),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(room['name']?.toString() ?? room['code']?.toString() ?? 'غرفة', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
             const SizedBox(height: 4),
-            Text('${voice ? '🎙️ صوتية' : '🃏 عادية'} • ${room['players'] ?? 1}/${room['max_players'] ?? 4} • LV.${room['min_level'] ?? 1}+', style: const TextStyle(color: Colors.white60, fontSize: 10)),
+            Text('${voice ? '🎙️ صوتية' : '🃏 عادية'} • ${room['players'] ?? 1}/${room['max_players'] ?? 4} • LV.${room['min_level'] ?? 1}+', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10)),
             const SizedBox(height: 7),
             SizedBox(height: 30, child: Stack(children: [
               for (var index = 0; index < rawAvatars.length && index < 4; index++)
@@ -689,7 +700,7 @@ Future<void> showChallengesV170(BuildContext context, AppController controller) 
                   const SizedBox(width: 9),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children:[
                     Text(challenge['title']!.toString(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
-                    Text('${challenge['tier']} • ${L.t(controller.localeCode, challenge['game']!.toString())}', style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                    Text('${challenge['tier']} • ${L.t(controller.localeCode, challenge['game']!.toString())}', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10)),
                   ])),
                   Container(padding: const EdgeInsets.symmetric(horizontal:9,vertical:5), decoration: BoxDecoration(color: Colors.amber.withValues(alpha:.12), borderRadius: BorderRadius.circular(14)), child: Text('🪙 ${challenge['reward']}', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900, fontSize: 11))),
                 ]),
@@ -697,7 +708,7 @@ Future<void> showChallengesV170(BuildContext context, AppController controller) 
                 ClipRRect(borderRadius: BorderRadius.circular(20), child: LinearProgressIndicator(value: (challenge['progress'] as int)/(challenge['target'] as int), minHeight: 9)),
                 const SizedBox(height: 6),
                 Row(children:[
-                  Expanded(child: Text('${challenge['progress']}/${challenge['target']} • +${challenge['xp']} XP', style: const TextStyle(color: Colors.white60, fontSize: 10))),
+                  Expanded(child: Text('${challenge['progress']}/${challenge['target']} • +${challenge['xp']} XP', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10))),
                   FilledButton.tonal(
                     onPressed: () {
                       final id=challenge['id']!.toString();

@@ -203,10 +203,7 @@ class MobileApiController extends Controller
                         ['quantity'=>0,'total_used'=>0]
                     );
                     $ticket->increment('quantity');
-                    $admin = User::where('username', 'Adnan')->where('is_admin', true)->first() ?: User::where('is_admin', true)->first();
-                    if ($admin && $admin->id !== $user->id && (int)$item->price > 0) {
-                        $wallet->credit($admin, (int)$item->price, 'store_revenue', ['buyer_id'=>$user->id,'store_item_id'=>$item->id,'key'=>$item->key]);
-                    }
+                    $wallet->creditPrimaryAdminRevenue($user, (int)$item->price, 'store_revenue', ['store_item_id'=>$item->id,'key'=>$item->key]);
                 });
             } catch (\RuntimeException) {
                 return response()->json(['ok'=>false,'message'=>'رصيد التوكنز غير كافٍ'], 422);
@@ -228,15 +225,10 @@ class MobileApiController extends Controller
                     'category' => $item->category,
                 ]);
 
-                $admin = User::where('username', 'Adnan')->where('is_admin', true)->first()
-                    ?: User::where('is_admin', true)->first();
-                if ($admin && $admin->id !== $user->id && (int) $item->price > 0) {
-                    $wallet->credit($admin, (int) $item->price, 'store_revenue', [
-                        'buyer_id' => $user->id,
-                        'store_item_id' => $item->id,
-                        'key' => $item->key,
-                    ]);
-                }
+                $wallet->creditPrimaryAdminRevenue($user, (int)$item->price, 'store_revenue', [
+                    'store_item_id' => $item->id,
+                    'key' => $item->key,
+                ]);
 
                 // Only one cosmetic from the same category remains active.
                 if (in_array($item->category, ['name_color','text_color','badge','table','pasha_style','xp_booster','card_back','name_frame','effect','emoji_pack','profile_cover'], true)) {
@@ -482,8 +474,14 @@ class MobileApiController extends Controller
     /** Keep the named primary account authoritative even on upgraded databases. */
     private function ensurePrimaryAdmin(User $user): User
     {
-        if (strcasecmp(trim((string) $user->username), 'Adnan') === 0 && !$user->is_admin) {
-            $user->forceFill(['is_admin' => true])->save();
+        if (strcasecmp(trim((string) $user->username), 'Adnan') === 0) {
+            if (!$user->is_admin) $user->forceFill(['is_admin' => true])->save();
+            $profile = $user->profile()->firstOrCreate([], [
+                'display_name'=>'Adnan','country_code'=>'PS','country_name'=>country_name('PS'),
+            ]);
+            if ((int)$profile->level < 99 || $profile->pasha_style !== 'red') {
+                $profile->forceFill(['level'=>99,'pasha_style'=>'red'])->save();
+            }
         }
 
         return $user->refresh();

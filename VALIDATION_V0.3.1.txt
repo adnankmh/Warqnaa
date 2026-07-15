@@ -1,0 +1,12 @@
+Warqnaa V0.3.1+182 validation summary
+- Python feature/source contracts: PASS
+- Static JSON/YAML/XML/Dart/source scan: PASS
+- PHP syntax files: 273 PASS
+- Engine adapters initialized: 18 PASS
+- Banakil focused tests: PASS
+- Dedicated rule cores: PASS
+- Image files verified: 266, invalid: 0
+- Optimized images: 128, saved: 74150323 bytes (79.85% of targeted source bytes)
+- Release version consistency: PASS
+- Flutter analyze/test/build: NOT RUN LOCALLY (Flutter SDK unavailable); enforced in GitHub Actions
+- php artisan test: NOT RUN LOCALLY (Composer vendor unavailable); enforced in Backend CI

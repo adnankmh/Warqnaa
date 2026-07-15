@@ -36,4 +36,18 @@ class WalletService
             $user->walletTransactions()->create(['type'=>$type,'amount'=>$amount,'meta'=>$meta]);
         });
     }
+
+    /**
+     * Credits every paid game-economy transaction to the primary Adnan admin.
+     * The buyer is never credited back and self-purchases do not create income.
+     */
+    public function creditPrimaryAdminRevenue(User $buyer, int $amount, string $type='store_sale_income', array $meta=[]): void
+    {
+        $this->validateAmount($amount);
+        if ($amount <= 0) return;
+        $admin = User::whereRaw('LOWER(username) = ?', ['adnan'])->where('is_admin', true)->first()
+            ?? User::where('is_admin', true)->orderBy('id')->first();
+        if (!$admin || (int)$admin->id === (int)$buyer->id) return;
+        $this->credit($admin, $amount, $type, array_merge($meta, ['buyer_id'=>(int)$buyer->id]));
+    }
 }

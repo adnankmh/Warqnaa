@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.3.0');
-const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 180);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.3.1');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 182);
 
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})
@@ -129,6 +129,8 @@ class WarqnaApiClient {
   Future<Map<String, dynamic>> claimDaily() => post('/rewards/daily', const {});
   Future<Map<String, dynamic>> claimRewardedAd(String verificationId) => post('/rewards/rewarded-ad', {'verification_id': verificationId, 'network': 'admob', 'reward_type': 'standard'});
   Future<Map<String, dynamic>> openDailyPackV173() => post('/packs/daily/open', const {});
+  Future<Map<String, dynamic>> luckyWheelV182() => get('/rewards/lucky-wheel');
+  Future<Map<String, dynamic>> spinLuckyWheelV182(String source) => post('/rewards/lucky-wheel/spin', {'source': source});
   Future<Map<String, dynamic>> prizeBoxesV02() => get('/prize-boxes');
   Future<Map<String, dynamic>> openPrizeBoxV02(int boxId) => post('/prize-boxes/$boxId/open', const {});
   Future<Map<String, dynamic>> engagementCenterV173() => get('/engagement/center');
@@ -177,7 +179,7 @@ class WarqnaApiClient {
       if (stateRevision != null) 'state_revision': stateRevision,
     });
   }
-  Future<Map<String, dynamic>> gameTimeout(String code) => post('/games/session/$code/timeout', const {});
+  Future<Map<String, dynamic>> gameTimeout(String code, {bool awayMode = false}) => post('/games/session/$code/timeout', {'away_mode': awayMode});
   Future<Map<String, dynamic>> leaveGame(String code) => post('/games/session/$code/leave', const {});
   Future<Map<String, dynamic>> kickRoomPlayer(String code, int userId) => post('/games/session/$code/kick/$userId', const {});
   Future<Map<String, dynamic>> roomChat(String code) => get('/games/session/$code/chat');

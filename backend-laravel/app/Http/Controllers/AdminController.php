@@ -12,6 +12,11 @@ use Illuminate\Support\Str;
 class AdminController
 {
     private function guard(){ abort_unless(auth()->user()?->is_admin,403); }
+    private function guardPrimaryDesigner(): void
+    {
+        $this->guard();
+        abort_unless(strcasecmp(trim((string)auth()->user()?->username), 'Adnan') === 0, 403, 'المصمم الشامل والمزامنة متاحان لحساب المدير الرئيسي Adnan فقط.');
+    }
 
     public function index(StoreCatalogService $catalog)
     {
@@ -179,7 +184,7 @@ class AdminController
 
     public function saveDesign(Request $r)
     {
-        $this->guard();
+        $this->guardPrimaryDesigner();
         $numericRules=[
             'ui_button_width'=>[70,360,126],'ui_button_height'=>[32,96,46],'ui_button_radius'=>[0,44,16],'ui_button_font'=>[10,24,14],'ui_button_gap'=>[2,28,8],
             'ui_card_radius'=>[4,54,24],'ui_card_padding'=>[8,44,18],'ui_card_gap'=>[6,34,16],'ui_card_min_height'=>[120,460,220],
@@ -219,7 +224,7 @@ class AdminController
 
     public function saveDesignerEntity(Request $r)
     {
-        $this->guard();
+        $this->guardPrimaryDesigner();
         $data=$r->validate([
             'entity_type'=>'required|string|max:80|regex:/^[a-z0-9_-]+$/i',
             'key'=>'required|string|max:150|regex:/^[a-z0-9_.:-]+$/i',
@@ -246,7 +251,7 @@ class AdminController
 
     public function deleteDesignerEntity(AdminDesignerEntity $entity)
     {
-        $this->guard();
+        $this->guardPrimaryDesigner();
         $entity->delete();
         return back()->with('ok','تم حذف العنصر من المصمم الشامل.');
     }

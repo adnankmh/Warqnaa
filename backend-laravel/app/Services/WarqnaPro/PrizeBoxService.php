@@ -24,57 +24,63 @@ class PrizeBoxService
     public function __construct(private readonly WalletService $wallet) {}
 
     /**
-     * Gives exactly one idempotent box for a completed game win, up to four
-     * boxes for the authenticated player during the current calendar day.
+     * Awards one outcome-aware box for every completed game, up to the daily
+     * limit. A normal loss yields a simple box, a normal win a strong box,
+     * a competition loss an epic box, and a competition win a legendary box.
      */
-    public function awardForWin(User $user, string $sourceKey, ?string $gameKey = null): ?PrizeBox
-    {
+    public function awardForCompletedGame(
+        User $user,
+        string $sourceKey,
+        ?string $gameKey = null,
+        string $mode = 'normal',
+        bool $won = false,
+    ): ?PrizeBox {
         $normalizedSource = trim($sourceKey);
-        if ($normalizedSource === '') {
-            throw new RuntimeException('Prize box source key is required.');
-        }
+        if ($normalizedSource === '') throw new RuntimeException('Prize box source key is required.');
 
-        return DB::transaction(function () use ($user, $normalizedSource, $gameKey) {
-            $existing = PrizeBox::where('user_id', $user->id)
-                ->where('source_key', $normalizedSource)
-                ->lockForUpdate()
-                ->first();
-            if ($existing) {
-                return $existing;
-            }
+        return DB::transaction(function () use ($user,$normalizedSource,$gameKey,$mode,$won) {
+            $existing = PrizeBox::where('user_id',$user->id)->where('source_key',$normalizedSource)->lockForUpdate()->first();
+            if ($existing) return $existing;
 
             $today = now()->toDateString();
-            $todayBoxes = PrizeBox::where('user_id', $user->id)
-                ->whereDate('awarded_date', $today)
-                ->lockForUpdate()
-                ->orderBy('id')
-                ->get();
+            $todayBoxes = PrizeBox::where('user_id',$user->id)->whereDate('awarded_date',$today)->lockForUpdate()->orderBy('id')->get();
+            if ($todayBoxes->count() >= self::DAILY_LIMIT) return null;
 
-            if ($todayBoxes->count() >= self::DAILY_LIMIT) {
-                return null;
-            }
-
-            $index = (abs((int) crc32($normalizedSource.'|'.($gameKey ?? 'game'))) + $todayBoxes->count()) % count(self::BOX_KEYS);
-            $boxKey = self::BOX_KEYS[$index];
-            $lastKey = $todayBoxes->last()?->box_key;
-            if ($lastKey === $boxKey && count(self::BOX_KEYS) > 1) {
-                $boxKey = self::BOX_KEYS[($index + 1) % count(self::BOX_KEYS)];
+            $competition = in_array($mode, ['tournament','sponsored','seasonal','competition'], true);
+            if ($competition && $won) {
+                $boxKey = 'diamond_phoenix';
+                $tier = 'legendary';
+            } elseif ($competition) {
+                $boxKey = 'royal_amethyst';
+                $tier = 'epic';
+            } elseif ($won) {
+                $strong = ['emerald_eagle','bronze_dragon'];
+                $boxKey = $strong[abs((int)crc32($normalizedSource)) % count($strong)];
+                $tier = 'strong';
+            } else {
+                $simple = ['crimson_lion','obsidian'];
+                $boxKey = $simple[abs((int)crc32($normalizedSource)) % count($simple)];
+                $tier = 'simple';
             }
 
             return PrizeBox::create([
-                'user_id' => $user->id,
-                'box_key' => $boxKey,
-                'source_type' => 'game_win',
-                'source_key' => $normalizedSource,
-                'awarded_date' => $today,
-                'payload' => [
-                    'game_key' => $gameKey,
-                    'daily_sequence' => $todayBoxes->count() + 1,
-                    'daily_limit' => self::DAILY_LIMIT,
-                    'version' => 'V0.2',
+                'user_id'=>$user->id,
+                'box_key'=>$boxKey,
+                'source_type'=>$competition ? 'competition_complete' : 'game_complete',
+                'source_key'=>$normalizedSource,
+                'awarded_date'=>$today,
+                'payload'=>[
+                    'game_key'=>$gameKey,'mode'=>$mode,'won'=>$won,'tier'=>$tier,
+                    'daily_sequence'=>$todayBoxes->count()+1,'daily_limit'=>self::DAILY_LIMIT,'version'=>'V0.3.1',
                 ],
             ]);
         });
+    }
+
+    /** Backward-compatible alias used by older callers. */
+    public function awardForWin(User $user, string $sourceKey, ?string $gameKey = null): ?PrizeBox
+    {
+        return $this->awardForCompletedGame($user,$sourceKey,$gameKey,'normal',true);
     }
 
     /** @return array<string,mixed> */
@@ -118,7 +124,7 @@ class PrizeBoxService
                 throw new RuntimeException('تم فتح صندوق الجوائز مسبقاً.');
             }
 
-            $reward = $forcedReward ?: $this->randomReward();
+            $reward = $forcedReward ?: $this->randomRewardForBox((string)$locked->box_key);
             $reward = $this->normalizeReward($reward);
             $expiresAt = $reward['duration_hours'] > 0 ? now()->addHours($reward['duration_hours']) : null;
             $reward['opened_at'] = now()->toIso8601String();
@@ -134,7 +140,7 @@ class PrizeBoxService
                 'expires_at' => $expiresAt,
                 'payload' => array_merge($locked->payload ?? [], [
                     'reward' => $reward,
-                    'version' => 'V0.2',
+                    'version' => 'V0.3.1',
                 ]),
             ])->save();
 
@@ -202,26 +208,41 @@ class PrizeBoxService
     public static function catalog(): array
     {
         return [
-            ['weight' => 15, 'type' => 'pasha_day', 'value' => '1', 'duration_hours' => 24, 'rarity' => 'legendary', 'icon' => '🎩', 'label_ar' => 'يوم باشا', 'store_item_key' => 'daily_prize_pasha_day_v02'],
+            ['weight' => 15, 'type' => 'pasha_day', 'value' => '1', 'duration_hours' => 24, 'rarity' => 'legendary', 'icon' => '👑', 'label_ar' => 'يوم باشا', 'store_item_key' => 'daily_prize_pasha_day_v02'],
             ['weight' => 18, 'type' => 'writing_color', 'value' => '#22d3ee', 'duration_hours' => 24, 'rarity' => 'rare', 'icon' => '✍️', 'label_ar' => 'لون كتابة لمدة يوم', 'store_item_key' => 'daily_pack_chat_cyan_24h_v176'],
             ['weight' => 18, 'type' => 'player_color', 'value' => '#facc15', 'duration_hours' => 24, 'rarity' => 'rare', 'icon' => '🎨', 'label_ar' => 'لون لاعب لمدة يوم', 'store_item_key' => 'daily_pack_name_gold_24h_v176'],
             ['weight' => 14, 'type' => 'profile_cover', 'value' => 'cover_v02_royal', 'duration_hours' => 72, 'rarity' => 'epic', 'icon' => '🖼️', 'label_ar' => 'غلاف شخصي لمدة 3 أيام', 'store_item_key' => 'daily_prize_cover_v02'],
             ['weight' => 25, 'type' => 'tokens', 'value' => 'random_50_1000', 'duration_hours' => 0, 'rarity' => 'common', 'icon' => '🪙', 'label_ar' => 'توكنز عشوائية'],
-            ['weight' => 10, 'type' => 'ticket', 'value' => '200', 'duration_hours' => 0, 'rarity' => 'epic', 'icon' => '🎟️', 'label_ar' => 'تذكرة مسابقة 200'],
+            ['weight' => 8, 'type' => 'ticket', 'value' => '200', 'duration_hours' => 0, 'rarity' => 'epic', 'icon' => '🎟️', 'label_ar' => 'تذكرة مسابقة 200'],
+            ['weight' => 2, 'type' => 'ticket', 'value' => '500', 'duration_hours' => 0, 'rarity' => 'legendary', 'icon' => '🎟️', 'label_ar' => 'تذكرة مسابقة 500'],
         ];
     }
 
     /** @return array<string,mixed> */
-    private function randomReward(): array
+    private function randomRewardForBox(string $boxKey): array
     {
         $items = self::catalog();
-        $total = array_sum(array_column($items, 'weight'));
-        $pick = random_int(1, max(1, $total));
-        foreach ($items as $item) {
-            $pick -= (int) $item['weight'];
-            if ($pick <= 0) {
-                return $item;
+        $allowed = match ($boxKey) {
+            'crimson_lion','obsidian' => ['tokens','writing_color','player_color'],
+            'emerald_eagle','bronze_dragon' => ['tokens','writing_color','player_color','ticket','profile_cover'],
+            'royal_amethyst' => ['ticket','profile_cover','pasha_day','tokens','writing_color','player_color'],
+            'diamond_phoenix' => ['ticket','profile_cover','pasha_day','tokens'],
+            default => array_values(array_unique(array_column($items,'type'))),
+        };
+        $items = array_values(array_filter($items, fn(array $item)=>in_array($item['type'],$allowed,true)));
+        if ($boxKey === 'diamond_phoenix') {
+            foreach ($items as &$item) {
+                if ($item['type'] === 'ticket' && (int)$item['value'] === 500) $item['weight'] = 28;
+                if ($item['type'] === 'pasha_day') $item['weight'] = 24;
+                if ($item['type'] === 'tokens') $item['weight'] = 22;
             }
+            unset($item);
+        }
+        $total = array_sum(array_column($items,'weight'));
+        $pick = random_int(1,max(1,$total));
+        foreach ($items as $item) {
+            $pick -= (int)$item['weight'];
+            if ($pick <= 0) return $item;
         }
         return $items[0];
     }
@@ -238,7 +259,9 @@ class PrizeBoxService
             $reward['label_ar'] = $tokens.' توكن مجاني';
         }
         if ($type === 'ticket') {
-            $reward['value'] = '200';
+            $denomination = (int)($reward['value'] ?? 200);
+            $reward['value'] = (string)(in_array($denomination,[50,100,200,500,1000],true) ? $denomination : 200);
+            $reward['label_ar'] = 'تذكرة مسابقة '.$reward['value'];
         }
         $reward['duration_hours'] = max(0, (int) ($reward['duration_hours'] ?? 0));
         $reward['rarity'] = (string) ($reward['rarity'] ?? 'common');
@@ -302,7 +325,7 @@ class PrizeBoxService
                 break;
             case 'ticket':
                 $ticket = CompetitionTicket::firstOrCreate(
-                    ['user_id' => $user->id, 'denomination' => 200],
+                    ['user_id' => $user->id, 'denomination' => (int)$reward['value']],
                     ['quantity' => 0, 'total_used' => 0]
                 );
                 $ticket->increment('quantity');

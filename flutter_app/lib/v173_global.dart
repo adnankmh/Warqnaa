@@ -37,20 +37,20 @@ PashaStyleV173 pashaStyleV173(String key) => pashaStylesV173.firstWhere(
 const List<int> competitionTicketValuesV173 = <int>[50,100,200,500,1000,2000,4000,5000,8000,10000,20000,30000,50000,100000];
 
 List<StoreProduct> buildV173StoreProducts() => <StoreProduct>[
-    StoreProduct(id: 'pasha_style_yellow_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا أصفر', nameEn: 'Yellow Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون أصفر: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full yellow Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'yellow', previewColor1: Color(0xfff6c915), previewColor2: Color(0xff9b6d00), imageAsset: 'assets/images/pasha/v173/pasha_yellow.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_red_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا أحمر', nameEn: 'Red Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون أحمر: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full red Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'red', previewColor1: Color(0xffb70822), previewColor2: Color(0xff6f0012), imageAsset: 'assets/images/pasha/v173/pasha_red.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_crimson_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا قرمزي', nameEn: 'Crimson Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون القرمزي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full crimson Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'crimson', previewColor1: Color(0xffc1123f), previewColor2: Color(0xff74001f), imageAsset: 'assets/images/pasha/v173/pasha_crimson.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_blue_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا أزرق', nameEn: 'Blue Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون أزرق: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full blue Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'blue', previewColor1: Color(0xff1e55b5), previewColor2: Color(0xff0b2a70), imageAsset: 'assets/images/pasha/v173/pasha_blue.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_green_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا أخضر', nameEn: 'Green Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون أخضر: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full green Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'green', previewColor1: Color(0xff006b58), previewColor2: Color(0xff00382f), imageAsset: 'assets/images/pasha/v173/pasha_green.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_purple_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا بنفسجي', nameEn: 'Purple Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون بنفسجي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full purple Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'purple', previewColor1: Color(0xff7b318b), previewColor2: Color(0xff45164e), imageAsset: 'assets/images/pasha/v173/pasha_purple.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_bronze_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا برونزي', nameEn: 'Bronze Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون برونزي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full bronze Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'bronze', previewColor1: Color(0xffb57b38), previewColor2: Color(0xff68401d), imageAsset: 'assets/images/pasha/v173/pasha_bronze.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_gold_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا ذهبي', nameEn: 'Gold Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون ذهبي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full gold Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'gold', previewColor1: Color(0xffd79d31), previewColor2: Color(0xff7b4e0c), imageAsset: 'assets/images/pasha/v173/pasha_gold.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_orange_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا برتقالي', nameEn: 'Orange Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون برتقالي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full orange Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'orange', previewColor1: Color(0xffff6515), previewColor2: Color(0xffa32d00), imageAsset: 'assets/images/pasha/v173/pasha_orange.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_pink_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا وردي', nameEn: 'Pink Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون وردي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full pink Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'pink', previewColor1: Color(0xffe42f8a), previewColor2: Color(0xff8a104a), imageAsset: 'assets/images/pasha/v173/pasha_pink.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_silver_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا فضي', nameEn: 'Silver Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون فضي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full silver Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'silver', previewColor1: Color(0xffc9ccd2), previewColor2: Color(0xff737883), imageAsset: 'assets/images/pasha/v173/pasha_silver.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_platinum_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا بلاتيني', nameEn: 'Platinum Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون بلاتيني: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full platinum Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'platinum', previewColor1: Color(0xffe0e4e9), previewColor2: Color(0xff8d96a3), imageAsset: 'assets/images/pasha/v173/pasha_platinum.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_navy_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا كحلي', nameEn: 'Navy Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون كحلي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full navy Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'navy', previewColor1: Color(0xff16265e), previewColor2: Color(0xff091333), imageAsset: 'assets/images/pasha/v173/pasha_navy.png', collection: 'pasha_v173'),
-    StoreProduct(id: 'pasha_style_white_v173', category: 'pasha_style', icon: '🎩', nameAr: 'طربوش باشا أبيض', nameEn: 'White Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون أبيض: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full white Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'white', previewColor1: Color(0xfff2f3f5), previewColor2: Color(0xffaeb4bd), imageAsset: 'assets/images/pasha/v173/pasha_white.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_yellow_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا أصفر', nameEn: 'Yellow Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون أصفر: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full yellow Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'yellow', previewColor1: Color(0xfff6c915), previewColor2: Color(0xff9b6d00), imageAsset: 'assets/images/pasha/v173/pasha_yellow.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_red_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا أحمر', nameEn: 'Red Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون أحمر: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full red Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'red', previewColor1: Color(0xffb70822), previewColor2: Color(0xff6f0012), imageAsset: 'assets/images/pasha/v173/pasha_red.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_crimson_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا قرمزي', nameEn: 'Crimson Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون القرمزي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full crimson Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'crimson', previewColor1: Color(0xffc1123f), previewColor2: Color(0xff74001f), imageAsset: 'assets/images/pasha/v173/pasha_crimson.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_blue_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا أزرق', nameEn: 'Blue Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون أزرق: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full blue Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'blue', previewColor1: Color(0xff1e55b5), previewColor2: Color(0xff0b2a70), imageAsset: 'assets/images/pasha/v173/pasha_blue.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_green_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا أخضر', nameEn: 'Green Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون أخضر: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full green Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'green', previewColor1: Color(0xff006b58), previewColor2: Color(0xff00382f), imageAsset: 'assets/images/pasha/v173/pasha_green.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_purple_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا بنفسجي', nameEn: 'Purple Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون بنفسجي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full purple Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'purple', previewColor1: Color(0xff7b318b), previewColor2: Color(0xff45164e), imageAsset: 'assets/images/pasha/v173/pasha_purple.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_bronze_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا برونزي', nameEn: 'Bronze Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون برونزي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full bronze Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'bronze', previewColor1: Color(0xffb57b38), previewColor2: Color(0xff68401d), imageAsset: 'assets/images/pasha/v173/pasha_bronze.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_gold_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا ذهبي', nameEn: 'Gold Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون ذهبي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full gold Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'gold', previewColor1: Color(0xffd79d31), previewColor2: Color(0xff7b4e0c), imageAsset: 'assets/images/pasha/v173/pasha_gold.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_orange_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا برتقالي', nameEn: 'Orange Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون برتقالي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full orange Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'orange', previewColor1: Color(0xffff6515), previewColor2: Color(0xffa32d00), imageAsset: 'assets/images/pasha/v173/pasha_orange.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_pink_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا وردي', nameEn: 'Pink Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون وردي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full pink Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'pink', previewColor1: Color(0xffe42f8a), previewColor2: Color(0xff8a104a), imageAsset: 'assets/images/pasha/v173/pasha_pink.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_silver_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا فضي', nameEn: 'Silver Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون فضي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full silver Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'silver', previewColor1: Color(0xffc9ccd2), previewColor2: Color(0xff737883), imageAsset: 'assets/images/pasha/v173/pasha_silver.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_platinum_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا بلاتيني', nameEn: 'Platinum Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون بلاتيني: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full platinum Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'platinum', previewColor1: Color(0xffe0e4e9), previewColor2: Color(0xff8d96a3), imageAsset: 'assets/images/pasha/v173/pasha_platinum.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_navy_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا كحلي', nameEn: 'Navy Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون كحلي: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full navy Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'navy', previewColor1: Color(0xff16265e), previewColor2: Color(0xff091333), imageAsset: 'assets/images/pasha/v173/pasha_navy.png', collection: 'pasha_v173'),
+    StoreProduct(id: 'pasha_style_white_v173', category: 'pasha_style', icon: '👑', nameAr: 'طربوش باشا أبيض', nameEn: 'White Pasha Fez', descriptionAr: 'هوية باشا كاملة باللون أبيض: الطربوش والوهج والاسم والدردشة واللون الرئيسي.', descriptionEn: 'Full white Pasha identity: fez, glow, name, chat and accent color.', price: 6500, value: 'white', previewColor1: Color(0xfff2f3f5), previewColor2: Color(0xffaeb4bd), imageAsset: 'assets/images/pasha/v173/pasha_white.png', collection: 'pasha_v173'),
     StoreProduct(id: 'table_v173_royal_01', category: 'tables', icon: '🃏', nameAr: 'طاولة الزمرد الملكي', nameEn: 'Royal Collection 01 Table', descriptionAr: 'طاولة Full HD من مجموعة V173 الجديدة مع معاينة كاملة داخل غرفة اللعب.', descriptionEn: 'Full-HD V173 table with full in-room preview.', price: 12000, previewColor1: const Color(0xff07111c), previewColor2: const Color(0xffd6aa59), imageAsset: 'assets/images/tables/v173/royal/table_v173_royal_01.jpg', collection: 'v173_royal'),
     StoreProduct(id: 'table_v173_royal_02', category: 'tables', icon: '🃏', nameAr: 'طاولة المخمل القرمزي', nameEn: 'Royal Collection 02 Table', descriptionAr: 'طاولة Full HD من مجموعة V173 الجديدة مع معاينة كاملة داخل غرفة اللعب.', descriptionEn: 'Full-HD V173 table with full in-room preview.', price: 12850, previewColor1: const Color(0xff07111c), previewColor2: const Color(0xffd6aa59), imageAsset: 'assets/images/tables/v173/royal/table_v173_royal_02.jpg', collection: 'v173_royal'),
     StoreProduct(id: 'table_v173_royal_03', category: 'tables', icon: '🃏', nameAr: 'طاولة المحيط الأزرق', nameEn: 'Royal Collection 03 Table', descriptionAr: 'طاولة Full HD من مجموعة V173 الجديدة مع معاينة كاملة داخل غرفة اللعب.', descriptionEn: 'Full-HD V173 table with full in-room preview.', price: 13700, previewColor1: const Color(0xff07111c), previewColor2: const Color(0xffd6aa59), imageAsset: 'assets/images/tables/v173/royal/table_v173_royal_03.jpg', collection: 'v173_royal'),
@@ -125,7 +125,7 @@ class PashaHatV173 extends StatelessWidget {
   const PashaHatV173({super.key, required this.controller, this.width = 44, this.height, this.fit = BoxFit.contain});
   @override
   Widget build(BuildContext context) {
-    return Image.asset('assets/images/pasha.png', width: width, height: height ?? width * .68, fit: BoxFit.contain, filterQuality: FilterQuality.high, errorBuilder: (_, __, ___) => const Text('🎩'));
+    return Image.asset('assets/images/pasha.png', width: width, height: height ?? width * .68, fit: BoxFit.contain, filterQuality: FilterQuality.high, errorBuilder: (_, __, ___) => const Text('👑'));
   }
 }
 
@@ -284,19 +284,19 @@ class GroupCommandCenterV173 extends StatelessWidget {
   final AppController controller;
   const GroupCommandCenterV173({super.key, required this.controller});
   @override Widget build(BuildContext context) => PremiumPanel(child: Padding(padding: const EdgeInsets.all(13), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    Row(children: [const Text('🛡️', style: TextStyle(fontSize: 31)), const SizedBox(width: 8), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('مركز قيادة المجموعة', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)), Text('موسم • خزينة • حرب مجموعات • صلاحيات • سجل كامل', style: TextStyle(color: Colors.white60, fontSize: 9))])), Chip(label: Text('LV.${controller.level}'))]),
+    Row(children: [const Text('🛡️', style: TextStyle(fontSize: 31)), const SizedBox(width: 8), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('مركز قيادة المجموعة', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)), Text('موسم • خزينة • حرب مجموعات • صلاحيات • سجل كامل', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 9))])), Chip(label: Text('LV.${controller.level}'))]),
     const SizedBox(height: 9),
     Row(children: [Expanded(child: _MiniStatV173('🏆','${controller.clubPoints}','نقاط الموسم')), const SizedBox(width:6), Expanded(child: _MiniStatV173('🔥','${controller.challengeStreakV173}','سلسلة')), const SizedBox(width:6), const Expanded(child: _MiniStatV173('🎟️','3','منافسات مجانية'))]),
     const SizedBox(height: 9),
     Wrap(spacing: 6, runSpacing: 6, children: [
       FilledButton.tonalIcon(onPressed: () => showCompetitionsV173(context, controller), icon: const Icon(Icons.emoji_events_outlined), label: const Text('منافسات المجموعة')),
       FilledButton.tonalIcon(onPressed: () => showChallengesV173(context, controller), icon: const Icon(Icons.bolt), label: const Text('مهام الأعضاء')),
-      FilledButton.tonalIcon(onPressed: () => showToast(context, 'سجل المجموعة: الانضمام، الترقية، الجوائز، التحويلات والمخالفات.'), icon: const Icon(Icons.history), label: const Text('السجل')),
-      FilledButton.tonalIcon(onPressed: () => showToast(context, 'الصلاحيات: قائد، نائب، منظم منافسات، مشرف دردشة، عضو.'), icon: const Icon(Icons.admin_panel_settings_outlined), label: const Text('الصلاحيات')),
+      FilledButton.tonalIcon(onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ClubManagementPageV182(controller: controller))), icon: const Icon(Icons.history), label: const Text('السجل')),
+      FilledButton.tonalIcon(onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ClubManagementPageV182(controller: controller))), icon: const Icon(Icons.admin_panel_settings_outlined), label: const Text('الصلاحيات')),
     ]),
   ])));
 }
-class _MiniStatV173 extends StatelessWidget { final String icon,value,label; const _MiniStatV173(this.icon,this.value,this.label); @override Widget build(BuildContext context)=>Container(padding:const EdgeInsets.all(8),decoration:BoxDecoration(color:Colors.white.withValues(alpha:.05),borderRadius:BorderRadius.circular(13)),child:Column(children:[Text(icon),Text(value,style:const TextStyle(fontWeight:FontWeight.w900)),Text(label,style:const TextStyle(fontSize:8,color:Colors.white54))])); }
+class _MiniStatV173 extends StatelessWidget { final String icon,value,label; const _MiniStatV173(this.icon,this.value,this.label); @override Widget build(BuildContext context)=>Container(padding:const EdgeInsets.all(8),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha:.55),borderRadius:BorderRadius.circular(13)),child:Column(children:[Text(icon),Text(value,style:const TextStyle(fontWeight:FontWeight.w900)),Text(label,style:TextStyle(fontSize:8,color:Theme.of(context).colorScheme.onSurfaceVariant))])); }
 
 class UniversalDesignerV173 extends StatelessWidget {
   final AppController controller;
@@ -309,11 +309,11 @@ class UniversalDesignerV173 extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('المصمم الشامل V0.2 — للمدير فقط', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+              const Text('المصمم الشامل V0.3.1 — لحساب Adnan فقط', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'إدارة وإضافة وتعديل وحذف جميع مكونات التطبيق: الألعاب والطاولات والمتجر والاقتصاد والمستويات وصناديق الجوائز والتحديات والمنافسات والمجموعات والإعلانات والإشعارات والصفحات والتنقل والترجمات والثيمات والأمان من قاعدة البيانات.',
-                style: TextStyle(color: Colors.white60, height: 1.5, fontSize: 10),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.5, fontSize: 10),
               ),
               const SizedBox(height: 9),
               Wrap(
@@ -324,6 +324,7 @@ class UniversalDesignerV173 extends StatelessWidget {
                     ('الطاولات', 'table', Icons.table_restaurant),
                     ('التذاكر', 'competition_ticket', Icons.confirmation_number),
                     ('صناديق الجوائز', 'prize_box', Icons.redeem),
+                    ('دولاب الحظ', 'lucky_wheel', Icons.casino_rounded),
                     ('التحديات', 'challenge', Icons.bolt),
                     ('المنافسات', 'competition', Icons.emoji_events),
                     ('المجموعات', 'group', Icons.groups),
@@ -342,7 +343,7 @@ class UniversalDesignerV173 extends StatelessWidget {
                     ('إعدادات النظام', 'system', Icons.settings_suggest),
                   ])
                     OutlinedButton.icon(
-                      onPressed: controller.serverConnected
+                      onPressed: controller.isPrimaryAdmin
                           ? () => Navigator.of(context).push(
                                 MaterialPageRoute<void>(
                                   builder: (_) => DesignerEntityManagerV173(
@@ -359,8 +360,14 @@ class UniversalDesignerV173 extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
+              Row(children:<Widget>[
+                Icon(controller.serverConnected ? Icons.cloud_done_rounded : Icons.cloud_off_rounded, size:18, color:controller.serverConnected ? Colors.greenAccent : Colors.amber),
+                const SizedBox(width:6),
+                Expanded(child:Text(controller.serverConnected ? 'المزامنة مع الخادم متاحة.' : 'وضع محلي آمن: التعديلات تُحفظ الآن وتُزامن عند عودة الخادم.',style:TextStyle(fontSize:10,color:Theme.of(context).colorScheme.onSurfaceVariant))),
+              ]),
+              const SizedBox(height: 8),
               FilledButton.icon(
-                onPressed: controller.serverConnected
+                onPressed: controller.isPrimaryAdmin
                     ? () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (_) => DesignerEntityManagerV173(
@@ -407,26 +414,47 @@ class _DesignerEntityManagerV173State extends State<DesignerEntityManagerV173> {
   }
 
   Future<void> _load() async {
-    if (!widget.controller.serverConnected) {
-      if (mounted) setState(() { loading = false; error = 'لا يوجد اتصال بالخادم.'; });
+    if (!widget.controller.isPrimaryAdmin) {
+      if (mounted) setState(() { loading = false; error = 'هذه الإدارة متاحة لحساب Adnan فقط.'; });
       return;
     }
     if (mounted) setState(() { loading = true; error = null; });
-    try {
-      final result = await widget.controller.api.adminDesignerEntitiesV173();
-      final raw = result['entities'];
-      final list = raw is List
-          ? raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
-          : <Map<String, dynamic>>[];
-      if (!mounted) return;
-      setState(() {
-        entities = list;
-        loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() { loading = false; error = e.toString(); });
+    widget.controller.ensureDesignerOfflineSeedV182();
+    if (widget.controller.serverConnected && widget.controller.api.token?.isNotEmpty == true) {
+      try {
+        await widget.controller.syncDesignerOfflineEntitiesV182();
+        final result = await widget.controller.api.adminDesignerEntitiesV173();
+        final raw = result['entities'];
+        final remote = raw is List
+            ? raw.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList()
+            : <Map<String, dynamic>>[];
+        final merged = <String, Map<String, dynamic>>{};
+        for (final item in remote) {
+          merged['${item['entity_type']}:${item['key']}'] = item;
+        }
+        for (final item in widget.controller.designerOfflineEntitiesV182) {
+          merged.putIfAbsent('${item['entity_type']}:${item['key']}', () => Map<String, dynamic>.from(item));
+        }
+        if (!mounted) return;
+        setState(() { entities = merged.values.toList(); loading = false; });
+        return;
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          entities = widget.controller.designerOfflineEntitiesV182.map((item) => Map<String, dynamic>.from(item)).toList();
+          loading = false;
+          error = null;
+        });
+        showToast(context, 'تعذرت المزامنة مؤقتًا؛ تم فتح نسخة الإدارة المحلية المحفوظة.');
+        return;
+      }
     }
+    if (!mounted) return;
+    setState(() {
+      entities = widget.controller.designerOfflineEntitiesV182.map((item) => Map<String, dynamic>.from(item)).toList();
+      loading = false;
+      error = null;
+    });
   }
 
   List<Map<String, dynamic>> get filtered {
@@ -481,14 +509,29 @@ class _DesignerEntityManagerV173State extends State<DesignerEntityManagerV173> {
                 try {
                   final decoded = jsonDecode(payload.text);
                   if (decoded is! Map) throw const FormatException('يجب أن يكون JSON Object.');
-                  await widget.controller.api.upsertAdminDesignerEntityV173(
-                    entityType: type.text.trim(),
-                    key: key.text.trim(),
-                    locale: locale.text.trim().isEmpty ? 'all' : locale.text.trim(),
-                    sortOrder: int.tryParse(order.text) ?? 0,
+                  final entityType = type.text.trim();
+                  final entityKey = key.text.trim();
+                  final entityLocale = locale.text.trim().isEmpty ? 'all' : locale.text.trim();
+                  final entityOrder = int.tryParse(order.text) ?? 0;
+                  final entityPayload = Map<String, dynamic>.from(decoded);
+                  await widget.controller.upsertDesignerOfflineEntityV182(
+                    entityType: entityType,
+                    key: entityKey,
+                    locale: entityLocale,
+                    sortOrder: entityOrder,
                     active: active,
-                    payload: Map<String, dynamic>.from(decoded),
+                    payload: entityPayload,
                   );
+                  if (widget.controller.serverConnected && widget.controller.api.token?.isNotEmpty == true) {
+                    await widget.controller.api.upsertAdminDesignerEntityV173(
+                      entityType: entityType,
+                      key: entityKey,
+                      locale: entityLocale,
+                      sortOrder: entityOrder,
+                      active: active,
+                      payload: entityPayload,
+                    );
+                  }
                   if (dialogContext.mounted) Navigator.pop(dialogContext, true);
                 } catch (e) {
                   if (dialogContext.mounted) {
@@ -505,7 +548,7 @@ class _DesignerEntityManagerV173State extends State<DesignerEntityManagerV173> {
     type.dispose(); key.dispose(); locale.dispose(); order.dispose(); payload.dispose();
     if (saved == true) {
       await _load();
-      if (mounted) showToast(context, 'تم حفظ العنصر ومزامنته مع الخادم.');
+      if (mounted) showToast(context, widget.controller.serverConnected ? 'تم حفظ العنصر ومزامنته مع الخادم.' : 'تم حفظ العنصر محليًا وسيُزامن تلقائيًا عند الاتصال.');
     }
   }
 
@@ -525,9 +568,12 @@ class _DesignerEntityManagerV173State extends State<DesignerEntityManagerV173> {
     );
     if (confirmed != true) return;
     try {
-      await widget.controller.api.deleteAdminDesignerEntityV173(id);
+      await widget.controller.deleteDesignerOfflineEntityV182(entity);
+      if (id > 0 && widget.controller.serverConnected && widget.controller.api.token?.isNotEmpty == true) {
+        await widget.controller.api.deleteAdminDesignerEntityV173(id);
+      }
       await _load();
-      if (mounted) showToast(context, 'تم حذف العنصر.');
+      if (mounted) showToast(context, widget.controller.serverConnected ? 'تم حذف العنصر ومزامنة التغيير.' : 'تم حذف العنصر محليًا.');
     } catch (e) {
       if (mounted) showToast(context, 'تعذر الحذف: $e');
     }
@@ -559,7 +605,7 @@ class _DesignerEntityManagerV173State extends State<DesignerEntityManagerV173> {
                           final payload = entity['payload'];
                           return Card(
                             child: ListTile(
-                              leading: Icon(entity['active'] == false ? Icons.visibility_off : Icons.cloud_done),
+                              leading: Icon(entity['active'] == false ? Icons.visibility_off : entity['pending_sync'] == true ? Icons.cloud_upload_outlined : Icons.cloud_done),
                               title: Text('${entity['entity_type']} / ${entity['key']}', style: const TextStyle(fontWeight: FontWeight.w800)),
                               subtitle: Text('اللغة: ${entity['locale']} • المراجعة: ${entity['revision']}\n${jsonEncode(payload)}', maxLines: 3, overflow: TextOverflow.ellipsis),
                               isThreeLine: true,

@@ -1,0 +1,1803 @@
+{
+  "validated_image_files": 266,
+  "invalid_image_files": 0,
+  "files_optimized": 128,
+  "before_bytes": 92864273,
+  "after_bytes": 18713950,
+  "saved_bytes": 74150323,
+  "saved_percent": 79.85,
+  "items": [
+    {
+      "file": "assets/play-store/screenshot-01-games.png",
+      "before": 1183372,
+      "after": 169550,
+      "saved": 1013822,
+      "dimensions_before": [
+        1080,
+        1920
+      ],
+      "dimensions_after": [
+        720,
+        1280
+      ]
+    },
+    {
+      "file": "assets/play-store/screenshot-02-voice.png",
+      "before": 657715,
+      "after": 112044,
+      "saved": 545671,
+      "dimensions_before": [
+        1080,
+        1920
+      ],
+      "dimensions_after": [
+        720,
+        1280
+      ]
+    },
+    {
+      "file": "assets/play-store/screenshot-03-social.png",
+      "before": 621286,
+      "after": 95945,
+      "saved": 525341,
+      "dimensions_before": [
+        1080,
+        1920
+      ],
+      "dimensions_after": [
+        720,
+        1280
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/basha1.png",
+      "before": 843254,
+      "after": 23709,
+      "saved": 819545,
+      "dimensions_before": [
+        1920,
+        1080
+      ],
+      "dimensions_after": [
+        1024,
+        576
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_01.jpg",
+      "before": 323979,
+      "after": 114860,
+      "saved": 209119,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_03.jpg",
+      "before": 315990,
+      "after": 102284,
+      "saved": 213706,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_04.jpg",
+      "before": 356337,
+      "after": 126708,
+      "saved": 229629,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_05.jpg",
+      "before": 353548,
+      "after": 138443,
+      "saved": 215105,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_06.jpg",
+      "before": 385787,
+      "after": 132375,
+      "saved": 253412,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_09.jpg",
+      "before": 442795,
+      "after": 168005,
+      "saved": 274790,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_10.jpg",
+      "before": 338896,
+      "after": 131720,
+      "saved": 207176,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_11.jpg",
+      "before": 623488,
+      "after": 170465,
+      "saved": 453023,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_12.jpg",
+      "before": 434996,
+      "after": 167718,
+      "saved": 267278,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_13.jpg",
+      "before": 367572,
+      "after": 138426,
+      "saved": 229146,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_14.jpg",
+      "before": 341134,
+      "after": 123855,
+      "saved": 217279,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_15.jpg",
+      "before": 368704,
+      "after": 151647,
+      "saved": 217057,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_16.jpg",
+      "before": 340655,
+      "after": 129776,
+      "saved": 210879,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_17.jpg",
+      "before": 366576,
+      "after": 139623,
+      "saved": 226953,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_19.jpg",
+      "before": 388998,
+      "after": 159687,
+      "saved": 229311,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_20.jpg",
+      "before": 486400,
+      "after": 198876,
+      "saved": 287524,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_21.jpg",
+      "before": 444190,
+      "after": 182107,
+      "saved": 262083,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_22.jpg",
+      "before": 343205,
+      "after": 139767,
+      "saved": 203438,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_23.jpg",
+      "before": 371745,
+      "after": 138938,
+      "saved": 232807,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_24.jpg",
+      "before": 327212,
+      "after": 117399,
+      "saved": 209813,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_25.jpg",
+      "before": 437309,
+      "after": 171577,
+      "saved": 265732,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_26.jpg",
+      "before": 303835,
+      "after": 127379,
+      "saved": 176456,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_27.jpg",
+      "before": 333875,
+      "after": 127540,
+      "saved": 206335,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_29.jpg",
+      "before": 341562,
+      "after": 133729,
+      "saved": 207833,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "backend-laravel/public/assets/store/tables/v173/royal/table_v173_royal_30.jpg",
+      "before": 398919,
+      "after": 161311,
+      "saved": 237608,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/brand/store_tables_reference_v172.png",
+      "before": 2321809,
+      "after": 333044,
+      "saved": 1988765,
+      "dimensions_before": [
+        1536,
+        1024
+      ],
+      "dimensions_after": [
+        1280,
+        853
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/brand/warqna_logo.png",
+      "before": 856669,
+      "after": 110251,
+      "saved": 746418,
+      "dimensions_before": [
+        1107,
+        1007
+      ],
+      "dimensions_after": [
+        1024,
+        931
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/cardbacks/v021/cardback_v021_black_horse.png",
+      "before": 490889,
+      "after": 68575,
+      "saved": 422314,
+      "dimensions_before": [
+        600,
+        900
+      ],
+      "dimensions_after": [
+        600,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/cardbacks/v021/cardback_v021_eagle.png",
+      "before": 438997,
+      "after": 55918,
+      "saved": 383079,
+      "dimensions_before": [
+        600,
+        900
+      ],
+      "dimensions_after": [
+        600,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/cardbacks/v021/cardback_v021_fire_dragon.png",
+      "before": 493720,
+      "after": 56583,
+      "saved": 437137,
+      "dimensions_before": [
+        600,
+        900
+      ],
+      "dimensions_after": [
+        600,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/cardbacks/v021/cardback_v021_gold_dragon.png",
+      "before": 484834,
+      "after": 59143,
+      "saved": 425691,
+      "dimensions_before": [
+        600,
+        900
+      ],
+      "dimensions_after": [
+        600,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/cardbacks/v021/cardback_v021_lion.png",
+      "before": 529124,
+      "after": 78367,
+      "saved": 450757,
+      "dimensions_before": [
+        600,
+        900
+      ],
+      "dimensions_after": [
+        600,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/cardbacks/v021/cardback_v021_owl.png",
+      "before": 462164,
+      "after": 61175,
+      "saved": 400989,
+      "dimensions_before": [
+        600,
+        900
+      ],
+      "dimensions_after": [
+        600,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/cardbacks/v021/cardback_v021_phoenix.png",
+      "before": 440986,
+      "after": 54376,
+      "saved": 386610,
+      "dimensions_before": [
+        600,
+        900
+      ],
+      "dimensions_after": [
+        600,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/cardbacks/v021/cardback_v021_tiger.png",
+      "before": 553229,
+      "after": 82137,
+      "saved": 471092,
+      "dimensions_before": [
+        600,
+        900
+      ],
+      "dimensions_after": [
+        600,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/cardbacks/v021/cardback_v021_whale.png",
+      "before": 465294,
+      "after": 67180,
+      "saved": 398114,
+      "dimensions_before": [
+        600,
+        900
+      ],
+      "dimensions_after": [
+        600,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/cardbacks/v021/cardback_v021_white_tiger.png",
+      "before": 552829,
+      "after": 87805,
+      "saved": 465024,
+      "dimensions_before": [
+        600,
+        900
+      ],
+      "dimensions_after": [
+        600,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/cardbacks/v021/cardback_v021_white_wolf.png",
+      "before": 496559,
+      "after": 79917,
+      "saved": 416642,
+      "dimensions_before": [
+        600,
+        900
+      ],
+      "dimensions_after": [
+        600,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/design-reference.png",
+      "before": 1991149,
+      "after": 237538,
+      "saved": 1753611,
+      "dimensions_before": [
+        941,
+        1672
+      ],
+      "dimensions_after": [
+        720,
+        1280
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/games/baloot.png",
+      "before": 362045,
+      "after": 105251,
+      "saved": 256794,
+      "dimensions_before": [
+        420,
+        675
+      ],
+      "dimensions_after": [
+        420,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/games/basra.png",
+      "before": 380404,
+      "after": 117622,
+      "saved": 262782,
+      "dimensions_before": [
+        420,
+        675
+      ],
+      "dimensions_after": [
+        420,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/games/game_library_reference.png",
+      "before": 773121,
+      "after": 149299,
+      "saved": 623822,
+      "dimensions_before": [
+        473,
+        1024
+      ],
+      "dimensions_after": [
+        416,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/games/hand_partner.png",
+      "before": 323033,
+      "after": 82941,
+      "saved": 240092,
+      "dimensions_before": [
+        420,
+        675
+      ],
+      "dimensions_after": [
+        420,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/games/syrian_tarneeb.png",
+      "before": 387745,
+      "after": 130721,
+      "saved": 257024,
+      "dimensions_before": [
+        420,
+        675
+      ],
+      "dimensions_after": [
+        420,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/games/trix_complex.png",
+      "before": 320913,
+      "after": 88357,
+      "saved": 232556,
+      "dimensions_before": [
+        420,
+        675
+      ],
+      "dimensions_after": [
+        420,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/games/trix_partner.png",
+      "before": 309913,
+      "after": 78135,
+      "saved": 231778,
+      "dimensions_before": [
+        420,
+        675
+      ],
+      "dimensions_after": [
+        420,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/pasha.png",
+      "before": 843254,
+      "after": 23709,
+      "saved": 819545,
+      "dimensions_before": [
+        1920,
+        1080
+      ],
+      "dimensions_after": [
+        1024,
+        576
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/reference/table_reference_01.png",
+      "before": 1183411,
+      "after": 383969,
+      "saved": 799442,
+      "dimensions_before": [
+        1024,
+        640
+      ],
+      "dimensions_after": [
+        1024,
+        640
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/reference/table_reference_02.png",
+      "before": 1123418,
+      "after": 452508,
+      "saved": 670910,
+      "dimensions_before": [
+        1024,
+        640
+      ],
+      "dimensions_after": [
+        1024,
+        640
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/reference/table_reference_03.png",
+      "before": 906814,
+      "after": 304861,
+      "saved": 601953,
+      "dimensions_before": [
+        1024,
+        640
+      ],
+      "dimensions_after": [
+        1024,
+        640
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/reference/table_reference_04.png",
+      "before": 1054143,
+      "after": 426304,
+      "saved": 627839,
+      "dimensions_before": [
+        1024,
+        640
+      ],
+      "dimensions_after": [
+        1024,
+        640
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/reference/table_reference_05.png",
+      "before": 694478,
+      "after": 71788,
+      "saved": 622690,
+      "dimensions_before": [
+        1024,
+        640
+      ],
+      "dimensions_after": [
+        1024,
+        640
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/reference/table_reference_06.png",
+      "before": 802842,
+      "after": 344526,
+      "saved": 458316,
+      "dimensions_before": [
+        1024,
+        640
+      ],
+      "dimensions_after": [
+        1024,
+        640
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/reference/table_reference_07.png",
+      "before": 1122907,
+      "after": 408086,
+      "saved": 714821,
+      "dimensions_before": [
+        1024,
+        640
+      ],
+      "dimensions_after": [
+        1024,
+        640
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/reference/table_reference_08.png",
+      "before": 835239,
+      "after": 282590,
+      "saved": 552649,
+      "dimensions_before": [
+        1024,
+        640
+      ],
+      "dimensions_after": [
+        1024,
+        640
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/reference/table_reference_09.png",
+      "before": 1048068,
+      "after": 442124,
+      "saved": 605944,
+      "dimensions_before": [
+        1024,
+        640
+      ],
+      "dimensions_after": [
+        1024,
+        640
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/reference/table_reference_10.png",
+      "before": 971711,
+      "after": 346641,
+      "saved": 625070,
+      "dimensions_before": [
+        1024,
+        640
+      ],
+      "dimensions_after": [
+        1024,
+        640
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/reference/table_reference_11.png",
+      "before": 888298,
+      "after": 303012,
+      "saved": 585286,
+      "dimensions_before": [
+        1024,
+        640
+      ],
+      "dimensions_after": [
+        1024,
+        640
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/reference/table_reference_16.png",
+      "before": 800810,
+      "after": 334402,
+      "saved": 466408,
+      "dimensions_before": [
+        1024,
+        640
+      ],
+      "dimensions_after": [
+        1024,
+        640
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_01.jpg",
+      "before": 323979,
+      "after": 114860,
+      "saved": 209119,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_03.jpg",
+      "before": 315990,
+      "after": 102284,
+      "saved": 213706,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_04.jpg",
+      "before": 356337,
+      "after": 126708,
+      "saved": 229629,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_05.jpg",
+      "before": 353548,
+      "after": 138443,
+      "saved": 215105,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_06.jpg",
+      "before": 385787,
+      "after": 132375,
+      "saved": 253412,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_09.jpg",
+      "before": 442795,
+      "after": 168005,
+      "saved": 274790,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_10.jpg",
+      "before": 338896,
+      "after": 131720,
+      "saved": 207176,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_11.jpg",
+      "before": 623488,
+      "after": 170465,
+      "saved": 453023,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_12.jpg",
+      "before": 434996,
+      "after": 167718,
+      "saved": 267278,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_13.jpg",
+      "before": 367572,
+      "after": 138426,
+      "saved": 229146,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_14.jpg",
+      "before": 341134,
+      "after": 123855,
+      "saved": 217279,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_15.jpg",
+      "before": 368704,
+      "after": 151647,
+      "saved": 217057,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_16.jpg",
+      "before": 340655,
+      "after": 129776,
+      "saved": 210879,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_17.jpg",
+      "before": 366576,
+      "after": 139623,
+      "saved": 226953,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_19.jpg",
+      "before": 388998,
+      "after": 159687,
+      "saved": 229311,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_20.jpg",
+      "before": 486400,
+      "after": 198876,
+      "saved": 287524,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_21.jpg",
+      "before": 444190,
+      "after": 182107,
+      "saved": 262083,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_22.jpg",
+      "before": 343205,
+      "after": 139767,
+      "saved": 203438,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_23.jpg",
+      "before": 371745,
+      "after": 138938,
+      "saved": 232807,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_24.jpg",
+      "before": 327212,
+      "after": 117399,
+      "saved": 209813,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_25.jpg",
+      "before": 437309,
+      "after": 171577,
+      "saved": 265732,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_26.jpg",
+      "before": 303835,
+      "after": 127379,
+      "saved": 176456,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_27.jpg",
+      "before": 333875,
+      "after": 127540,
+      "saved": 206335,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_29.jpg",
+      "before": 341562,
+      "after": 133729,
+      "saved": 207833,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/tables/v173/royal/table_v173_royal_30.jpg",
+      "before": 398919,
+      "after": 161311,
+      "saved": 237608,
+      "dimensions_before": [
+        1672,
+        941
+      ],
+      "dimensions_after": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/bronze_dragon.png",
+      "before": 1424852,
+      "after": 172293,
+      "saved": 1252559,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/bronze_dragon_body.png",
+      "before": 782932,
+      "after": 92986,
+      "saved": 689946,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/bronze_dragon_front_panel.png",
+      "before": 671701,
+      "after": 81363,
+      "saved": 590338,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/bronze_dragon_lid.png",
+      "before": 650580,
+      "after": 84570,
+      "saved": 566010,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/crimson_lion.png",
+      "before": 1276664,
+      "after": 151783,
+      "saved": 1124881,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/crimson_lion_body.png",
+      "before": 695394,
+      "after": 80086,
+      "saved": 615308,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/crimson_lion_front_panel.png",
+      "before": 593269,
+      "after": 69021,
+      "saved": 524248,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/crimson_lion_lid.png",
+      "before": 588311,
+      "after": 77972,
+      "saved": 510339,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/diamond_phoenix.png",
+      "before": 1233296,
+      "after": 153230,
+      "saved": 1080066,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/diamond_phoenix_body.png",
+      "before": 699134,
+      "after": 90229,
+      "saved": 608905,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/diamond_phoenix_front_panel.png",
+      "before": 627281,
+      "after": 82433,
+      "saved": 544848,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/diamond_phoenix_lid.png",
+      "before": 543328,
+      "after": 69070,
+      "saved": 474258,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/emerald_eagle.png",
+      "before": 1100640,
+      "after": 125555,
+      "saved": 975085,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/emerald_eagle_body.png",
+      "before": 610444,
+      "after": 69136,
+      "saved": 541308,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/emerald_eagle_front_panel.png",
+      "before": 542194,
+      "after": 62250,
+      "saved": 479944,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/emerald_eagle_lid.png",
+      "before": 498107,
+      "after": 61725,
+      "saved": 436382,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/obsidian.png",
+      "before": 1076607,
+      "after": 111998,
+      "saved": 964609,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/obsidian_body.png",
+      "before": 591275,
+      "after": 60101,
+      "saved": 531174,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/obsidian_front_panel.png",
+      "before": 498551,
+      "after": 51300,
+      "saved": 447251,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/obsidian_lid.png",
+      "before": 495668,
+      "after": 57219,
+      "saved": 438449,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/royal_amethyst.png",
+      "before": 1055367,
+      "after": 133932,
+      "saved": 921435,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/royal_amethyst_body.png",
+      "before": 675245,
+      "after": 84500,
+      "saved": 590745,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/royal_amethyst_front_panel.png",
+      "before": 606915,
+      "after": 76638,
+      "saved": 530277,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/prize_boxes/royal_amethyst_lid.png",
+      "before": 388341,
+      "after": 54832,
+      "saved": 333509,
+      "dimensions_before": [
+        1200,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        675
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/rewards/pasha_day.png",
+      "before": 513484,
+      "after": 39324,
+      "saved": 474160,
+      "dimensions_before": [
+        900,
+        900
+      ],
+      "dimensions_after": [
+        900,
+        900
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/rewards/ticket_200.png",
+      "before": 1752891,
+      "after": 173091,
+      "saved": 1579800,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_100.png",
+      "before": 1756244,
+      "after": 173136,
+      "saved": 1583108,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_1000.png",
+      "before": 1765801,
+      "after": 175617,
+      "saved": 1590184,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_10000.png",
+      "before": 1739901,
+      "after": 175045,
+      "saved": 1564856,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_100000.png",
+      "before": 1770388,
+      "after": 177290,
+      "saved": 1593098,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_200.png",
+      "before": 1752891,
+      "after": 173091,
+      "saved": 1579800,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_2000.png",
+      "before": 1764236,
+      "after": 175645,
+      "saved": 1588591,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_20000.png",
+      "before": 1737541,
+      "after": 174981,
+      "saved": 1562560,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_30000.png",
+      "before": 1738219,
+      "after": 175263,
+      "saved": 1562956,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_4000.png",
+      "before": 1762263,
+      "after": 175462,
+      "saved": 1586801,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_50.png",
+      "before": 1778969,
+      "after": 173409,
+      "saved": 1605560,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_500.png",
+      "before": 1751189,
+      "after": 173109,
+      "saved": 1578080,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_5000.png",
+      "before": 1762830,
+      "after": 175849,
+      "saved": 1586981,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_50000.png",
+      "before": 1735430,
+      "after": 174949,
+      "saved": 1560481,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    },
+    {
+      "file": "flutter_app/assets/images/v02/tickets/ticket_8000.png",
+      "before": 1764040,
+      "after": 175934,
+      "saved": 1588106,
+      "dimensions_before": [
+        1400,
+        880
+      ],
+      "dimensions_after": [
+        960,
+        603
+      ]
+    }
+  ]
+}

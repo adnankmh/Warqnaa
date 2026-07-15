@@ -18,13 +18,13 @@ class V02Text {
   static const Map<String, Map<String, String>> _data = <String, Map<String, String>>{
     'ar': <String, String>{
       'title': 'صندوق الجوائز اليومي',
-      'subtitle': 'اربح مباراة لتحصل على صندوق • بحد أقصى 4 صناديق يومياً',
+      'subtitle': 'أكمل مباراة لتحصل على صندوق حسب النتيجة • بحد أقصى 4 يومياً',
       'myBoxes': 'صناديقي',
       'showcase': 'مجموعة الصناديق الملكية',
       'open': 'فتح الصندوق',
       'opened': 'تم فتحه',
       'empty': 'لا توجد صناديق جاهزة الآن',
-      'emptyHint': 'اربح مباراة مكتملة، وسيصل الصندوق مباشرة إلى هذه الصفحة.',
+      'emptyHint': 'أكمل مباراة كاملة، وسيصل صندوق مناسب للنتيجة مباشرة إلى هذه الصفحة.',
       'today': 'حصيلة اليوم',
       'remaining': 'المتبقي اليوم',
       'reward': 'مكافأتك',
@@ -38,20 +38,20 @@ class V02Text {
       'tokens': 'توكنز مجانية',
       'ticket200': 'تذكرة مسابقة 200',
       'expires': 'تنتهي الصلاحية',
-      'perWin': 'صندوق عن كل فوز',
+      'perWin': 'صندوق عن كل مباراة مكتملة',
       'dailyMax': 'الحد اليومي 4',
       'frontOpen': 'فتح أمامي سينمائي',
       'newBox': 'حصلت على صندوق جوائز جديد!',
     },
     'en': <String, String>{
       'title': 'Daily Prize Box',
-      'subtitle': 'Win a game to earn a box • Up to 4 boxes per day',
+      'subtitle': 'Complete a game to earn an outcome-based box • Up to 4 per day',
       'myBoxes': 'My boxes',
       'showcase': 'Royal box collection',
       'open': 'Open box',
       'opened': 'Opened',
       'empty': 'No prize boxes ready',
-      'emptyHint': 'Win a completed game and your box will appear here immediately.',
+      'emptyHint': 'Complete a full game and the matching box will appear here immediately.',
       'today': 'Today',
       'remaining': 'Remaining today',
       'reward': 'Your reward',
@@ -65,7 +65,7 @@ class V02Text {
       'tokens': 'Free tokens',
       'ticket200': 'Competition ticket 200',
       'expires': 'Expires',
-      'perWin': 'One box per win',
+      'perWin': 'One box per completed game',
       'dailyMax': 'Daily limit 4',
       'frontOpen': 'Cinematic front opening',
       'newBox': 'You earned a new prize box!',
@@ -180,37 +180,57 @@ extension WarqnaV02Controller on AppController {
     refreshUi();
   }
 
-  void awardLocalPrizeBoxV02(String gameId) {
+  void awardLocalPrizeBoxV02(String gameId, {bool won = true, String mode = 'normal'}) {
     normalizePrizeBoxesV02();
     if (prizeBoxesEarnedTodayV02 >= prizeBoxDailyLimitV02) return;
+    final competition = <String>{'tournament','competition','sponsored','seasonal'}.contains(mode);
     final sequence = prizeBoxesEarnedTodayV02 + wins + gameId.hashCode.abs();
-    final boxKey = prizeBoxKeysV02[sequence % prizeBoxKeysV02.length];
+    final String boxKey;
+    final String tier;
+    if (competition && won) { boxKey = 'diamond_phoenix'; tier = 'legendary'; }
+    else if (competition) { boxKey = 'royal_amethyst'; tier = 'epic'; }
+    else if (won) { boxKey = <String>['emerald_eagle','bronze_dragon'][sequence % 2]; tier = 'strong'; }
+    else { boxKey = <String>['crimson_lion','obsidian'][sequence % 2]; tier = 'simple'; }
     final now = DateTime.now();
     final box = <String, dynamic>{
       'id': 'local-${now.microsecondsSinceEpoch}',
       'box_key': boxKey,
-      'source_type': 'offline_win',
-      'source_key': 'offline:$gameId:${now.microsecondsSinceEpoch}',
+      'source_type': competition ? 'offline_competition_complete' : 'offline_game_complete',
+      'source_key': 'offline:$gameId:${won ? 'win' : 'loss'}:${now.microsecondsSinceEpoch}',
       'awarded_date': _todayV02,
       'created_at': now.toIso8601String(),
       'opened_at': null,
+      'payload': <String,dynamic>{'game_key':gameId,'won':won,'mode':mode,'tier':tier,'version':'V0.3.1'},
     };
     upsertPrizeBoxV02(box);
-    notices.insert(0, AppNotice('🎁', V02Text.t(localeCode, 'newBox'), V02Text.t(localeCode, 'subtitle')));
+    final title = switch (tier) { 'legendary'=>'صندوق أسطوري!', 'epic'=>'صندوق منافسة رائع!', 'strong'=>'صندوق فوز قوي!', _=>'صندوق مشاركة جديد!' };
+    notices.insert(0, AppNotice('🎁', title, 'تمت إضافة الصندوق إلى صفحة صناديق الجوائز.'));
     unawaited(_save());
     refreshUi();
   }
 
-  Map<String, dynamic> _localRewardV02() {
+  Map<String, dynamic> _localRewardV02([String boxKey = 'crimson_lion']) {
     final random = math.Random(DateTime.now().microsecondsSinceEpoch);
-    final type = <String>['pasha_day', 'writing_color', 'player_color', 'profile_cover', 'tokens', 'ticket'][random.nextInt(6)];
+    final simple = <String>['tokens','writing_color','player_color'];
+    final strong = <String>['tokens','writing_color','player_color','profile_cover','ticket'];
+    final epic = <String>['ticket','profile_cover','pasha_day','tokens','writing_color','player_color'];
+    final legendary = <String>['ticket','ticket','pasha_day','pasha_day','tokens','profile_cover'];
+    final pool = switch (boxKey) {
+      'diamond_phoenix' => legendary,
+      'royal_amethyst' => epic,
+      'emerald_eagle' || 'bronze_dragon' => strong,
+      _ => simple,
+    };
+    final type = pool[random.nextInt(pool.length)];
+    final legendaryBox = boxKey == 'diamond_phoenix';
+    final simpleBox = boxKey == 'crimson_lion' || boxKey == 'obsidian';
     return switch (type) {
-      'pasha_day' => <String, dynamic>{'type': type, 'value': '1', 'duration_hours': 24, 'expires_at': DateTime.now().add(const Duration(days: 1)).toIso8601String()},
-      'writing_color' => <String, dynamic>{'type': type, 'value': '#22d3ee', 'store_item_key': 'daily_pack_chat_cyan_24h_v176', 'duration_hours': 24, 'expires_at': DateTime.now().add(const Duration(days: 1)).toIso8601String()},
-      'player_color' => <String, dynamic>{'type': type, 'value': '#facc15', 'store_item_key': 'daily_pack_name_gold_24h_v176', 'duration_hours': 24, 'expires_at': DateTime.now().add(const Duration(days: 1)).toIso8601String()},
-      'profile_cover' => <String, dynamic>{'type': type, 'value': 'cover_v02_royal', 'store_item_key': 'daily_prize_cover_v02', 'duration_hours': 72, 'expires_at': DateTime.now().add(const Duration(days: 3)).toIso8601String()},
-      'tokens' => <String, dynamic>{'type': type, 'value': '${(random.nextInt(20) + 1) * 50}', 'duration_hours': 0},
-      _ => <String, dynamic>{'type': 'ticket', 'value': '200', 'duration_hours': 0},
+      'pasha_day' => <String, dynamic>{'type': type, 'value': '1', 'label_ar':'يوم باشا', 'duration_hours': 24, 'expires_at': DateTime.now().add(const Duration(days: 1)).toIso8601String()},
+      'writing_color' => <String, dynamic>{'type': type, 'value': '#22d3ee', 'label_ar':'لون كتابة لمدة يوم', 'store_item_key': 'daily_pack_chat_cyan_24h_v176', 'duration_hours': 24, 'expires_at': DateTime.now().add(const Duration(days: 1)).toIso8601String()},
+      'player_color' => <String, dynamic>{'type': type, 'value': '#facc15', 'label_ar':'لون لاعب لمدة يوم', 'store_item_key': 'daily_pack_name_gold_24h_v176', 'duration_hours': 24, 'expires_at': DateTime.now().add(const Duration(days: 1)).toIso8601String()},
+      'profile_cover' => <String, dynamic>{'type': type, 'value': 'cover_v02_royal', 'label_ar':'غلاف ملكي لمدة 3 أيام', 'store_item_key': 'daily_prize_cover_v02', 'duration_hours': 72, 'expires_at': DateTime.now().add(const Duration(days: 3)).toIso8601String()},
+      'tokens' => <String, dynamic>{'type': type, 'value': '${simpleBox ? (random.nextInt(3)+1)*50 : legendaryBox ? (random.nextInt(3)+2)*250 : (random.nextInt(8)+3)*50}', 'label_ar':'توكنز مجانية', 'duration_hours': 0},
+      _ => <String, dynamic>{'type': 'ticket', 'value': legendaryBox ? '500' : '200', 'label_ar':'تذكرة مسابقة ${legendaryBox ? 500 : 200}', 'duration_hours': 0},
     };
   }
 
@@ -270,7 +290,7 @@ extension WarqnaV02Controller on AppController {
       refreshUi();
       return reward;
     }
-    final reward = _localRewardV02();
+    final reward = _localRewardV02(box['box_key']?.toString() ?? 'crimson_lion');
     box['opened_at'] = DateTime.now().toIso8601String();
     box['reward'] = reward;
     box['reward_type'] = reward['type'];
@@ -291,7 +311,7 @@ String prizeRewardLabelV02(String lang, Map<String, dynamic> reward) {
     'player_color' || 'name_color' => V02Text.t(lang, 'playerColor'),
     'profile_cover' => V02Text.t(lang, 'profileCover'),
     'tokens' => '${reward['value'] ?? 0} ${V02Text.t(lang, 'tokens')}',
-    'ticket' => V02Text.t(lang, 'ticket200'),
+    'ticket' => '${lang == 'ar' ? 'تذكرة مسابقة' : 'Competition ticket'} ${reward['value'] ?? 200}',
     _ => V02Text.t(lang, 'reward'),
   };
 }
@@ -304,7 +324,7 @@ String prizeRewardAssetV02(Map<String, dynamic> reward) {
     'player_color' || 'name_color' => 'assets/images/v02/rewards/player_color.png',
     'profile_cover' => 'assets/images/v02/rewards/profile_cover.png',
     'tokens' => 'assets/images/v02/rewards/tokens.png',
-    'ticket' => 'assets/images/v02/rewards/ticket_200.png',
+    'ticket' => ticketAssetV02(reward['value']?.toString() ?? '200'),
     _ => 'assets/images/v02/rewards/tokens.png',
   };
 }
@@ -330,7 +350,7 @@ class PrizeBoxesHomeCardV02 extends StatelessWidget {
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(V02Text.t(lang, 'title'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
               const SizedBox(height: 4),
-              Text(V02Text.t(lang, 'subtitle'), style: const TextStyle(color: Colors.white60, fontSize: 10, height: 1.45)),
+              Text(V02Text.t(lang, 'subtitle'), style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10, height: 1.45)),
               const SizedBox(height: 7),
               Wrap(spacing: 6, runSpacing: 6, children: [
                 Chip(label: Text('${V02Text.t(lang, 'today')}: ${controller.prizeBoxesEarnedTodayV02}/$prizeBoxDailyLimitV02')),
@@ -439,7 +459,7 @@ class _PrizeBoxesPageV02State extends State<PrizeBoxesPageV02> {
                 itemBuilder: (_, index) => Container(
                   width: 160,
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: .04), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white10)),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .35), borderRadius: BorderRadius.circular(20), border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)),
                   child: Image.asset(prizeBoxAssetV02(prizeBoxKeysV02[index]), fit: BoxFit.contain, filterQuality: FilterQuality.high),
                 ),
               ),
@@ -457,7 +477,7 @@ class _PrizeBoxesPageV02State extends State<PrizeBoxesPageV02> {
                   const SizedBox(height: 9),
                   Text(V02Text.t(lang, 'empty'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 5),
-                  Text(V02Text.t(lang, 'emptyHint'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, height: 1.5)),
+                  Text(V02Text.t(lang, 'emptyHint'), textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.5)),
                 ]),
               )),
             ...boxes.map((box) => Padding(
@@ -480,8 +500,8 @@ class _PrizeStatV02 extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: Colors.white.withValues(alpha: .045), borderRadius: BorderRadius.circular(16)),
-        child: Row(children: [Icon(icon, color: Colors.amber), const SizedBox(width: 8), Expanded(child: Text(label, style: const TextStyle(color: Colors.white60, fontSize: 10))), Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16))]),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .42), borderRadius: BorderRadius.circular(16)),
+        child: Row(children: [Icon(icon, color: Colors.amber), const SizedBox(width: 8), Expanded(child: Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10))), Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16))]),
       );
 }
 
@@ -506,7 +526,7 @@ class PrizeBoxCardV02 extends StatelessWidget {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(V02Text.t(lang, 'title'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
           const SizedBox(height: 4),
-          Text(opened && reward.isNotEmpty ? prizeRewardLabelV02(lang, reward) : V02Text.t(lang, 'perWin'), style: TextStyle(color: opened ? Colors.greenAccent : Colors.white60, fontSize: 11)),
+          Text(opened && reward.isNotEmpty ? prizeRewardLabelV02(lang, reward) : V02Text.t(lang, 'perWin'), style: TextStyle(color: opened ? const Color(0xff16a34a) : Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11)),
           const SizedBox(height: 9),
           FilledButton.icon(
             onPressed: opened ? null : onOpen,
