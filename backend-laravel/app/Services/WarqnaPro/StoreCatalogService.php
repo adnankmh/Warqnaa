@@ -9,7 +9,7 @@ class StoreCatalogService
     public function sync(): void
     {
         if(!Schema::hasTable('store_items')) return;
-        foreach(array_merge($this->pashaItems(), $this->tableSkins(), $this->cardBacks(), $this->v021TableCardBacks(), $this->nameFrames(), $this->v173NonTableItems()) as $item) $this->upsert($item);
+        foreach(array_merge($this->pashaItems(), $this->tableSkins(), $this->cardBacks(), $this->v021TableCardBacks(), $this->nameFrames(), $this->v173NonTableItems(), $this->v183Items()) as $item) $this->upsert($item);
         // v131: remove duplicates and keep one clean Pasha plan per duration.
         $keep=array_column($this->pashaItems(),'key');
         DB::table('store_items')->where('category','pasha')->whereNotIn('key',$keep)->update(['active'=>false,'updated_at'=>now()]);
@@ -27,6 +27,11 @@ class StoreCatalogService
         DB::table('store_items')->where('category','pasha')->where('key','pasha_3_days_v132')->update(['price'=>5000,'duration_days'=>3,'active'=>true,'updated_at'=>now()]);
         DB::table('store_items')->where('category','pasha')->where('key','pasha_90_days_v132')->update(['price'=>105000,'duration_days'=>90,'active'=>true,'updated_at'=>now()]);
         DB::table('store_items')->where('key','pasha_style_black_v173')->update(['active'=>false,'updated_at'=>now()]);
+        // V183: remove the four temporary reference-table batches from all storefronts.
+        DB::table('store_items')->where('category','table')->where('key','like','table_reference_%')->update(['active'=>false,'updated_at'=>now()]);
+        // Keep exactly the seven color boosters active. Legacy booster rows remain for historical inventory only.
+        $boostKeep=array_column(array_filter($this->v183Items(),fn(array $i)=>($i['category'] ?? '')==='xp_booster'),'key');
+        DB::table('store_items')->where('category','xp_booster')->whereNotIn('key',$boostKeep)->update(['active'=>false,'updated_at'=>now()]);
 
     }
 
@@ -35,13 +40,77 @@ class StoreCatalogService
         DB::table('store_items')->updateOrInsert(['key'=>$item['key']],[
             'name'=>json_encode(['ar'=>$item['ar'],'en'=>$item['en'] ?? $item['key']],JSON_UNESCAPED_UNICODE),
             'category'=>$item['category'],
-            'price'=>$item['price'],
+            'price'=>$this->v183Price($item),
             'duration_days'=>$item['duration_days'] ?? null,
             'payload'=>json_encode($item['payload'] ?? [],JSON_UNESCAPED_UNICODE),
             'active'=>true,
             'created_at'=>now(),
             'updated_at'=>now(),
         ]);
+    }
+
+    private function v183Price(array $item): int
+    {
+        $price=(int)($item['price'] ?? 0);
+        if($price<=0) return $price;
+        $category=(string)($item['category'] ?? '');
+        if(in_array($category,['pasha','competition_ticket','xp_booster'],true)) return $price;
+        $factor=match($category){
+            'table'=>2.40,
+            'card_back'=>2.10,
+            'emoji_pack'=>2.20,
+            'effect'=>2.25,
+            'profile_cover'=>2.05,
+            'badge'=>2.00,
+            'name_color','text_color','name_frame'=>1.85,
+            default=>2.00,
+        };
+        $raised=(int)round($price*$factor);
+        if($raised<1000) return (int)(ceil($raised/50)*50);
+        if($raised<10000) return (int)(ceil($raised/250)*250);
+        return (int)(ceil($raised/500)*500);
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    public function v183Items(): array
+    {
+        $boosters=[
+            ['booster_yellow_v183','المسرّع الأصفر ×1.25','Yellow Booster ×1.25',1.25,4000,7,'yellow','#ffca28'],
+            ['booster_green_v183','المسرّع الأخضر ×1.5','Green Booster ×1.5',1.5,8000,8,'green','#22c55e'],
+            ['booster_red_v183','المسرّع الأحمر ×2','Red Booster ×2',2.0,15000,9,'red','#ef4444'],
+            ['booster_blue_v183','المسرّع الأزرق ×2.5','Blue Booster ×2.5',2.5,25000,10,'blue','#2388ff'],
+            ['booster_black_v183','المسرّع الأسود ×3','Black Booster ×3',3.0,40000,11,'black','#252a32'],
+            ['booster_silver_v183','المسرّع الفضي ×4','Silver Booster ×4',4.0,60000,12,'silver','#d7dde7'],
+            ['booster_gold_v183','المسرّع الذهبي ×5','Gold Booster ×5',5.0,100000,14,'gold','#ffc107'],
+        ];
+        $items=[];
+        foreach($boosters as [$key,$ar,$en,$multiplier,$price,$validDays,$color,$hex]){
+            $items[]=[
+                'key'=>$key,'ar'=>$ar,'en'=>$en,'category'=>'xp_booster','price'=>$price,'duration_days'=>$validDays,
+                'payload'=>[
+                    'multiplier'=>$multiplier,'valid_days'=>$validDays,'activate_hours'=>24,'color'=>$color,'color_hex'=>$hex,
+                    'tier'=>$multiplier>=4?'legendary':($multiplier>=2?'pro':'expert'),'preview_icon'=>'🚀',
+                    'image_asset'=>'assets/images/boosters/v183/booster_'.$color.'.webp','v183_fixed_price'=>true,
+                ],
+            ];
+        }
+        $emoji=[
+            ['emoji_pack_palestine_v183','روح فلسطين','Palestine Spirit','🇵🇸🫒🕊️❤️🤲',9000],
+            ['emoji_pack_pasha_v183','مجلس الباشا','Pasha Majlis','👑🦁🦅🗝️🏰',18000],
+            ['emoji_pack_comedy_v183','مسرح الكوميديا','Comedy Stage','🤣🤡🙈👻🫠',7500],
+            ['emoji_pack_rage_v183','تحدي وغضب','Rage & Challenge','😤🤬🌋💢🥊',12000],
+            ['emoji_pack_victory_v183','احتفال الأبطال','Champions Celebration','🏆🎆🥇💯🍾',22000],
+            ['emoji_pack_space_v183','مجرة ورقنا','Warqnaa Galaxy','🚀🪐☄️👽🌌',16000],
+            ['emoji_pack_animals_v183','وحوش الأساطير','Legend Beasts','🐉🐯🦁🦅🐺',26000],
+            ['emoji_pack_calm_v183','الهدوء الراقي','Elegant Calm','☕🌙🌹🕊️✨',6500],
+            ['emoji_pack_cards_v183','ملوك الورق','Card Kings','🃏♠️♥️♦️♣️',14000],
+            ['emoji_pack_ultra_v183','ألترا الأسطورية','Ultra Legendary','💎🔥⚡👑🐉',45000],
+        ];
+        foreach($emoji as [$key,$ar,$en,$icons,$price]) $items[]=[
+            'key'=>$key,'ar'=>$ar,'en'=>$en,'category'=>'emoji_pack','price'=>$price,'duration_days'=>null,
+            'payload'=>['pack'=>$key,'icons'=>$icons,'animated'=>true,'sound_enabled'=>true,'original_assets'=>true,'tier'=>$price>=30000?'legendary':($price>=15000?'pro':'expert')],
+        ];
+        return $items;
     }
 
     public function pashaItems(): array

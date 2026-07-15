@@ -1,0 +1,22 @@
+{
+  "version": "0.3.2",
+  "build": 183,
+  "display": "V0.3.2",
+  "type": "responsive-web-store-and-engine-overhaul",
+  "name": "Warqnaa V0.3.2 Responsive Web & Engines Overhaul",
+  "features": [
+    "desktop-first responsive Flutter Web shell",
+    "adaptive store and gameplay table previews",
+    "seven color XP boosters with expiring inventory and 24-hour activation",
+    "removed temporary reference table batches",
+    "expanded primary-admin no-code designer",
+    "original emoji packs and audio cues",
+    "Tarneeb 400 individual bidding/scoring",
+    "improved Hand, Banakil, Trix and Baloot rules"
+  ],
+  "admin": {
+    "username": "Adnan",
+    "level": 99,
+    "designer_access": "primary-admin-only"
+  }
+}

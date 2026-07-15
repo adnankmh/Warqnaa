@@ -53,6 +53,8 @@ jobs:
         run: php tools/verify_http_foundation.php
       - name: PHP syntax audit
         run: find app config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Run standalone V183 engine regressions
+        run: php tools/test-v183-engine-overhaul.php
       - name: Run Laravel tests
         run: php artisan test
       - name: Production preflight in non-strict mode

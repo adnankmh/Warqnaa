@@ -128,9 +128,10 @@ class StoreController
             if(in_array($item->category,['name_color','text_color','badge','table','pasha_style','xp_booster','card_back','name_frame','effect','emoji_pack','profile_cover'],true)) {
                 InventoryItem::where('user_id',auth()->id())->whereHas('storeItem',fn($q)=>$q->where('category',$item->category))->update(['active'=>false]);
             }
-            $activeDays = ($item->category==='xp_booster') ? 1 : ($item->duration_days ?: null);
-            $inventory->update(['active'=>true,'activated_at'=>now(),'expires_at'=>$activeDays?now()->addDays($activeDays):$inventory->expires_at]);
             $payload=$item->payload ?: [];
+            $activeHours = ($item->category==='xp_booster') ? max(1,(int)($payload['activate_hours'] ?? 24)) : null;
+            $activeDays = $item->category==='xp_booster' ? null : ($item->duration_days ?: null);
+            $inventory->update(['active'=>true,'activated_at'=>now(),'expires_at'=>$activeHours?now()->addHours($activeHours):($activeDays?now()->addDays($activeDays):$inventory->expires_at)]);
             $profile=auth()->user()->profile;
             if($profile){
                 if($item->category==='name_color' && isset($payload['color'])) { $profile->name_color=$payload['color']; $profile->active_name_frame=$payload['frame'] ?? $payload['glow'] ?? ('glow-'.str_replace('#','',$payload['color'])); }
@@ -145,7 +146,7 @@ class StoreController
                 if($item->category==='name_frame') { $profile->active_name_frame=$payload['frame'] ?? $item->key; if(isset($payload['color'])) $profile->name_color=$payload['color']; }
                 if($item->category==='effect') { if(isset($payload['theme'])) $profile->active_site_theme=(string)$payload['theme']; else $profile->active_effect=$payload['effect'] ?? $item->key; }
                 if($item->category==='profile_cover') $profile->active_profile_cover=$payload['cover'] ?? $item->key;
-                if($item->category==='xp_booster') $profile->xp_boost_multiplier=(float)($payload['multiplier'] ?? 1.25);
+                if($item->category==='xp_booster') { $profile->xp_boost_multiplier=(float)($payload['multiplier'] ?? 1.25); $profile->xp_boost_expires_at=now()->addHours(max(1,(int)($payload['activate_hours'] ?? 24))); }
                 $profile->save();
             }
         });

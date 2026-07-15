@@ -401,6 +401,7 @@ class _AdminStoreStudioV151State extends State<AdminStoreStudioV151> {
     final normalizedQuery = query.trim().toLowerCase();
     final items = products.where((product) {
       if (product.category != category) return false;
+      if (product.id.startsWith('table_reference_')) return false;
       if (normalizedQuery.isEmpty) return true;
       return product.nameAr.toLowerCase().contains(normalizedQuery) ||
           product.nameEn.toLowerCase().contains(normalizedQuery) ||
@@ -473,14 +474,14 @@ class _AdminStoreStudioV151State extends State<AdminStoreStudioV151> {
               ? const Center(child: Text('لا توجد عناصر مطابقة في هذا التبويب.', style: TextStyle(color: Colors.white54)))
               : LayoutBuilder(
                   builder: (context, constraints) {
-                    final columns = constraints.maxWidth >= 1000 ? 4 : constraints.maxWidth >= 680 ? 3 : 2;
+                    final columns = constraints.maxWidth >= 1500 ? 6 : constraints.maxWidth >= 1180 ? 5 : constraints.maxWidth >= 900 ? 4 : constraints.maxWidth >= 620 ? 3 : 2;
                     return GridView.builder(
                       padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: columns,
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
-                        childAspectRatio: columns == 2 ? .64 : .78,
+                        childAspectRatio: columns <= 2 ? .64 : columns >= 5 ? .88 : .78,
                       ),
                       itemCount: visibleItems.length,
                       itemBuilder: (_, index) => _AdminStoreItemCard(

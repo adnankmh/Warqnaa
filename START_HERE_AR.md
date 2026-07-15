@@ -1,23 +1,19 @@
-# ابدأ من هنا — Warqnaa V0.3.1
+# ابدأ من هنا — Warqnaa V0.3.2
 
-## خيارات التحميل
+الإصدار التقني: **0.3.2+183**.
 
-يمكنك استخدام الملف الكامل، أو فك الجزأين **PART-1** و**PART-2** داخل المجلد نفسه. الجزآن متكاملان ولا يعمل أحدهما وحده.
+## على Windows
+1. شغّل `CHECK_WARQNA_WINDOWS.bat`.
+2. بعد نجاح الفحص شغّل `START_WARQNA_WINDOWS.bat`.
 
-## الفحص والتشغيل
+## على GitHub
+ارفع محتويات المشروع كاملة، ثم انتظر نجاح:
+- Build and deploy Flutter Web
+- Build Android APK & AAB
+- Flutter iOS
+- Backend CI
+- Production Release Gate
 
-1. لا تخلط الإصدار مع ملفات نسخة أقدم.
-2. شغّل `CHECK_WARQNA_WINDOWS.bat`، أو `bash scripts/unix/current/check-v182.sh`.
-3. ارفع المشروع كاملًا إلى GitHub، ثم شغّل **Production Release Check** و**Backend CI**.
-4. ابنِ Web أو APK/AAB أو iOS من مسار GitHub Actions المناسب.
-5. اضبط `WARQNA_API_URL` على خادم Laravel الحقيقي لتفعيل الغرف والاقتصاد والمزامنة المركزية.
+لا تخلط ملفات هذا الإصدار مع إصدار أقدم. النسخة المقسمة إلى جزأين يجب فكها داخل المجلد نفسه.
 
-## معلومات الإصدار
-
-- الاسم: **Warqnaa — ورقنا**
-- الإصدار الظاهر: **V0.3.1**
-- الإصدار التقني: **0.3.1+182**
-- حساب المدير الأساسي: **Adnan**
-- مستوى المدير: **99**
-
-راجع `docs/INSTALL_V0.3.1_AR.md` و`CHANGELOG_V0.3.1_AR.md` و`VALIDATION_V0.3.1.txt`.
+راجع `CHANGELOG_V0.3.2_AR.md` و`VALIDATION_V0.3.2.txt` لمعرفة التعديلات ونتائج الفحص.

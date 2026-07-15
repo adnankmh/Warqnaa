@@ -62,6 +62,14 @@ class LocalGameSession {
   final Map<int, List<String>> _captured = <int, List<String>>{0: <String>[], 1: <String>[]};
   final Map<int, int> _basras = <int, int>{0: 0, 1: 0};
   final List<String> _messages = <String>[];
+  final List<int> _meldOwners = <int>[];
+  final Map<int, int> _tarneeb400Bids = <int, int>{};
+  final Set<String> _trixContractsUsed = <String>{};
+  final List<int> _trixFinishOrder = <int>[];
+  final Map<String, Map<String, dynamic>> _trixBoard = <String, Map<String, dynamic>>{
+    for (final suit in _suits) suit: <String, dynamic>{'started': false, 'low': 11, 'high': 11},
+  };
+  int _kingdomOwnerSeat = 0;
 
   String phase = 'playing';
   String enginePhase = 'playing';
@@ -74,6 +82,7 @@ class LocalGameSession {
   bool gameOver = false;
   String? winnerKey;
   int _lastCaptureSeat = 0;
+  bool _starterDiscardPending = false;
 
   bool get _isRummy =>
       gameId == 'hand' ||
@@ -100,7 +109,8 @@ class LocalGameSession {
   int get playerCount {
     if (_isBasra) return 2;
     if (_isHandPartner) return 4;
-    if (_isRummy) return requestedPlayerCount.clamp(2, 4).toInt();
+    if (gameId == 'banakil') return requestedPlayerCount <= 2 ? 2 : 4;
+    if (_isRummy) return requestedPlayerCount.clamp(2, 5).toInt();
     return 4;
   }
 
@@ -113,6 +123,12 @@ class LocalGameSession {
     _table.clear();
     _trick.clear();
     _messages.clear();
+    _meldOwners.clear();
+    _tarneeb400Bids.clear();
+    _trixContractsUsed.clear();
+    _trixFinishOrder.clear();
+    _resetTrixBoard();
+    _kingdomOwnerSeat = 0;
     _tricksWon.updateAll((_, __) => 0);
     _scores.updateAll((_, __) => 0);
     _captured[0] = <String>[];
@@ -127,6 +143,7 @@ class LocalGameSession {
     gameOver = false;
     winnerKey = null;
     round = 1;
+    _starterDiscardPending = false;
 
     if (_isRummy) {
       _setupRummy();
@@ -224,17 +241,16 @@ class LocalGameSession {
         _hands[seat].add(_deck.removeLast());
       }
     }
+    // The starter gets one extra card and begins by discarding. Banakil uses 18+19,
+    // while Hand uses 14+15. The following turns return to draw -> meld -> discard.
+    _hands[0].add(_deck.removeLast());
+    _starterDiscardPending = true;
+    phase = 'discard';
+    enginePhase = 'discard';
     if (gameId == 'banakil') {
-      // The starter receives card 19 and must discard before the draw cycle.
-      _hands[0].add(_deck.removeLast());
-      phase = 'discard';
-      enginePhase = 'discard';
       _messages.add('بناكل: معك 19 ورقة. ارمِ ورقة أولاً، ثم اسحب ونزّل مجموعات من 3 أوراق فأكثر دون حد أدنى.');
     } else {
-      _discard.add(_deck.removeLast());
-      phase = 'draw';
-      enginePhase = 'draw';
-      _messages.add('هاند: اسحب، ثم نزّل مجموعة أو عدة مجموعات بقيمة 51 نقطة على الأقل في النزول الأول، وبعدها ارمِ ورقة.');
+      _messages.add('هاند: معك 15 ورقة. ارمِ أولاً، ثم افتح بمجموع مجموعة أو عدة مجموعات قيمتها 51 نقطة على الأقل.');
     }
     for (final hand in _hands) {
       _sortHand(hand);
@@ -304,6 +320,7 @@ class LocalGameSession {
         for (var seat = 0; seat < playerCount; seat++)
           (seat == 0 ? 'user:0' : 'bot:$seat'): _scores[seat] ?? 0,
       },
+      'tarneeb400_bids': <String, int>{for (final entry in _tarneeb400Bids.entries) (entry.key == 0 ? 'user:0' : 'bot:${entry.key}'): entry.value},
       'tricks': <String, int>{
         for (var seat = 0; seat < playerCount; seat++)
           (seat == 0 ? 'user:0' : 'bot:$seat'): _tricksWon[seat] ?? 0,
@@ -314,6 +331,10 @@ class LocalGameSession {
       'deck_count': _deck.length,
       'discard_top': _discard.isEmpty ? null : _discard.last,
       'melds': _melds.map((e) => List<String>.from(e)).toList(),
+      'meld_owners': List<int>.from(_meldOwners),
+      'trix_board': <String, Map<String, dynamic>>{for (final entry in _trixBoard.entries) entry.key: Map<String, dynamic>.from(entry.value)},
+      'trix_finish_order': List<int>.from(_trixFinishOrder),
+      'contracts_used': _trixContractsUsed.toList(growable: false),
       'basras': <String, int>{'user:0': _basras[0] ?? 0, 'bot:1': _basras[1] ?? 0},
       'captured_count': <String, int>{'user:0': _captured[0]?.length ?? 0, 'bot:1': _captured[1]?.length ?? 0},
     };
@@ -342,8 +363,27 @@ class LocalGameSession {
         for (final card in _hands[0]) <String, dynamic>{'type': 'discard', 'card': card},
         <String, dynamic>{'type': 'organize'},
       ];
-      for (final meld in _meldSuggestions(_hands[0])) {
+      if (_starterDiscardPending) return actions;
+      final suggestions = _meldSuggestions(_hands[0]);
+      for (final meld in suggestions) {
         actions.add(<String, dynamic>{'type': 'meld', 'cards': meld});
+      }
+      final multiple = _nonOverlappingMelds(suggestions);
+      if (multiple.length >= 2) {
+        actions.add(<String, dynamic>{'type': 'meld_many', 'groups': multiple});
+      }
+      if (_openedRummySeats.contains(0)) {
+        for (var meldIndex = 0; meldIndex < _melds.length; meldIndex++) {
+          final owner = _meldOwners.length > meldIndex ? _meldOwners[meldIndex] : 0;
+          final sameSide = owner == 0 || (_isHandPartner || gameId == 'banakil') && owner.isEven;
+          if (!sameSide) continue;
+          for (final card in _hands[0]) {
+            final combined = <String>[..._melds[meldIndex], card];
+            if (_isValidMeld(combined)) {
+              actions.add(<String, dynamic>{'type': 'layoff', 'meld_index': meldIndex, 'cards': <String>[card]});
+            }
+          }
+        }
       }
       return actions;
     }
@@ -355,6 +395,13 @@ class LocalGameSession {
     }
 
     if (phase == 'bidding') {
+      if (_isTarneeb400) {
+        final minimum = _tarneeb400MinimumBidLocal(0);
+        return <Map<String, dynamic>>[
+          for (var value = minimum; value <= 13; value++)
+            <String, dynamic>{'type': 'bid', 'amount': value},
+        ];
+      }
       return <Map<String, dynamic>>[
         for (var value = max(7, highestBid + 1); value <= 13; value++)
           <String, dynamic>{'type': 'bid', 'amount': value},
@@ -377,8 +424,15 @@ class LocalGameSession {
           ? <String>['complex', 'trix']
           : <String>['king_hearts', 'girls', 'diamonds', 'tricks', 'trix'];
       return <Map<String, dynamic>>[
-        for (final value in values) <String, dynamic>{'type': 'choose_contract', 'contract': value},
+        for (final value in values)
+          if (!_trixContractsUsed.contains(value)) <String, dynamic>{'type': 'choose_contract', 'contract': value},
       ];
+    }
+    if (_isTrix && phase == 'trix_playing') {
+      final legal = _legalTrixCards(0);
+      return legal.isEmpty
+          ? <Map<String, dynamic>>[<String, dynamic>{'type': 'pass_trix'}]
+          : <Map<String, dynamic>>[for (final card in legal) <String, dynamic>{'type': 'play_card', 'card': card}];
     }
     return <Map<String, dynamic>>[
       for (final card in _legalCardsFor(0)) <String, dynamic>{'type': 'play_card', 'card': card},
@@ -427,7 +481,7 @@ class LocalGameSession {
         _basraAction('play_card', <String, dynamic>{'card': _bestBasraCard(0)});
       }
     } else if (phase == 'bidding') {
-      _trickAction('bid', <String, dynamic>{'amount': max(7, highestBid + 1)});
+      _trickAction('bid', <String, dynamic>{'amount': _isTarneeb400 ? _tarneeb400MinimumBidLocal(0) : max(7, highestBid + 1)});
     } else if (phase == 'choose_trump') {
       _trickAction('choose_trump', <String, dynamic>{'suit': _bestSuit(_hands[0])});
     } else if (phase == 'choose_contract') {
@@ -443,6 +497,16 @@ class LocalGameSession {
 
   void _trickAction(String action, Map<String, dynamic> payload) {
     if (phase == 'bidding') {
+      if (_isTarneeb400) {
+        if (action != 'bid') throw StateError('طرنيب 400 يتطلب إعلان طلب من كل لاعب.');
+        final amount = int.tryParse(payload['amount']?.toString() ?? '') ?? 0;
+        final minimum = _tarneeb400MinimumBidLocal(0);
+        if (amount < minimum || amount > 13) throw StateError('طلب طرنيب 400 غير قانوني.');
+        _tarneeb400Bids[0] = amount;
+        _messages.add('$humanName أعلن $amount');
+        _finishLocalBidding();
+        return;
+      }
       if (action == 'pass') {
         _messages.add('$humanName: سكون');
       } else if (action == 'bid') {
@@ -481,9 +545,14 @@ class LocalGameSession {
           _messages.add('بدأت جولة الصن.');
         }
       } else {
+        final allowed = gameId == 'trix_complex' ? const <String>{'complex', 'trix'} : const <String>{'king_hearts', 'girls', 'diamonds', 'tricks', 'trix'};
+        if (!allowed.contains(value) || _trixContractsUsed.contains(value)) {
+          throw StateError('العقد غير متاح في المملكة الحالية.');
+        }
         contract = value;
-        phase = 'playing';
-        enginePhase = 'playing';
+        phase = value == 'trix' ? 'trix_playing' : 'playing';
+        enginePhase = phase;
+        currentSeat = _kingdomOwnerSeat;
         _messages.add('العقد: ${_contractLabel(value)}');
       }
       return;
@@ -506,6 +575,17 @@ class LocalGameSession {
       return;
     }
 
+    if (_isTrix && phase == 'trix_playing') {
+      if (action == 'pass_trix') {
+        _passTrix(0);
+      } else if (action == 'play_card') {
+        _playTrixCard(0, payload['card']?.toString() ?? '');
+      } else {
+        throw StateError('اختر ورقة قابلة للتركيب أو مرّر عند عدم وجود حركة.');
+      }
+      _autoBotsUntilHuman();
+      return;
+    }
     if (action != 'play_card') {
       throw StateError('اختر ورقة للعب.');
     }
@@ -514,7 +594,46 @@ class LocalGameSession {
     _autoBotsUntilHuman();
   }
 
+  int _tarneeb400MinimumBidLocal(int seat) {
+    final score = _scores[seat] ?? 0;
+    if (score >= 50) return 5;
+    if (score >= 40) return 4;
+    if (score >= 30) return 3;
+    return 2;
+  }
+
+  int _tarneeb400BidPointsLocal(int bid, int currentScore) {
+    final normal = <int, int>{2: 2, 3: 3, 4: 4, 5: 10, 6: 12, 7: 14, 8: 16, 9: 27, 10: 40, 11: 40, 12: 40, 13: 40};
+    final advanced = <int, int>{2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 14, 8: 16, 9: 27, 10: 40, 11: 40, 12: 40, 13: 40};
+    return (currentScore >= 30 ? advanced : normal)[bid] ?? bid;
+  }
+
   void _finishLocalBidding() {
+    if (_isTarneeb400) {
+      for (var seat = 1; seat < 4; seat++) {
+        final minimum = _tarneeb400MinimumBidLocal(seat);
+        final strength = _handStrength(_hands[seat]);
+        final declared = (minimum + (strength ~/ 70)).clamp(minimum, 8).toInt();
+        _tarneeb400Bids[seat] = declared;
+        _messages.add('${_botNames[seat - 1]} أعلن $declared');
+      }
+      var total = _tarneeb400Bids.values.fold<int>(0, (sum, value) => sum + value);
+      while (total < 11) {
+        final seat = _tarneeb400Bids.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+        if ((_tarneeb400Bids[seat] ?? 13) >= 13) break;
+        _tarneeb400Bids[seat] = (_tarneeb400Bids[seat] ?? 2) + 1;
+        total++;
+      }
+      final winnerEntry = _tarneeb400Bids.entries.reduce((a, b) => a.value >= b.value ? a : b);
+      bidWinner = winnerEntry.key;
+      highestBid = winnerEntry.value;
+      trump = 'H';
+      phase = 'playing';
+      enginePhase = 'playing';
+      currentSeat = 0;
+      _messages.add('الكبة ♥ هي الحكم الثابت، وكل لاعب يُحاسب على طلبه بصورة مستقلة.');
+      return;
+    }
     final biddingOrder = _isSyrianTarneeb ? <int>[3, 2, 1] : <int>[1, 2, 3];
     for (final seat in biddingOrder) {
       final strength = _handStrength(_hands[seat]);
@@ -531,14 +650,7 @@ class LocalGameSession {
     if (highestBid < 7) {
       highestBid = 7;
     }
-    if (_isTarneeb400) {
-      trump = 'H';
-      phase = 'playing';
-      enginePhase = 'playing';
-      currentSeat = bidWinner ?? 0;
-      _messages.add('الكبة ♥ هي الحكم الثابت في طرنيب 400.');
-      _autoBotsUntilHuman();
-    } else if (bidWinner == 0) {
+    if (bidWinner == 0) {
       phase = 'choose_trump';
       enginePhase = 'choose_trump';
       currentSeat = 0;
@@ -553,6 +665,7 @@ class LocalGameSession {
   }
 
   void _playTrickCard(int seat, String card) {
+    if (_isTrix && phase == 'trix_playing') return currentSeat == seat ? _legalTrixCards(seat) : <String>[];
     if (phase != 'playing' || currentSeat != seat) {
       throw StateError('ليس دور هذا اللاعب.');
     }
@@ -586,9 +699,23 @@ class LocalGameSession {
         _runRummyBot(currentSeat);
       } else if (_isBasra) {
         _playBasraCard(currentSeat, _bestBasraCard(currentSeat));
+      } else if (_isTrix && phase == 'trix_playing') {
+        final legal = _legalTrixCards(currentSeat);
+        if (legal.isEmpty) {
+          _passTrix(currentSeat);
+        } else {
+          legal.sort((a, b) => _standardRanks.indexOf(_cardRank(a)).compareTo(_standardRanks.indexOf(_cardRank(b))));
+          _playTrixCard(currentSeat, legal.first);
+        }
       } else if (phase == 'playing') {
         final card = _bestBotTrickCard(currentSeat);
         _playTrickCard(currentSeat, card);
+      } else if (_isTrix && phase == 'choose_contract') {
+        final values = gameId == 'trix_complex' ? <String>['complex', 'trix'] : <String>['tricks', 'girls', 'diamonds', 'king_hearts', 'trix'];
+        contract = values.firstWhere((value) => !_trixContractsUsed.contains(value));
+        phase = contract == 'trix' ? 'trix_playing' : 'playing';
+        enginePhase = phase;
+        _messages.add('${_seatName(currentSeat)} اختار ${_contractLabel(contract!)}.');
       } else if (phase == 'choose_trump') {
         trump = _bestSuit(_hands[currentSeat]);
         phase = 'playing';
@@ -610,6 +737,7 @@ class LocalGameSession {
     if (_isBasra) {
       return currentSeat == seat ? List<String>.from(_hands[seat]) : <String>[];
     }
+    if (_isTrix && phase == 'trix_playing') return currentSeat == seat ? _legalTrixCards(seat) : <String>[];
     if (phase != 'playing' || currentSeat != seat) {
       return <String>[];
     }
@@ -730,6 +858,120 @@ class LocalGameSession {
     return (seat + 1) % playerCount;
   }
 
+  void _resetTrixBoard() {
+    for (final suit in _suits) {
+      _trixBoard[suit] = <String, dynamic>{'started': false, 'low': 11, 'high': 11};
+    }
+  }
+
+  List<String> _legalTrixCards(int seat) {
+    if (!_isTrix || phase != 'trix_playing' || currentSeat != seat) return <String>[];
+    return _hands[seat].where((card) {
+      final suit = _cardSuit(card);
+      final value = _standardRanks.indexOf(_cardRank(card)) + 2;
+      final board = _trixBoard[suit] ?? const <String, dynamic>{'started': false, 'low': 11, 'high': 11};
+      if (board['started'] != true) return value == 11;
+      return value == (board['low'] as int) - 1 || value == (board['high'] as int) + 1;
+    }).toList();
+  }
+
+  void _playTrixCard(int seat, String card) {
+    if (!_legalTrixCards(seat).contains(card)) throw StateError('الورقة لا تركب على سلاسل تركس الحالية.');
+    _hands[seat].remove(card);
+    final suit = _cardSuit(card);
+    final value = _standardRanks.indexOf(_cardRank(card)) + 2;
+    final board = _trixBoard[suit]!;
+    if (board['started'] != true) {
+      _trixBoard[suit] = <String, dynamic>{'started': true, 'low': 11, 'high': 11};
+    } else {
+      board['low'] = min(board['low'] as int, value);
+      board['high'] = max(board['high'] as int, value);
+    }
+    _messages.add('${_seatName(seat)} ركّب ${_prettyCard(card)}');
+    if (_hands[seat].isEmpty && !_trixFinishOrder.contains(seat)) _trixFinishOrder.add(seat);
+    if (_trixFinishOrder.length >= playerCount - 1) {
+      for (var i = 0; i < playerCount; i++) if (!_trixFinishOrder.contains(i)) _trixFinishOrder.add(i);
+      const awards = <int>[200, 150, 100, 50];
+      for (var i = 0; i < _trixFinishOrder.length; i++) {
+        final target = _trixFinishOrder[i];
+        _scores[target] = (_scores[target] ?? 0) + (i < awards.length ? awards[i] : 0);
+      }
+      _messages.add('اكتمل عقد تركس: ${_trixFinishOrder.map(_seatName).join('، ')}.');
+      _completeTrixContract();
+      return;
+    }
+    currentSeat = (seat + 1) % playerCount;
+  }
+
+  void _passTrix(int seat) {
+    if (_legalTrixCards(seat).isNotEmpty) throw StateError('لديك ورقة قانونية ويجب لعبها.');
+    _messages.add('${_seatName(seat)} مرّر.');
+    currentSeat = (seat + 1) % playerCount;
+  }
+
+  void _completeTrixContract() {
+    if (contract != null) _trixContractsUsed.add(contract!);
+    final required = gameId == 'trix_complex' ? 2 : 5;
+    if (_trixContractsUsed.length >= required) {
+      _trixContractsUsed.clear();
+      _kingdomOwnerSeat = (_kingdomOwnerSeat + 1) % 4;
+    }
+    final maximum = gameId == 'trix_complex' ? 8 : 20;
+    if (round >= maximum) {
+      gameOver = true;
+      phase = 'finished';
+      enginePhase = 'finished';
+      if (_isTrixPartner) {
+        final teamA = (_scores[0] ?? 0) + (_scores[2] ?? 0);
+        final teamB = (_scores[1] ?? 0) + (_scores[3] ?? 0);
+        winnerKey = teamA >= teamB ? 'user:0' : 'bot:1';
+      } else {
+        final best = _scores.entries.reduce((a, b) => a.value >= b.value ? a : b);
+        winnerKey = best.key == 0 ? 'user:0' : 'bot:${best.key}';
+      }
+      _messages.add('انتهت جميع ممالك تركس.');
+      return;
+    }
+    round++;
+    _dealNextTrixContract();
+  }
+
+  void _dealNextTrixContract() {
+    _deck
+      ..clear()
+      ..addAll(_makeDeck());
+    _hands
+      ..clear()
+      ..addAll(List<List<String>>.generate(4, (_) => <String>[]));
+    for (var card = 0; card < 13; card++) {
+      for (var seat = 0; seat < 4; seat++) _hands[seat].add(_deck.removeLast());
+    }
+    for (final hand in _hands) _sortHand(hand);
+    _trick.clear();
+    _tricksWon.updateAll((_, __) => 0);
+    _trixFinishOrder.clear();
+    _resetTrixBoard();
+    contract = null;
+    currentSeat = _kingdomOwnerSeat;
+    phase = 'choose_contract';
+    enginePhase = 'choose_contract';
+    _messages.add('بدأت الجولة $round من مملكة ${_seatName(_kingdomOwnerSeat)}.');
+  }
+
+  List<List<String>> _nonOverlappingMelds(List<List<String>> suggestions) {
+    final selected = <List<String>>[];
+    final used = <String>[];
+    for (final suggestion in suggestions) {
+      final trial = <String>[...used, ...suggestion];
+      if (_containsAll(_hands[0], trial)) {
+        selected.add(List<String>.from(suggestion));
+        used.addAll(suggestion);
+      }
+      if (selected.length == 4) break;
+    }
+    return selected;
+  }
+
   void _scoreTrixTrick(int winner) {
     if (!_isTrix) {
       return;
@@ -760,7 +1002,18 @@ class LocalGameSession {
     gameOver = true;
     phase = 'finished';
     enginePhase = 'finished';
-    if (_isTarneebVariant) {
+    if (_isTarneeb400) {
+      for (var seat = 0; seat < 4; seat++) {
+        final declared = _tarneeb400Bids[seat] ?? 2;
+        final won = _tricksWon[seat] ?? 0;
+        final points = _tarneeb400BidPointsLocal(declared, _scores[seat] ?? 0);
+        _scores[seat] = (_scores[seat] ?? 0) + (won >= declared ? points : -points);
+      }
+      final teamA = (_scores[0] ?? 0) + (_scores[2] ?? 0);
+      final teamB = (_scores[1] ?? 0) + (_scores[3] ?? 0);
+      winnerKey = teamA >= teamB ? 'user:0' : 'bot:1';
+      _messages.add('طرنيب 400: نقاط فريقك $teamA مقابل $teamB، مع حساب طلب كل لاعب بشكل مستقل.');
+    } else if (_isTarneebVariant) {
       final teamA = (_tricksWon[0] ?? 0) + (_tricksWon[2] ?? 0);
       final teamB = (_tricksWon[1] ?? 0) + (_tricksWon[3] ?? 0);
       final bidderTeamA = (bidWinner ?? 0).isEven;
@@ -786,20 +1039,11 @@ class LocalGameSession {
       winnerKey = humanTeamWon ? 'user:0' : 'bot:1';
       _messages.add('النتيجة: فريقك $teamA مقابل $teamB.');
     } else if (_isTrix) {
-      if (_isTrixPartner) {
-        final teamA = (_scores[0] ?? 0) + (_scores[2] ?? 0);
-        final teamB = (_scores[1] ?? 0) + (_scores[3] ?? 0);
-        _scores[0] = teamA;
-        _scores[2] = teamA;
-        _scores[1] = teamB;
-        _scores[3] = teamB;
-        winnerKey = teamA >= teamB ? 'user:0' : 'bot:1';
-        _messages.add('انتهى عقد الشراكة: فريقك $teamA مقابل $teamB.');
-      } else {
-        final best = _scores.entries.reduce((a, b) => a.value >= b.value ? a : b);
-        winnerKey = best.key == 0 ? 'user:0' : 'bot:${best.key}';
-        _messages.add('انتهى العقد. الأعلى نقاطاً هو ${_seatName(best.key)}.');
-      }
+      gameOver = false;
+      phase = 'playing';
+      enginePhase = 'playing';
+      _completeTrixContract();
+      return;
     } else {
       final teamA = (_tricksWon[0] ?? 0) + (_tricksWon[2] ?? 0);
       final teamB = (_tricksWon[1] ?? 0) + (_tricksWon[3] ?? 0);
@@ -831,6 +1075,39 @@ class LocalGameSession {
       _sortHand(_hands[0]);
       return;
     }
+    if (_starterDiscardPending && action != 'discard' && action != 'organize') {
+      throw StateError('يجب رمي الورقة الإضافية أولاً.');
+    }
+    if (action == 'meld_many') {
+      final rawGroups = (payload['groups'] as List?) ?? const <dynamic>[];
+      final groups = rawGroups.map((group) => (group as List).map((e) => e.toString()).toList()).toList();
+      if (groups.isEmpty || groups.length > 8) throw StateError('اختر مجموعتين قانونيتين على الأقل.');
+      final all = <String>[for (final group in groups) ...group];
+      if (!_containsAll(_hands[0], all) || groups.any((group) => !_isValidMeld(group))) throw StateError('إحدى مجموعات التنزيل غير قانونية.');
+      final total = groups.fold<int>(0, (sum, group) => sum + _rummyPoints(group));
+      final openingRequired = gameId == 'banakil' ? 0 : 51;
+      if (!_openedRummySeats.contains(0) && total < openingRequired) throw StateError('مجموع النزول الأول يجب أن يبلغ $openingRequired نقطة على الأقل.');
+      for (final card in all) _hands[0].remove(card);
+      for (final group in groups) { _melds.add(group); _meldOwners.add(0); }
+      _openedRummySeats.add(0);
+      _messages.add('$humanName نزّل ${groups.length} مجموعات بقيمة إجمالية $total.');
+      if (_hands[0].isEmpty) _finishRummy(0);
+      return;
+    }
+    if (action == 'layoff') {
+      final index = int.tryParse(payload['meld_index']?.toString() ?? '') ?? -1;
+      final cards = (payload['cards'] as List?)?.map((e) => e.toString()).toList() ?? <String>[];
+      if (!_openedRummySeats.contains(0) || index < 0 || index >= _melds.length || cards.isEmpty || !_containsAll(_hands[0], cards)) throw StateError('التركيب غير متاح.');
+      final owner = _meldOwners.length > index ? _meldOwners[index] : 0;
+      final sameSide = owner == 0 || (_isHandPartner || gameId == 'banakil') && owner.isEven;
+      final combined = <String>[..._melds[index], ...cards];
+      if (!sameSide || !_isValidMeld(combined)) throw StateError('لا يمكن تركيب هذه الأوراق على المجموعة المختارة.');
+      for (final card in cards) _hands[0].remove(card);
+      _melds[index] = combined;
+      _messages.add('$humanName ركّب ${cards.length} ورقة على مجموعة موجودة.');
+      if (_hands[0].isEmpty) _finishRummy(0);
+      return;
+    }
     if (action == 'meld') {
       final cards = (payload['cards'] as List?)?.map((e) => e.toString()).toList() ?? <String>[];
       if (!_isValidMeld(cards) || !_containsAll(_hands[0], cards)) {
@@ -845,6 +1122,7 @@ class LocalGameSession {
         _hands[0].remove(card);
       }
       _melds.add(cards);
+      _meldOwners.add(0);
       _openedRummySeats.add(0);
       _messages.add('$humanName نزّل مجموعة من ${cards.length} أوراق بقيمة $meldPoints.');
       if (_hands[0].isEmpty) {
@@ -860,6 +1138,7 @@ class LocalGameSession {
       throw StateError('الورقة غير موجودة في يدك.');
     }
     _discard.add(card);
+    _starterDiscardPending = false;
     _messages.add('$humanName رمى ${_prettyCard(card)}');
     if (_hands[0].isEmpty) {
       _finishRummy(0);
@@ -886,6 +1165,7 @@ class LocalGameSession {
         _hands[seat].remove(card);
       }
       _melds.add(meld);
+      _meldOwners.add(seat);
       _openedRummySeats.add(seat);
       _messages.add('${_seatName(seat)} نزّل مجموعة بقيمة ${_rummyPoints(meld)}.');
     }
@@ -896,6 +1176,7 @@ class LocalGameSession {
     final discard = _easyAi ? _hands[seat][_random.nextInt(_hands[seat].length)] : _smartRummyDiscard(_hands[seat]);
     _hands[seat].remove(discard);
     _discard.add(discard);
+    _starterDiscardPending = false;
     _messages.add('${_seatName(seat)} رمى ${_prettyCard(discard)}');
     if (_hands[seat].isEmpty) {
       _finishRummy(seat);

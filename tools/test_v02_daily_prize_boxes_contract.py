@@ -34,12 +34,12 @@ def main() -> None:
     main_dart = require(
         "flutter_app/lib/main.dart",
         "part 'v02_release.dart';",
-        "PrizeBoxesHomeCardV02",
-        "PrizeBoxesPageV02",
         "syncPrizeBoxesV02(data['prize_boxes'])",
-        "ticketAssetV02(product.value!)",
+        "CompetitionTicketPreviewV183(denomination: product.value!",
         "selectedPashaStyle = 'red';",
     )
+    require("flutter_app/lib/v183_overhaul.dart", "PrizeBoxesHomeCardV02", "PrizeBoxesPageV02")
+
     if "DailyPackCardV176(" in main_dart or "PackInventoryStripV176(" in main_dart:
         fail("daily packs are still displayed inside the store")
 

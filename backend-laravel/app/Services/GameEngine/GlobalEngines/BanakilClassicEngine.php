@@ -12,7 +12,7 @@ class BanakilClassicEngine extends GlobalCardEngineCore
     {
         return [
             'mode' => 'rummy',
-            'players' => [2, 3, 4],
+            'players' => [2, 4],
             'partnership' => true,
             'deck' => 'double-joker',
             'rounds' => 7,
@@ -20,6 +20,7 @@ class BanakilClassicEngine extends GlobalCardEngineCore
             'starterExtraCard' => true,
             'starterMustDiscard' => true,
             'opening' => 0,
+            'banakilScoring' => true,
             'targetScore' => 150,
             'targetOptions' => [150, 222, 300],
             'wildTwos' => true,
@@ -43,7 +44,7 @@ class BanakilClassicEngine extends GlobalCardEngineCore
             'emoji' => '🂲',
             'description' => 'نسخة كلاسيكية من البناكل بتوزيع 18+19، لعب شراكة، وتركيب على مجموعات الفريق.',
             'version' => 'v0.3',
-            'players' => [2, 3, 4],
+            'players' => [2, 4],
             'partnership' => true,
         ];
     }

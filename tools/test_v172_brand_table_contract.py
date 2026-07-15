@@ -80,11 +80,13 @@ def main() -> None:
         "assets/images/brand/warqna_logo.png",
         "reference_1",
         "reference_4",
-        "الطاولات السابقة",
         "imageAsset",
     ]:
         if needle not in source:
             fail(f"Flutter v172 store/brand contract missing: {needle}")
+
+    if "if (p.id.startsWith('table_reference_')) return false;" not in source:
+        fail("V183 must hide all temporary reference tables from the customer store")
 
     topbar = (ROOT / "flutter_app/lib/v170_global.dart").read_text(encoding="utf-8")
     if "assets/images/brand/warqna_logo.png" not in topbar:
@@ -111,10 +113,7 @@ def main() -> None:
     if "apply_brand_assets.py" not in android:
         fail("Android workflow does not reapply the Warqna icons after flutter create")
 
-    print(
-        "[PASS] v172 additive brand/table contract: "
-        "50 legacy + 40 new tables, 40 HD assets, global logo, and dual controller-reference compatibility"
-    )
+    print("[PASS] v172 assets remain compatible while V183 hides the 40 temporary tables and removes their customer tabs")
 
 
 if __name__ == "__main__":

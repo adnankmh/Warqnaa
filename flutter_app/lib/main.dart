@@ -34,6 +34,7 @@ part 'v176_release.dart';
 part 'v02_release.dart';
 part 'v021_patch.dart';
 part 'v182_rewards.dart';
+part 'v183_overhaul.dart';
 
 final GlobalKey<NavigatorState> warqnaNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -1502,6 +1503,14 @@ class AppController extends ChangeNotifier {
     }
 
     if (!reusable) owned.add(product.id);
+    if (product.category == 'boost') {
+      packInventoryExpiriesV176[product.id] = DateTime.now().add(Duration(days: boosterValidityDaysV183(product.id)));
+      transactions.insert(0, TokenTransaction('شراء ${nameFor(product, 'ar')}', -price, serverConnected ? 'الآن • خادم' : 'الآن • محلي'));
+      AppSounds.fire('purchase');
+      await _save();
+      notifyListeners();
+      return true;
+    }
     transactions.insert(0, TokenTransaction('شراء ${nameFor(product, 'ar')}', -price, serverConnected ? 'الآن • خادم' : 'الآن • محلي'));
     activateProduct(product);
     AppSounds.fire('purchase');
@@ -1510,7 +1519,7 @@ class AppController extends ChangeNotifier {
     return true;
   }
 
-  int priceFor(StoreProduct product) => storePriceOverrides[product.id] ?? product.price;
+  int priceFor(StoreProduct product) => storePriceOverrides[product.id] ?? raisedStorePriceV183(product);
   String nameFor(StoreProduct product, [String? lang]) => storeNameOverrides[product.id]?.trim().isNotEmpty == true
       ? storeNameOverrides[product.id]!
       : product.name(lang ?? localeCode);
@@ -1608,7 +1617,11 @@ class AppController extends ChangeNotifier {
         break;
       case 'boost':
         activeXpMultiplier = product.multiplier ?? 1.0;
-        boosterExpiresAtV173 = expiryForProductV176(product.id) ?? (product.durationHours != null ? DateTime.now().add(Duration(hours: product.durationHours!)) : null);
+        boosterExpiresAtV173 = DateTime.now().add(const Duration(hours: 24));
+        owned.remove(product.id);
+        packInventoryExpiriesV176.remove(product.id);
+        if (serverConnected) unawaited(api.activateStoreItemV183(product.id).catchError((_) => <String, dynamic>{}));
+        AppSounds.fire('booster_activate');
         break;
     }
     _save();
@@ -3109,17 +3122,20 @@ class StoreProduct {
 
   String name(String lang) => localizeStoreProductNameV151(this, lang);
   String description(String lang) => localizeStoreProductDescriptionV151(this, lang);
-  bool get reusable => category == 'pasha' || category == 'boost' || category == 'competition_ticket' || durationDays != null || durationHours != null;
+  bool get reusable => category == 'pasha' || category == 'competition_ticket' || (category != 'boost' && (durationDays != null || durationHours != null));
   String get tier {
-    final days = durationDays ?? 0;
-    if (days >= 30 || price >= 25000 || id.contains('legend')) return 'legendary';
-    if (days >= 7 || price >= 7000 || id.contains('pro')) return 'pro';
+    final effectivePrice = raisedStorePriceV183(this);
+    if (id.contains('legend') || effectivePrice >= 70000 || (durationDays ?? 0) >= 90) return 'legendary';
+    if (id.contains('pro') || effectivePrice >= 30000 || (durationDays ?? 0) >= 30) return 'pro';
+    if (effectivePrice >= 10000 || (durationDays ?? 0) >= 7) return 'expert';
     return 'beginner';
   }
 
   String tierLabel(String lang) {
-    if (lang == 'ar') return tier == 'legendary' ? 'أسطوري' : tier == 'pro' ? 'محترف' : 'مبتدئ';
-    return tier == 'legendary' ? 'Legendary' : tier == 'pro' ? 'Professional' : 'Beginner';
+    if (lang == 'ar') {
+      return switch (tier) { 'legendary' => 'أسطوري', 'pro' => 'محترف', 'expert' => 'خبير', _ => 'مبتدئ' };
+    }
+    return switch (tier) { 'legendary' => 'Legendary', 'pro' => 'Professional', 'expert' => 'Expert', _ => 'Beginner' };
   }
 }
 
@@ -3350,12 +3366,13 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "emoji_legend_big", category: "emoji", icon: "🦁🐉🦅🌌💥🎆", nameAr: "إيموجي أسطورية كبيرة", nameEn: "Legendary Big", descriptionAr: "حزمة ردود سريعة كبيرة مع مؤثرات وصوت داخل الدردشة واللعبة.", descriptionEn: "Large quick reactions with animation and sound.", price: 15000),
   StoreProduct(id: "emoji_animated_vip", category: "emoji", icon: "😂🔥👑💎⚡🏆🎉", nameAr: "إيموجي متحركة VIP", nameEn: "Animated VIP", descriptionAr: "حزمة ردود سريعة كبيرة مع مؤثرات وصوت داخل الدردشة واللعبة.", descriptionEn: "Large quick reactions with animation and sound.", price: 15000),
   StoreProduct(id: "emoji_huge_reactions", category: "emoji", icon: "😂👑🔥😡😭🤯", nameAr: "ردود فعل عملاقة", nameEn: "Huge Reactions", descriptionAr: "حزمة ردود سريعة كبيرة مع مؤثرات وصوت داخل الدردشة واللعبة.", descriptionEn: "Large quick reactions with animation and sound.", price: 50000),
-  StoreProduct(id: "xp_x1_25", category: "boost", icon: "🚀", nameAr: "مسرّع نقاط ×1.25", nameEn: "XP Booster ×1.25", descriptionAr: "يتفعّل لمدة 24 ساعة ويضاعف XP المكتسبة من الجولات والفوز.", descriptionEn: "Activates for 24 hours and multiplies earned XP.", price: 12000, multiplier: 1.25, previewColor1: Color(0xff22c55e), previewColor2: const Color(0xff111827)),
-  StoreProduct(id: "xp_x1_5", category: "boost", icon: "🚀", nameAr: "مسرّع نقاط ×1.5", nameEn: "XP Booster ×1.5", descriptionAr: "يتفعّل لمدة 24 ساعة ويضاعف XP المكتسبة من الجولات والفوز.", descriptionEn: "Activates for 24 hours and multiplies earned XP.", price: 25000, multiplier: 1.5, previewColor1: Color(0xff38bdf8), previewColor2: const Color(0xff111827)),
-  StoreProduct(id: "xp_x2", category: "boost", icon: "🚀", nameAr: "مسرّع نقاط ×2", nameEn: "XP Booster ×2", descriptionAr: "يتفعّل لمدة 24 ساعة ويضاعف XP المكتسبة من الجولات والفوز.", descriptionEn: "Activates for 24 hours and multiplies earned XP.", price: 52000, multiplier: 2.0, previewColor1: Color(0xffa855f7), previewColor2: const Color(0xff111827)),
-  StoreProduct(id: "xp_x3", category: "boost", icon: "🚀", nameAr: "مسرّع نقاط ×3", nameEn: "XP Booster ×3", descriptionAr: "يتفعّل لمدة 24 ساعة ويضاعف XP المكتسبة من الجولات والفوز.", descriptionEn: "Activates for 24 hours and multiplies earned XP.", price: 110000, multiplier: 3.0, previewColor1: Color(0xfff97316), previewColor2: const Color(0xff111827)),
-  StoreProduct(id: "xp_x4", category: "boost", icon: "🚀", nameAr: "مسرّع نقاط ×4", nameEn: "XP Booster ×4", descriptionAr: "يتفعّل لمدة 24 ساعة ويضاعف XP المكتسبة من الجولات والفوز.", descriptionEn: "Activates for 24 hours and multiplies earned XP.", price: 190000, multiplier: 4.0, previewColor1: Color(0xfffacc15), previewColor2: const Color(0xff111827)),
-  StoreProduct(id: "xp_x5", category: "boost", icon: "🚀", nameAr: "مسرّع نقاط ×5", nameEn: "XP Booster ×5", descriptionAr: "يتفعّل لمدة 24 ساعة ويضاعف XP المكتسبة من الجولات والفوز.", descriptionEn: "Activates for 24 hours and multiplies earned XP.", price: 320000, multiplier: 5.0, previewColor1: Color(0xffef4444), previewColor2: const Color(0xff111827)),
+  StoreProduct(id: "booster_yellow_v183", category: "boost", icon: "🚀", nameAr: "المسرّع الأصفر ×1.25", nameEn: "Yellow Booster ×1.25", descriptionAr: "يبقى في المخزون 7 أيام، وعند تفعيله يضاعف XP المؤهلة لمدة 24 ساعة.", descriptionEn: "Stored for 7 days; once activated it multiplies eligible XP for 24 hours.", price: 4000, durationHours: 24, multiplier: 1.25, previewColor1: Color(0xffffca28), previewColor2: Color(0xff4a3500), imageAsset: "assets/images/boosters/v183/booster_yellow.webp", collection: "boosters_v183"),
+  StoreProduct(id: "booster_green_v183", category: "boost", icon: "🚀", nameAr: "المسرّع الأخضر ×1.5", nameEn: "Green Booster ×1.5", descriptionAr: "يبقى في المخزون 8 أيام، وعند تفعيله يضاعف XP المؤهلة لمدة 24 ساعة.", descriptionEn: "Stored for 8 days; once activated it multiplies eligible XP for 24 hours.", price: 8000, durationHours: 24, multiplier: 1.5, previewColor1: Color(0xff22c55e), previewColor2: Color(0xff05351a), imageAsset: "assets/images/boosters/v183/booster_green.webp", collection: "boosters_v183"),
+  StoreProduct(id: "booster_red_v183", category: "boost", icon: "🚀", nameAr: "المسرّع الأحمر ×2", nameEn: "Red Booster ×2", descriptionAr: "يبقى في المخزون 9 أيام، وعند تفعيله يضاعف XP المؤهلة لمدة 24 ساعة.", descriptionEn: "Stored for 9 days; once activated it multiplies eligible XP for 24 hours.", price: 15000, durationHours: 24, multiplier: 2.0, previewColor1: Color(0xffef4444), previewColor2: Color(0xff450606), imageAsset: "assets/images/boosters/v183/booster_red.webp", collection: "boosters_v183"),
+  StoreProduct(id: "booster_blue_v183", category: "boost", icon: "🚀", nameAr: "المسرّع الأزرق ×2.5", nameEn: "Blue Booster ×2.5", descriptionAr: "يبقى في المخزون 10 أيام، وعند تفعيله يضاعف XP المؤهلة لمدة 24 ساعة.", descriptionEn: "Stored for 10 days; once activated it multiplies eligible XP for 24 hours.", price: 25000, durationHours: 24, multiplier: 2.5, previewColor1: Color(0xff2388ff), previewColor2: Color(0xff061f4f), imageAsset: "assets/images/boosters/v183/booster_blue.webp", collection: "boosters_v183"),
+  StoreProduct(id: "booster_black_v183", category: "boost", icon: "🚀", nameAr: "المسرّع الأسود ×3", nameEn: "Black Booster ×3", descriptionAr: "يبقى في المخزون 11 يومًا، وعند تفعيله يضاعف XP المؤهلة لمدة 24 ساعة.", descriptionEn: "Stored for 11 days; once activated it multiplies eligible XP for 24 hours.", price: 40000, durationHours: 24, multiplier: 3.0, previewColor1: Color(0xff252a32), previewColor2: Color(0xff050607), imageAsset: "assets/images/boosters/v183/booster_black.webp", collection: "boosters_v183"),
+  StoreProduct(id: "booster_silver_v183", category: "boost", icon: "🚀", nameAr: "المسرّع الفضي ×4", nameEn: "Silver Booster ×4", descriptionAr: "يبقى في المخزون 12 يومًا، وعند تفعيله يضاعف XP المؤهلة لمدة 24 ساعة.", descriptionEn: "Stored for 12 days; once activated it multiplies eligible XP for 24 hours.", price: 60000, durationHours: 24, multiplier: 4.0, previewColor1: Color(0xffd7dde7), previewColor2: Color(0xff5d6470), imageAsset: "assets/images/boosters/v183/booster_silver.webp", collection: "boosters_v183"),
+  StoreProduct(id: "booster_gold_v183", category: "boost", icon: "🚀", nameAr: "المسرّع الذهبي ×5", nameEn: "Gold Booster ×5", descriptionAr: "يبقى في المخزون 14 يومًا، وعند تفعيله يضاعف XP المؤهلة لمدة 24 ساعة.", descriptionEn: "Stored for 14 days; once activated it multiplies eligible XP for 24 hours.", price: 100000, durationHours: 24, multiplier: 5.0, previewColor1: Color(0xffffc107), previewColor2: Color(0xff704400), imageAsset: "assets/images/boosters/v183/booster_gold.webp", collection: "boosters_v183"),
   StoreProduct(id: "nameframe_gold_aura", category: "names", icon: "✨", nameAr: "إطار اسم هالة ذهبية", nameEn: "Gold Aura Name Frame", descriptionAr: "معاينة فورية على صورة اللاعب واسمه في البروفايل والغرف.", descriptionEn: "Live preview on the avatar and player name.", price: 9000, value: "#f5c542", previewColor1: Color(0xfff5c542), previewColor2: const Color(0xff111827)),
   StoreProduct(id: "nameframe_emerald_lux", category: "names", icon: "💚", nameAr: "إطار اسم زمرد فاخر", nameEn: "Emerald Lux Name Frame", descriptionAr: "معاينة فورية على صورة اللاعب واسمه في البروفايل والغرف.", descriptionEn: "Live preview on the avatar and player name.", price: 11000, value: "#10b981", previewColor1: Color(0xff10b981), previewColor2: const Color(0xff111827)),
   StoreProduct(id: "nameframe_ruby_flash", category: "names", icon: "❤️", nameAr: "إطار اسم روبي لامع", nameEn: "Ruby Flash Name Frame", descriptionAr: "معاينة فورية على صورة اللاعب واسمه في البروفايل والغرف.", descriptionEn: "Live preview on the avatar and player name.", price: 13000, value: "#ef4444", previewColor1: Color(0xffef4444), previewColor2: const Color(0xff111827)),
@@ -3386,6 +3403,16 @@ final List<StoreProduct> products = <StoreProduct>[
   StoreProduct(id: "emoji_pack_legendary", category: "emoji", icon: "🐉👑⚡💎🏆", nameAr: "الإيموجي الأسطورية", nameEn: "Legendary Emojis", descriptionAr: "حزمة أسطورية متحركة.", descriptionEn: "Animated legendary pack.", price: 15000),
   StoreProduct(id: "emoji_pack_emotions", category: "emoji", icon: "😡😭🥺😍😱", nameAr: "المشاعر الكاملة", nameEn: "Full Emotions", descriptionAr: "غضب وحزن وفرح ودهشة بحجم كبير.", descriptionEn: "Large full emotion set.", price: 3500),
   StoreProduct(id: "emoji_pack_sports", category: "emoji", icon: "⚽🏀🎯🥇🚀", nameAr: "الحماس الرياضي", nameEn: "Sports Energy", descriptionAr: "حزمة حماس وتحدي ومسابقات.", descriptionEn: "Sports and tournament energy pack.", price: 7000),
+  StoreProduct(id: "emoji_pack_palestine_v183", category: "emoji", icon: "🇵🇸🫒🕊️❤️🤲", nameAr: "روح فلسطين", nameEn: "Palestine Spirit", descriptionAr: "ردود أصلية متحركة للمحبة والصمود والتحية.", descriptionEn: "Original animated reactions for love, resilience and greetings.", price: 9000),
+  StoreProduct(id: "emoji_pack_pasha_v183", category: "emoji", icon: "👑🦁🦅🗝️🏰", nameAr: "مجلس الباشا", nameEn: "Pasha Majlis", descriptionAr: "حزمة ملكية فخمة للباشا والبطولات.", descriptionEn: "Luxury royal reactions for Pasha and tournaments.", price: 18000),
+  StoreProduct(id: "emoji_pack_comedy_v183", category: "emoji", icon: "🤣🤡🙈👻🫠", nameAr: "مسرح الكوميديا", nameEn: "Comedy Stage", descriptionAr: "ردود مرحة كبيرة ومتحركة للمواقف الطريفة.", descriptionEn: "Large animated comedy reactions.", price: 7500),
+  StoreProduct(id: "emoji_pack_rage_v183", category: "emoji", icon: "😤🤬🌋💢🥊", nameAr: "تحدي وغضب", nameEn: "Rage & Challenge", descriptionAr: "ردود قوية للتحدي والحماس دون إساءة.", descriptionEn: "Powerful competitive reactions without abuse.", price: 12000),
+  StoreProduct(id: "emoji_pack_victory_v183", category: "emoji", icon: "🏆🎆🥇💯🍾", nameAr: "احتفال الأبطال", nameEn: "Champions Celebration", descriptionAr: "ألعاب نارية وكؤوس واحتفالات متحركة.", descriptionEn: "Animated fireworks, trophies and celebrations.", price: 22000),
+  StoreProduct(id: "emoji_pack_space_v183", category: "emoji", icon: "🚀🪐☄️👽🌌", nameAr: "مجرة ورقنا", nameEn: "Warqnaa Galaxy", descriptionAr: "حزمة فضائية سريعة بتأثيرات ضوئية.", descriptionEn: "Fast space pack with light effects.", price: 16000),
+  StoreProduct(id: "emoji_pack_animals_v183", category: "emoji", icon: "🐉🐯🦁🦅🐺", nameAr: "وحوش الأساطير", nameEn: "Legend Beasts", descriptionAr: "حيوانات أسطورية متحركة للمنافسات.", descriptionEn: "Animated legendary animals for competition.", price: 26000),
+  StoreProduct(id: "emoji_pack_calm_v183", category: "emoji", icon: "☕🌙🌹🕊️✨", nameAr: "الهدوء الراقي", nameEn: "Elegant Calm", descriptionAr: "ردود هادئة وأنيقة للدردشة الودية.", descriptionEn: "Calm elegant reactions for friendly chat.", price: 6500),
+  StoreProduct(id: "emoji_pack_cards_v183", category: "emoji", icon: "🃏♠️♥️♦️♣️", nameAr: "ملوك الورق", nameEn: "Card Kings", descriptionAr: "إيموت خاصة بالورق والطلبات واللمّات.", descriptionEn: "Card-game reactions for bids and tricks.", price: 14000),
+  StoreProduct(id: "emoji_pack_ultra_v183", category: "emoji", icon: "💎🔥⚡👑🐉", nameAr: "ألترا الأسطورية", nameEn: "Ultra Legendary", descriptionAr: "حزمة نادرة فائقة مع حركة وصوت مميزين.", descriptionEn: "Rare ultra pack with premium animation and sound.", price: 45000),
   StoreProduct(id: "effect_gold_entry", category: "effects", icon: "✨", nameAr: "دخول ذهبي", nameEn: "Golden Entry", descriptionAr: "عنصر تجميلي فاخر يظهر في الملف الشخصي وغرفة اللعب.", descriptionEn: "Premium cosmetic shown in the profile and game room.", price: 42000),
   StoreProduct(id: "effect_fire_win", category: "effects", icon: "🔥", nameAr: "احتفال فوز ناري", nameEn: "Fire Win Celebration", descriptionAr: "عنصر تجميلي فاخر يظهر في الملف الشخصي وغرفة اللعب.", descriptionEn: "Premium cosmetic shown in the profile and game room.", price: 48000),
   StoreProduct(id: "effect_royal_confetti", category: "effects", icon: "🎉", nameAr: "قصاصات ملكية", nameEn: "Royal Confetti", descriptionAr: "عنصر تجميلي فاخر يظهر في الملف الشخصي وغرفة اللعب.", descriptionEn: "Premium cosmetic shown in the profile and game room.", price: 55000),
@@ -3760,32 +3787,50 @@ class _HomeShellState extends State<HomeShell> {
       ClubsPage(controller: widget.controller),
       EventsPage(controller: widget.controller),
     ];
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            PremiumTopBar(controller: widget.controller),
-            if (widget.controller.activeGame != null) ActiveGameBanner(controller: widget.controller, onResume: () {
-              final game = gamesCatalog.where((item) => item.id == widget.controller.activeGame).firstOrNull;
-              if (game != null) openGameRoom(context, widget.controller, game, options: widget.controller.activeRoomOptions());
-            }),
-            Expanded(child: IndexedStack(index: index, children: pages)),
+    return LayoutBuilder(builder: (context, constraints) {
+      final desktop = isDesktopWebV183(constraints.maxWidth);
+      final mainContent = Column(children: [
+        PremiumTopBar(controller: widget.controller),
+        if (widget.controller.activeGame != null)
+          ActiveGameBanner(controller: widget.controller, onResume: () {
+            final game = gamesCatalog.where((item) => item.id == widget.controller.activeGame).firstOrNull;
+            if (game != null) openGameRoom(context, widget.controller, game, options: widget.controller.activeRoomOptions());
+          }),
+        Expanded(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: desktop ? 1680 : double.infinity),
+              child: IndexedStack(index: index, children: pages),
+            ),
+          ),
+        ),
+      ]);
+      if (desktop) {
+        return Scaffold(
+          body: SafeArea(
+            child: Row(children: [
+              DesktopShellNavigationV183(controller: widget.controller, selectedIndex: index, onSelected: (value) => setState(() => index = value)),
+              Expanded(child: mainContent),
+            ]),
+          ),
+        );
+      }
+      return Scaffold(
+        body: SafeArea(bottom: false, child: mainContent),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: index,
+          onDestinationSelected: (value) => setState(() => index = value),
+          destinations: [
+            NavigationDestination(icon: const Icon(Icons.redeem), label: L.t(widget.controller.localeCode, 'store')),
+            NavigationDestination(icon: const Icon(Icons.style), label: L.t(widget.controller.localeCode, 'games')),
+            NavigationDestination(icon: const Icon(Icons.home_rounded), label: L.t(widget.controller.localeCode, 'home')),
+            NavigationDestination(icon: const Icon(Icons.shield), label: L.t(widget.controller.localeCode, 'clubs')),
+            NavigationDestination(icon: const Icon(Icons.calendar_month), label: L.t(widget.controller.localeCode, 'events')),
           ],
         ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: (value) => setState(() => index = value),
-        destinations: [
-          NavigationDestination(icon: const Icon(Icons.redeem), label: L.t(widget.controller.localeCode, 'store')),
-          NavigationDestination(icon: const Icon(Icons.style), label: L.t(widget.controller.localeCode, 'games')),
-          NavigationDestination(icon: const Icon(Icons.home_rounded), label: L.t(widget.controller.localeCode, 'home')),
-          NavigationDestination(icon: const Icon(Icons.shield), label: L.t(widget.controller.localeCode, 'clubs')),
-          NavigationDestination(icon: const Icon(Icons.calendar_month), label: L.t(widget.controller.localeCode, 'events')),
-        ],
-      ),
-    );
+      );
+    });
   }
 }
 
@@ -3803,80 +3848,7 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key, required this.controller, required this.onTab});
 
   @override
-  Widget build(BuildContext context) {
-    final lang = controller.localeCode;
-    return ListView(
-      padding: const EdgeInsets.all(13),
-      children: [
-        ResponsiveAccountStatsV170(controller: controller),
-        const SizedBox(height: 13),
-        HeroBanner(
-          lang: lang,
-          onJoin: () => showCompetitions(context, controller),
-        ),
-        const SizedBox(height: 13),
-        LuckyWheelHomeCardV182(controller: controller),
-        const SizedBox(height: 13),
-        PrizeBoxesHomeCardV02(
-          controller: controller,
-          onOpen: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => PrizeBoxesPageV02(controller: controller))),
-        ),
-        const SizedBox(height: 13),
-        GiftRoad(controller: controller),
-        const SizedBox(height: 16),
-        SectionTitle(
-          title: L.t(lang, 'homeGames'),
-          action: L.t(lang, 'customize'),
-          onTap: () => showHomeGamesSelector(context, controller),
-        ),
-        const SizedBox(height: 9),
-        LayoutBuilder(builder: (context, constraints) {
-          final selectedGames = controller.homeGames;
-          final columns = constraints.maxWidth < 430 ? 2 : math.min(4, selectedGames.length).clamp(1, 4).toInt();
-          return GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: columns,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: columns == 2 ? .92 : .86,
-            ),
-            itemCount: selectedGames.length,
-            itemBuilder: (_, i) => GameCard(
-              game: selectedGames[i],
-              lang: lang,
-              onTap: () => showGameLobby(context, controller, selectedGames[i]),
-            ),
-          );
-        }),
-        const SizedBox(height: 13),
-        Row(
-          children: [
-            Expanded(
-              child: PremiumActionButton(
-                icon: Icons.handshake,
-                title: L.t(lang, 'friendly'),
-                color: Theme.of(context).colorScheme.secondary,
-                onPressed: () => showGameLobby(context, controller, gamesCatalog[1]),
-              ),
-            ),
-            const SizedBox(width: 9),
-            Expanded(
-              child: PremiumActionButton(
-                icon: Icons.emoji_events,
-                title: L.t(lang, 'competitions'),
-                color: const Color(0xffa06f1d),
-                onPressed: () => showCompetitions(context, controller),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 13),
-        HomeQuickActionsV170(controller: controller, onTab: onTab),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => HomeDashboardV183(controller: controller, onTab: onTab);
 }
 
 Future<void> showHomeGamesSelector(BuildContext context, AppController controller) async {
@@ -4031,6 +4003,7 @@ class _StorePageState extends State<StorePage> {
     widget.controller.purgeExpiredPackInventoryV176(DateTime.now());
     final visible = products.where((p) {
       if (p.category == 'pasha_style') return false;
+      if (p.id.startsWith('table_reference_')) return false;
       if (!widget.controller.isStoreProductVisible(p)) return false;
       final activeOwned = widget.controller.isOwnedActiveV176(p.id);
       if (p.collection == 'daily_pack_v176' && !activeOwned) return false;
@@ -4140,13 +4113,9 @@ class _StorePageState extends State<StorePage> {
                     children: [
                       for (final entry in const [
                         ('all', 'الكل'),
-                        ('reference_1', 'الجديدة 1–10'),
-                        ('reference_2', 'الجديدة 11–20'),
-                        ('reference_3', 'الجديدة 21–30'),
-                        ('reference_4', 'الجديدة 31–40'),
-                        ('v173_royal', 'مجموعة V173 الملكية'),
-                        ('v173_showcase', 'حيوانات وسيارات V173'),
-                        ('legacy', 'الطاولات السابقة'),
+                        ('v173_royal', 'الملكية'),
+                        ('v173_showcase', 'الحيوانات والسيارات'),
+                        ('legacy', 'الكلاسيكية'),
                       ])
                         ChoiceChip(
                           label: Text(entry.$2, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900)),
@@ -4170,7 +4139,7 @@ class _StorePageState extends State<StorePage> {
               padding: EdgeInsetsDirectional.only(end: 2),
               child: Text('التصنيف', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white60)),
             ),
-            for (final entry in const [('all', 'الكل'), ('beginner', 'مبتدئ'), ('pro', 'محترف'), ('legendary', 'أسطوري')])
+            for (final entry in const [('all', 'الكل'), ('beginner', 'مبتدئ'), ('expert', 'خبير'), ('pro', 'محترف'), ('legendary', 'أسطوري')])
               FilterChip(
                 label: Text(entry.$2, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900)),
                 selected: tier == entry.$1,
@@ -4181,7 +4150,7 @@ class _StorePageState extends State<StorePage> {
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 1200 ? 4 : constraints.maxWidth >= 900 ? 3 : constraints.maxWidth >= 680 ? 2 : 1;
+            final columns = constraints.maxWidth >= 1500 ? 5 : constraints.maxWidth >= 1180 ? 4 : constraints.maxWidth >= 860 ? 3 : constraints.maxWidth >= 600 ? 2 : 1;
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -4585,25 +4554,7 @@ class _CompactProductPreview extends StatelessWidget {
     if (product.category == 'covers') {
       return SizedBox(width: 140, height: 92, child: ProfileCover(coverId: product.id, height: 92, colors: <Color>[c1, c2], child: Align(alignment: Alignment.bottomCenter, child: Padding(padding: const EdgeInsets.all(7), child: Text(controller.displayName, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900))))));
     }
-    if (product.category == 'tables') {
-      return Container(
-        width: 184,
-        height: 112,
-        padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(25),
-          gradient: RadialGradient(colors: [c2, c1, Color.lerp(c1, Colors.black, .55)!]),
-          border: Border.all(color: c2.withValues(alpha: .9), width: 2),
-          boxShadow: [BoxShadow(color: c2.withValues(alpha: .22), blurRadius: 14)],
-        ),
-        child: product.imageAsset == null
-            ? Stack(children: [const AmbientTableFX(density: 5, subtle: true), Center(child: Text(product.icon, style: const TextStyle(fontSize: 38)))])
-            : ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.asset(product.imageAsset!, fit: BoxFit.contain, filterQuality: FilterQuality.high),
-              ),
-      );
-    }
+    if (product.category == 'tables') return AdaptiveTablePreviewV183(controller: controller, product: product, compact: true);
     if (product.category == 'names' || product.category == 'chat_colors') {
       return Column(mainAxisSize: MainAxisSize.min, children: [
         GlowAvatar(text: controller.avatarEmoji, bytes: AccountAvatar(controller: controller)._decode(), size: 58, color: c1),
@@ -4634,12 +4585,8 @@ class _CompactProductPreview extends StatelessWidget {
         ),
       );
     }
-    if (product.category == 'competition_ticket' && product.value != null) {
-      return Padding(
-        padding: const EdgeInsets.all(4),
-        child: Image.asset(ticketAssetV02(product.value!), fit: BoxFit.contain, filterQuality: FilterQuality.high),
-      );
-    }
+    if (product.category == 'competition_ticket' && product.value != null) return CompetitionTicketPreviewV183(denomination: product.value!, compact: true);
+    if (product.category == 'boost') return BoosterPreviewV183(product: product, compact: true);
     if (product.category == 'cards') {
       return Container(
         width: 62,
@@ -4975,7 +4922,7 @@ class _TarneebRoomPageState extends State<TarneebRoomPage> {
 
   @override
   Widget build(BuildContext context) {
-    final landscape = widget.controller.landscapeMode;
+    final landscape = widget.controller.landscapeMode || isDesktopWebV183(MediaQuery.sizeOf(context).width);
     final body = landscape
         ? Row(
             children: [
@@ -5477,12 +5424,13 @@ class _LuxuryTable extends StatelessWidget {
     final assetImage = customBytes == null && skin?.imageAsset != null ? AssetImage(skin!.imageAsset!) : null;
     return Container(
       decoration: BoxDecoration(
+        color: customBytes != null || assetImage != null ? dark : null,
         borderRadius: BorderRadius.circular(30),
         gradient: customBytes == null && assetImage == null ? RadialGradient(center: const Alignment(0, -.25), radius: .95, colors: [c2.withValues(alpha: .72), c1, dark]) : null,
         image: customBytes != null
-            ? DecorationImage(image: MemoryImage(customBytes), fit: BoxFit.cover, colorFilter: const ColorFilter.mode(Color(0x33000000), BlendMode.darken))
+            ? DecorationImage(image: MemoryImage(customBytes), fit: BoxFit.contain, colorFilter: const ColorFilter.mode(Color(0x33000000), BlendMode.darken))
             : assetImage != null
-                ? DecorationImage(image: assetImage, fit: BoxFit.cover, colorFilter: const ColorFilter.mode(Color(0x22000000), BlendMode.darken))
+                ? DecorationImage(image: assetImage, fit: BoxFit.contain, colorFilter: const ColorFilter.mode(Color(0x22000000), BlendMode.darken))
                 : null,
         border: Border.all(color: c2, width: 5),
         boxShadow: [
@@ -6079,7 +6027,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
                       if (isVoiceRoom) _voicePanel(context),
                       Expanded(
                         child: OrientationBuilder(builder: (context, _) {
-                          final landscape = widget.controller.landscapeMode;
+                          final landscape = widget.controller.landscapeMode || isDesktopWebV183(MediaQuery.sizeOf(context).width);
                           return landscape
                               ? Row(children: [Expanded(flex: 7, child: _engineBoard(context)), if (chatOpen) SizedBox(width: 285 * widget.controller.uiChatScale, child: _engineChat())])
                               : Column(children: [Expanded(child: _engineBoard(context)), if (chatOpen) SizedBox(height: 165 * widget.controller.uiChatScale, child: _engineChat())]);
@@ -6227,6 +6175,11 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
       );
 
   Widget _engineBoard(BuildContext context) {
+    final viewport = MediaQuery.sizeOf(context);
+    final desktopWeb = isDesktopWebV183(viewport.width);
+    final tableSide = desktopWeb ? math.max(74.0, viewport.width * .055) : 34.0;
+    final tableTop = desktopWeb ? 24.0 : 34.0;
+    final tableBottom = desktopWeb ? 112.0 : 128.0;
     final players = room?['players'] is List ? room!['players'] as List : const [];
     final phase = state['phase']?.toString() ?? 'playing';
     return Column(
@@ -6246,17 +6199,17 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
         Expanded(
           child: Stack(
             children: [
-              Positioned.fill(left: 34, right: 34, top: 34, bottom: 128, child: _LuxuryTable(trump: state['trump']?.toString(), phase: phase, skinId: widget.controller.selectedTable, controller: widget.controller)),
-              Positioned(top: 40, left: 0, right: 0, child: Center(child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, controller: widget.controller))),
-              Positioned(left: 40, top: 120, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
-              if (players.length > 2) Positioned(right: 40, top: 120, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
+              Positioned.fill(left: tableSide, right: tableSide, top: tableTop, bottom: tableBottom, child: _LuxuryTable(trump: state['trump']?.toString(), phase: phase, skinId: widget.controller.selectedTable, controller: widget.controller)),
+              Positioned(top: desktopWeb ? 28 : 40, left: 0, right: 0, child: Center(child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, controller: widget.controller))),
+              Positioned(left: desktopWeb ? tableSide + 12 : 40, top: desktopWeb ? 104 : 120, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
+              if (players.length > 2) Positioned(right: desktopWeb ? tableSide + 12 : 40, top: desktopWeb ? 104 : 120, child: OpponentCardStack(cardBackId: widget.controller.selectedCardBack, vertical: true, controller: widget.controller)),
               for (var i = 0; i < players.length; i++) _serverPlayer(players[i] is Map ? Map<String, dynamic>.from(players[i] as Map) : {}, i, players.length),
               ..._trickSeatWidgets(),
               Positioned.fill(
-                left: 80,
-                right: 80,
-                top: 100,
-                bottom: 190,
+                left: desktopWeb ? tableSide + 120 : 80,
+                right: desktopWeb ? tableSide + 120 : 80,
+                top: desktopWeb ? 84 : 100,
+                bottom: desktopWeb ? 150 : 190,
                 child: Center(child: _stateSummary()),
               ),
               if (roundXpNoticesV174.isNotEmpty)
@@ -8458,61 +8411,89 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
   );
 }
 
-Future<void> showProductPreview(BuildContext context, AppController controller, StoreProduct product) {
-  return showPremiumSheet(
-    context,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _ProductLivePreview(controller: controller, product: product),
-        const SizedBox(height: 14),
-        Text(controller.nameFor(product), textAlign: TextAlign.center, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 6),
-        Text(controller.descriptionFor(product), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, height: 1.55)),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(child: _StoreFact(icon: '🪙', label: 'السعر', value: formatNumber(controller.priceFor(product)))),
-            const SizedBox(width: 8),
-            Expanded(child: _StoreFact(icon: '🛡️', label: 'الحالة', value: controller.isOwnedActiveV176(product.id) && !product.reusable ? 'مملوك' : product.reusable ? 'قابل للتجديد' : 'متاح')),
-            const SizedBox(width: 8),
-            Expanded(child: _StoreFact(icon: '⭐', label: 'الفئة', value: product.tierLabel(controller.localeCode))),
-          ],
+Future<void> showProductPreview(BuildContext context, AppController controller, StoreProduct product) async {
+  AppSounds.fire(product.category == 'tables' ? 'table_preview' : product.category == 'competition_ticket' ? 'ticket_flip' : 'store_open');
+  final content = _StorePreviewContentV183(controller: controller, product: product);
+  if (isDesktopWebV183(MediaQuery.sizeOf(context).width)) {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.all(32),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1040, maxHeight: 820),
+          child: SingleChildScrollView(padding: const EdgeInsets.all(22), child: content),
         ),
-        if (controller.productDurationLabelV176(product) != null) ...[const SizedBox(height: 8), _StoreFact(icon: '⏳', label: 'المدة', value: controller.productDurationLabelV176(product)!)],
-        if (controller.expiryForProductV176(product.id) != null) ...[const SizedBox(height: 8), _StoreFact(icon: '⌛', label: 'الصلاحية', value: controller.remainingForProductV176(product.id))],
-        const SizedBox(height: 13),
-        FilledButton.icon(
-          onPressed: controller.isOwnedActiveV176(product.id) && !product.reusable
-              ? () {
-                  controller.activateProduct(product);
-                  Navigator.pop(context);
-                  showToast(context, 'تم تفعيل ${controller.nameFor(product)}.');
-                }
-              : () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (dialogContext) => AlertDialog(
-                      title: const Text('تأكيد الشراء'),
-                      content: Text('هل أنت متأكد أنك تريد شراء ${controller.nameFor(product)} مقابل ${formatNumber(controller.priceFor(product))} توكن؟\n\nلن يتم الخصم إلا بعد التأكيد.'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
-                        FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('نعم، شراء')),
-                      ],
-                    ),
-                  );
-                  if (confirmed != true || !context.mounted) return;
-                  final ok = await controller.buy(product);
-                  if (!context.mounted) return;
-                  Navigator.pop(context);
-                  showToast(context, ok ? 'تم الشراء وإضافة العنصر إلى مقتنياتك.' : (controller.lastStoreError ?? 'تعذر الشراء.'));
-                },
-          icon: const Icon(Icons.shopping_bag_outlined),
-          label: Text(controller.isOwnedActiveV176(product.id) && !product.reusable ? 'تفعيل العنصر' : '${L.t(controller.localeCode, 'buy')} • ${formatNumber(controller.priceFor(product))} 🪙'),
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-        ),
+      ),
+    );
+    return;
+  }
+  await showPremiumSheet(context, child: content);
+}
+
+class _StorePreviewContentV183 extends StatelessWidget {
+  final AppController controller;
+  final StoreProduct product;
+  const _StorePreviewContentV183({required this.controller, required this.product});
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _ProductLivePreview(controller: controller, product: product),
+      const SizedBox(height: 14),
+      Text(controller.nameFor(product), textAlign: TextAlign.center, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 6),
+      Text(controller.descriptionFor(product), textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.55)),
+      const SizedBox(height: 12),
+      Row(children: [
+        Expanded(child: _StoreFact(icon: '🪙', label: 'السعر', value: formatNumber(controller.priceFor(product)))),
+        const SizedBox(width: 8),
+        Expanded(child: _StoreFact(icon: '🛡️', label: 'الحالة', value: controller.isOwnedActiveV176(product.id) && !product.reusable ? 'مملوك' : product.reusable ? 'قابل للتجديد' : 'متاح')),
+        const SizedBox(width: 8),
+        Expanded(child: _StoreFact(icon: '⭐', label: 'الفئة', value: product.tierLabel(controller.localeCode))),
+      ]),
+      if (product.category == 'boost') ...[
+        const SizedBox(height: 8),
+        _StoreFact(icon: '🚀', label: 'التفعيل', value: '×${product.multiplier} لمدة 24 ساعة • صلاحية المخزون ${boosterValidityDaysV183(product.id)} أيام'),
+      ] else if (controller.productDurationLabelV176(product) != null) ...[
+        const SizedBox(height: 8),
+        _StoreFact(icon: '⏳', label: 'المدة', value: controller.productDurationLabelV176(product)!),
       ],
-    ),
+      if (controller.expiryForProductV176(product.id) != null) ...[
+        const SizedBox(height: 8),
+        _StoreFact(icon: '⌛', label: 'الصلاحية', value: controller.remainingForProductV176(product.id)),
+      ],
+      const SizedBox(height: 13),
+      FilledButton.icon(
+        onPressed: controller.isOwnedActiveV176(product.id) && !product.reusable
+            ? () {
+                controller.activateProduct(product);
+                Navigator.pop(context);
+                showToast(context, product.category == 'boost' ? 'تم تفعيل ${controller.nameFor(product)} لمدة 24 ساعة.' : 'تم تفعيل ${controller.nameFor(product)}.');
+              }
+            : () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: const Text('تأكيد الشراء'),
+                    content: Text('هل أنت متأكد أنك تريد شراء ${controller.nameFor(product)} مقابل ${formatNumber(controller.priceFor(product))} توكن؟\n\nلن يتم الخصم إلا بعد التأكيد.'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
+                      FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('نعم، شراء')),
+                    ],
+                  ),
+                );
+                if (confirmed != true || !context.mounted) return;
+                final ok = await controller.buy(product);
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                showToast(context, ok ? (product.category == 'boost' ? 'تمت إضافة المسرّع إلى المخزون. فعّله قبل انتهاء صلاحيته.' : 'تم الشراء وإضافة العنصر إلى مقتنياتك.') : (controller.lastStoreError ?? 'تعذر الشراء.'));
+              },
+        icon: Icon(controller.isOwnedActiveV176(product.id) && !product.reusable ? Icons.play_arrow_rounded : Icons.shopping_bag_outlined),
+        label: Text(controller.isOwnedActiveV176(product.id) && !product.reusable ? 'تفعيل العنصر' : '${L.t(controller.localeCode, 'buy')} • ${formatNumber(controller.priceFor(product))} 🪙'),
+        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+      ),
+    ],
   );
 }
 
@@ -8527,47 +8508,9 @@ class _ProductLivePreview extends StatelessWidget {
     final c2 = controller.color2For(product);
     Widget preview;
     if (product.category == 'tables') {
-      preview = Container(
-        width: 330,
-        height: 205,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(34),
-          gradient: RadialGradient(colors: [c2.withValues(alpha: .88), c1, Color.lerp(c1, Colors.black, .58)!]),
-          border: Border.all(color: c2, width: 4),
-          boxShadow: [BoxShadow(color: c2.withValues(alpha: .24), blurRadius: 26, spreadRadius: 2), BoxShadow(color: Colors.black.withValues(alpha: .5), blurRadius: 24, offset: const Offset(0, 13))],
-        ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: product.imageAsset == null
-                  ? const AmbientTableFX(density: 8, subtle: true)
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(26),
-                      child: Image.asset(product.imageAsset!, fit: BoxFit.contain, filterQuality: FilterQuality.high),
-                    ),
-            ),
-            if (product.imageAsset == null)
-              Center(child: Text(product.icon, style: TextStyle(color: Colors.white.withValues(alpha: .25), fontSize: 65, fontWeight: FontWeight.w900))),
-            Positioned(
-              left: 18,
-              right: 18,
-              bottom: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12)),
-                child: Text(controller.displayName, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
-              ),
-            ),
-          ],
-        ),
-      );
+      preview = AdaptiveTablePreviewV183(controller: controller, product: product);
     } else if (product.category == 'competition_ticket' && product.value != null) {
-      preview = SizedBox(
-        width: 390,
-        height: 245,
-        child: Image.asset(ticketAssetV02(product.value!), fit: BoxFit.contain, filterQuality: FilterQuality.high),
-      );
+      preview = CompetitionTicketPreviewV183(denomination: product.value!);
     } else if (product.category == 'cards') {
       preview = Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -8639,19 +8582,15 @@ class _ProductLivePreview extends StatelessWidget {
     } else if (product.category == 'covers') {
       preview = SizedBox(width: 320, child: ProfileCover(coverId: product.id, height: 175, colors: <Color>[c1, c2], child: Align(alignment: Alignment.bottomCenter, child: Padding(padding: const EdgeInsets.all(14), child: Row(children: [AccountAvatar(controller: controller, size: 58), const SizedBox(width: 10), Expanded(child: Text(controller.displayName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)))])))));
     } else if (product.category == 'boost') {
-      preview = Container(
-        width: 190,
-        height: 145,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(30), gradient: LinearGradient(colors: [c1.withValues(alpha: .9), c2]), boxShadow: [BoxShadow(color: c1.withValues(alpha: .45), blurRadius: 28)]),
-        child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [const Text('🚀', style: TextStyle(fontSize: 58)), Text('×${product.multiplier ?? 1}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900))])),
-      );
+      preview = BoosterPreviewV183(product: product);
     } else if (product.category == 'emoji') {
       preview = Padding(padding: const EdgeInsets.all(16), child: FittedBox(fit: BoxFit.scaleDown, child: Text(product.icon, textAlign: TextAlign.center, style: const TextStyle(fontSize: 70))));
     } else {
       preview = Text(product.icon, style: const TextStyle(fontSize: 105));
     }
     return Container(
-      height: 220,
+      constraints: const BoxConstraints(minHeight: 220, maxHeight: 520),
+      padding: const EdgeInsets.all(8),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: .17),
@@ -9270,7 +9209,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
   Widget _designer() => widget.controller.isPrimaryAdmin ? ListView(
     padding: const EdgeInsets.all(12),
     children: [
-      const _AdminInfo(text:'استوديو مرئي لإدارة الشكل العام بدون كتابة كود. المعاينة تُطبق فوراً على الأزرار والخطوط والحواف والطاولات.'),
+      const _AdminInfo(text:'استوديو مرئي وإداري شامل بدون كتابة كود. التعديلات تُطبق فوراً محلياً وتُزامن مع الخادم لحساب Adnan فقط.'),
+      const SizedBox(height: 10),
+      DesignerQuickControlsV183(controller: widget.controller),
       const SizedBox(height: 10),
       UniversalDesignerV173(controller: widget.controller),
       const SizedBox(height: 10),
@@ -9427,6 +9368,16 @@ List<String> activeEmojiList(AppController controller) {
     'emoji_pack_legendary' => const ['🐉', '👑', '⚡', '💎', '🏆', '🦁', '🦅', '🌌'],
     'emoji_pack_emotions' => const ['😡', '😭', '🥺', '😍', '😱', '😬', '🤐', '🥹'],
     'emoji_pack_sports' => const ['⚽', '🏀', '🎯', '🥇', '🚀', '🏅', '🏆', '💯'],
+    'emoji_pack_palestine_v183' => const ['🇵🇸', '🫒', '🕊️', '❤️', '🤲', '🌹', '✌️', '✨'],
+    'emoji_pack_pasha_v183' => const ['👑', '🦁', '🦅', '🗝️', '🏰', '🔱', '💎', '♛'],
+    'emoji_pack_comedy_v183' => const ['🤣', '🤡', '🙈', '👻', '🫠', '😹', '🤪', '🙊'],
+    'emoji_pack_rage_v183' => const ['😤', '🤬', '🌋', '💢', '🥊', '🔥', '⚡', '💪'],
+    'emoji_pack_victory_v183' => const ['🏆', '🎆', '🥇', '💯', '🍾', '🎉', '🏅', '⭐'],
+    'emoji_pack_space_v183' => const ['🚀', '🪐', '☄️', '👽', '🌌', '🛸', '🌠', '✨'],
+    'emoji_pack_animals_v183' => const ['🐉', '🐯', '🦁', '🦅', '🐺', '🐆', '🦈', '🦂'],
+    'emoji_pack_calm_v183' => const ['☕', '🌙', '🌹', '🕊️', '✨', '🌿', '😊', '🤝'],
+    'emoji_pack_cards_v183' => const ['🃏', '♠️', '♥️', '♦️', '♣️', '🎴', '🎯', '🤝'],
+    'emoji_pack_ultra_v183' => const ['💎', '🔥', '⚡', '👑', '🐉', '🌌', '🏆', '☄️'],
     _ => const ['👍', '😂', '😍', '😮', '😢', '😡', '👏', '🔥'],
   };
 }

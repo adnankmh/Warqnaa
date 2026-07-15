@@ -13,7 +13,7 @@ class BanakilEngine extends GlobalCardEngineCore
     {
         return [
             'mode' => 'rummy',
-            'players' => [2, 3, 4],
+            'players' => [2, 4],
             'partnership' => true,
             'deck' => 'double-joker',
             'rounds' => 7,
@@ -21,6 +21,7 @@ class BanakilEngine extends GlobalCardEngineCore
             'starterExtraCard' => true,
             'starterMustDiscard' => true,
             'opening' => 0,
+            'banakilScoring' => true,
             'targetScore' => 222,
             'targetOptions' => [150, 222, 300],
             'wildTwos' => true,
@@ -44,7 +45,7 @@ class BanakilEngine extends GlobalCardEngineCore
             'emoji' => '🂮',
             'description' => 'بناكل شراكة بتوزيع 18+19، تنزيل وتركيب قانوني، جوكر واثنان كأوراق بديلة، وسجل حركات موثّق.',
             'version' => 'v0.3',
-            'players' => [2, 3, 4],
+            'players' => [2, 4],
             'partnership' => true,
         ];
     }

@@ -36,7 +36,6 @@ def main() -> int:
 
     require("flutter_app/lib/main.dart", [
         "part 'v170_global.dart';",
-        "ResponsiveAccountStatsV170(controller: controller)",
         "ProductCardV170(controller: controller, product: product)",
         "showPublicPlayerProfileV170",
         "showChallengesV170",
@@ -56,6 +55,8 @@ def main() -> int:
         "final exact = xpRequirementsV175[safe];",
         "return (xpRequirementsV175[100]! * math.pow(1.12, extra)).round();",
     ])
+    require("flutter_app/lib/v183_overhaul.dart", ["ResponsiveAccountStatsV170(controller: controller)", "HomeDashboardV183"])
+
     # The local Tarneeb page is not a lifecycle observer. The server room is.
     local_section = read("flutter_app/lib/main.dart").split("class _TarneebRoomPageState", 1)[1].split("class ServerEngineRoomPage", 1)[0]
     if "WidgetsBinding.instance.removeObserver(this);" in local_section:

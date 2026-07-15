@@ -19,8 +19,8 @@ def text(rel:str,*needles:str)->str:
 
 def main()->None:
     meta=json.loads((ROOT/'RELEASE_VERSION.json').read_text(encoding='utf-8'))
-    if meta.get('full')!='0.3.1+182': fail('release must be 0.3.1+182')
-    text('flutter_app/pubspec.yaml','version: 0.3.1+182')
+    if int(meta.get('build',0)) < 182: fail('release must include build 182 rewards contracts')
+    text('flutter_app/pubspec.yaml',f"version: {meta.get('full')}")
     main_dart=text('flutter_app/lib/main.dart',
         "part 'v182_rewards.dart';",
         'LuckyWheelHomeCardV182(controller: controller)',

@@ -241,19 +241,25 @@ class MobileApiController extends Controller
                     ? $existingInventory->expires_at->copy()
                     : now();
                 $expiresAt = $item->duration_days ? $baseExpiry->addDays((int) $item->duration_days) : null;
+                $isBooster = $item->category === 'xp_booster';
                 if ($renewable && $existingInventory) {
-                    $existingInventory->update(['active'=>true,'activated_at'=>now(),'expires_at'=>$expiresAt]);
+                    $existingInventory->update([
+                        'active'=>!$isBooster,
+                        'activated_at'=>$isBooster ? null : now(),
+                        'expires_at'=>$expiresAt,
+                    ]);
                     $inventory = $existingInventory->fresh();
                 } else {
                     $inventory = $user->inventoryItems()->create([
                         'store_item_id' => $item->id,
-                        'active' => true,
-                        'activated_at' => now(),
+                        'active' => !$isBooster,
+                        'activated_at' => $isBooster ? null : now(),
                         'expires_at' => $expiresAt,
                     ]);
                 }
 
-                $this->activateStoreItem($user, $item);
+                // V183 boosters remain in inventory until the player explicitly activates them.
+                if (!$isBooster) $this->activateStoreItem($user, $item);
                 return $inventory;
             });
         } catch (\RuntimeException) {
@@ -262,7 +268,7 @@ class MobileApiController extends Controller
 
         return response()->json([
             'ok' => true,
-            'message' => 'تم الشراء والتفعيل بنجاح',
+            'message' => $item->category === 'xp_booster' ? 'تمت إضافة المسرّع إلى المخزون. فعّله خلال مدة الصلاحية.' : 'تم الشراء والتفعيل بنجاح',
             'wallet' => $this->walletPayload($user->fresh()),
             'profile' => $user->profile?->fresh(),
             'inventory_item' => $inventory->load('storeItem'),
@@ -392,6 +398,41 @@ class MobileApiController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function activateStoreInventoryV183(Request $request)
+    {
+        $data=$request->validate(['key'=>'required|string|max:120']);
+        $user=$request->user();
+        $inventory=$user->inventoryItems()
+            ->whereHas('storeItem',fn($q)=>$q->where('key',$data['key'])->where('category','xp_booster')->where('active',true))
+            ->with('storeItem')->latest('id')->first();
+        if(!$inventory) return response()->json(['ok'=>false,'message'=>'المسرّع غير موجود في مخزونك.'],404);
+        if($inventory->expires_at && $inventory->expires_at->isPast()) {
+            $inventory->delete();
+            return response()->json(['ok'=>false,'message'=>'انتهت صلاحية المسرّع قبل التفعيل.'],410);
+        }
+        $item=$inventory->storeItem;
+        $payload=$item->payload ?: [];
+        $hours=max(1,(int)($payload['activate_hours'] ?? 24));
+        DB::transaction(function() use($user,$inventory,$item,$payload,$hours){
+            $user->inventoryItems()
+                ->where('id','!=',$inventory->id)
+                ->whereHas('storeItem',fn($q)=>$q->where('category','xp_booster'))
+                ->update(['active'=>false]);
+            $inventory->update(['active'=>true,'activated_at'=>now(),'expires_at'=>now()->addHours($hours)]);
+            $profile=$user->profile()->lockForUpdate()->firstOrCreate(['user_id'=>$user->id],[
+                'display_name'=>$user->username,'country_code'=>'PS','country_name'=>'Palestine',
+            ]);
+            $profile->xp_boost_multiplier=(float)($payload['multiplier'] ?? 1.25);
+            $profile->xp_boost_expires_at=now()->addHours($hours);
+            $profile->save();
+        });
+        return response()->json([
+            'ok'=>true,'message'=>'تم تفعيل المسرّع لمدة '.$hours.' ساعة.',
+            'profile'=>$user->profile?->fresh(),
+            'inventory_item'=>$inventory->fresh()->load('storeItem'),
+        ]);
+    }
+
     private function activateStoreItem(User $user, StoreItem $item): void
     {
         $profile = $user->profile()->firstOrCreate(
@@ -436,6 +477,7 @@ class MobileApiController extends Controller
                 break;
             case 'xp_booster':
                 $profile->xp_boost_multiplier = (float) ($payload['multiplier'] ?? 1.25);
+                $profile->xp_boost_expires_at = now()->addHours((int)($payload['activate_hours'] ?? 24));
                 break;
             case 'effect':
                 if (isset($payload['theme'])) $profile->active_site_theme = (string) $payload['theme'];

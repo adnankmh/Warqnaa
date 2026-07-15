@@ -1,0 +1,23 @@
+Warqnaa V0.3.2+183 validation summary
+=====================================
+
+PASS: release version consistency 0.3.2+183
+PASS: source-package preflight
+PASS: 48 JSON files parsed
+PASS: 15 YAML workflow/config files audited
+PASS: 2 XML files parsed
+PASS: 29 Dart files passed structural delimiter/reference scan
+PASS: 313 PHP files passed php -l
+PASS: all Python contracts V0.2 through V183
+PASS: engine adapters initialized for 18 game engines
+PASS: dedicated Domino, Basra, Backgammon, Chess and Jackaroo checks
+PASS: Banakil duplicate-card, meld, layoff, recycle and anti-cheat checks
+PASS: V183 Tarneeb 400, Hand, Banakil, Trix and Baloot standalone checks
+PASS: no Git merge markers or committed runtime secrets detected
+PASS: booster WebP assets have alpha and remain below 150 KB each
+
+Environment limitations:
+- Flutter SDK/Dart SDK are not installed in the local packaging environment, so flutter analyze,
+  flutter test and platform builds must run in the included GitHub Actions workflows.
+- Composer vendor dependencies are not bundled, so php artisan test must run in Backend CI after composer install.
+- Publishing is allowed only after Web, Android, iOS, Backend CI and Production Release Gate are green.

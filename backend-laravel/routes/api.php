@@ -45,6 +45,7 @@ Route::prefix('mobile/v1')->group(function () {
         Route::patch('/profile', [MobileApiController::class, 'updateProfile']);
         Route::get('/wallet', [MobileApiController::class, 'wallet']);
         Route::post('/store/purchase', [MobileApiController::class, 'purchase'])->middleware('throttle:warqna-sensitive');
+        Route::post('/store/activate', [MobileApiController::class, 'activateStoreInventoryV183'])->middleware('throttle:warqna-sensitive');
         Route::get('/notifications', [MobileApiController::class, 'notifications']);
         Route::patch('/notifications/{id}/read', [MobileApiController::class, 'markNotification']);
         Route::delete('/notifications/{id}', [MobileApiController::class, 'deleteNotification']);

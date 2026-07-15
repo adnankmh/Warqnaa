@@ -25,6 +25,7 @@ $state['hands']['p1'] = ['A_C','A_C','A_D','A_H','5_C'];
 $state['melds'] = [];
 $state['phase'] = 'discard';
 $state['currentIndex'] = 0;
+$state['starterDiscardPending'] = false; // the duplicate-card fixture starts after the mandatory opening discard
 $state = $engine->applyAction($state, 'p1', ['type'=>'meld','cards'=>['A_C','A_D','A_H']]);
 ok(count(array_filter($state['hands']['p1'], fn($c)=>$c==='A_C')) === 1, 'التنزيل يحذف نسخة واحدة فقط من الورقة المكررة');
 ok(count($state['melds']['p1'][0]['cards'] ?? []) === 3, 'تم تسجيل المجموعة القانونية');

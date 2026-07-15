@@ -17,6 +17,8 @@ class HandPartnershipEngine extends GlobalCardEngineCore
             'deck' => 'double-joker',
             'rounds' => 5,
             'cardsEach' => 14,
+            'starterExtraCard' => true,
+            'starterMustDiscard' => true,
             'opening' => 51,
             'targetScore' => 41,
             'targetOptions' => [],

@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.3.1');
-const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 182);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.3.2');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 183);
 
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})
@@ -126,6 +126,8 @@ class WarqnaApiClient {
       post('/social/transfer', {'receiver': receiver, 'amount': amount});
   Future<Map<String, dynamic>> purchase(String key) =>
       post('/store/purchase', {'key': key, 'confirmed': true});
+  Future<Map<String, dynamic>> activateStoreItemV183(String key) =>
+      post('/store/activate', {'key': key});
   Future<Map<String, dynamic>> claimDaily() => post('/rewards/daily', const {});
   Future<Map<String, dynamic>> claimRewardedAd(String verificationId) => post('/rewards/rewarded-ad', {'verification_id': verificationId, 'network': 'admob', 'reward_type': 'standard'});
   Future<Map<String, dynamic>> openDailyPackV173() => post('/packs/daily/open', const {});

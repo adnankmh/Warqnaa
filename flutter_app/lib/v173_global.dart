@@ -309,7 +309,7 @@ class UniversalDesignerV173 extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('المصمم الشامل V0.3.1 — لحساب Adnan فقط', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+              const Text('المصمم الشامل V0.3.2 — لحساب Adnan فقط', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
               const SizedBox(height: 4),
               Text(
                 'إدارة وإضافة وتعديل وحذف جميع مكونات التطبيق: الألعاب والطاولات والمتجر والاقتصاد والمستويات وصناديق الجوائز والتحديات والمنافسات والمجموعات والإعلانات والإشعارات والصفحات والتنقل والترجمات والثيمات والأمان من قاعدة البيانات.',
@@ -322,6 +322,11 @@ class UniversalDesignerV173 extends StatelessWidget {
                 children: [
                   for (final entry in const <(String, String, IconData)>[
                     ('الطاولات', 'table', Icons.table_restaurant),
+                    ('المسرعات', 'xp_booster', Icons.rocket_launch_rounded),
+                    ('الإيموت المتحركة', 'emoji_pack', Icons.emoji_emotions_rounded),
+                    ('الأصوات', 'audio', Icons.graphic_eq_rounded),
+                    ('المعاينات والأحجام', 'preview_layout', Icons.aspect_ratio_rounded),
+                    ('محركات وقواعد الألعاب', 'game_rules', Icons.rule_rounded),
                     ('التذاكر', 'competition_ticket', Icons.confirmation_number),
                     ('صناديق الجوائز', 'prize_box', Icons.redeem),
                     ('دولاب الحظ', 'lucky_wheel', Icons.casino_rounded),
