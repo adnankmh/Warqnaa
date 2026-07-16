@@ -1,0 +1,20 @@
+{
+  "version": "0.3.3",
+  "build": 184,
+  "display": "V0.3.3",
+  "type": "lucky-wheel-10-slot-media-optimization-hotfix",
+  "name": "Warqnaa V0.3.3 Lucky Wheel 10-Slot & Optimized Media",
+  "features": [
+    "ten-slot server-authoritative lucky wheel",
+    "larger premium wheel pointer",
+    "paid-spin reward-aware backend test",
+    "new compressed seven-color booster art",
+    "13 MB additional media reduction",
+    "inherited responsive web, adaptive previews and engine overhaul"
+  ],
+  "admin": {
+    "username": "Adnan",
+    "level": 99,
+    "designer_access": "primary-admin-only"
+  }
+}

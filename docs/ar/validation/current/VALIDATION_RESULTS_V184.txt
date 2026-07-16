@@ -1,0 +1,16 @@
+Warqnaa V0.3.3 / v184 validation
+
+PASS - release version contract 0.3.3+184
+PASS - full source preflight validate_release.py
+PASS - clean root, no merge markers, no unsafe secrets
+PASS - JSON/YAML/XML/Dart static validation
+PASS - PHP syntax validation
+PASS - V183 standalone engine overhaul tests
+PASS - engine adapters: 18 engines initialized
+PASS - v142 rule cores
+PASS - Banakil regression tests
+PASS - V182 10-slot lucky wheel source contract
+PASS - 270 images verified after optimization
+PASS - 194 images optimized, 13,211,418 bytes saved
+
+GitHub Actions remains authoritative for Flutter analyzer/test/build and full Laravel PHPUnit because Flutter SDK and Composer vendor are not bundled in this workspace.

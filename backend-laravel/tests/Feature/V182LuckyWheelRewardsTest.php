@@ -33,19 +33,19 @@ class V182LuckyWheelRewardsTest extends TestCase
         return $user->fresh(['profile','wallet']);
     }
 
-    public function test_wheel_has_six_server_authoritative_segments_and_one_free_spin_daily(): void
+    public function test_wheel_has_ten_server_authoritative_segments_and_one_free_spin_daily(): void
     {
         $this->player('Adnan', 0, true);
         $user = $this->player('WheelPlayer', 1000);
         $service = app(LuckyWheelService::class);
 
         $center = $service->center($user);
-        $this->assertCount(6, $center['segments']);
+        $this->assertCount(10, $center['segments']);
         $this->assertTrue($center['free_available']);
         $this->assertSame(100, $center['token_cost']);
 
         $result = $service->spin($user, 'free');
-        $this->assertContains($result['segment_index'], range(0, 5));
+        $this->assertContains($result['segment_index'], range(0, 9));
         $this->assertNotEmpty($result['reward']['type']);
         $this->assertFalse($result['center']['free_available']);
         $this->assertSame(1, LuckyWheelSpin::where('user_id',$user->id)->count());
@@ -64,7 +64,9 @@ class V182LuckyWheelRewardsTest extends TestCase
 
         $this->assertSame(100, (int)$result['center']['token_cost']);
         $this->assertSame(1, $result['center']['token_spins_today']);
-        $this->assertSame(900, (int)$user->wallet()->first()->tokens);
+        $reward = $result['reward'];
+        $rewardTokens = is_array($reward) && (($reward['type'] ?? '') === 'tokens') ? (int) ($reward['value'] ?? 0) : 0;
+        $this->assertSame(1000 - 100 + $rewardTokens, (int) $user->wallet()->first()->tokens);
         $this->assertSame(120, (int)$admin->wallet()->first()->tokens);
         $this->assertDatabaseHas('lucky_wheel_spins', [
             'user_id'=>$user->id,

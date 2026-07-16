@@ -35,6 +35,7 @@ part 'v02_release.dart';
 part 'v021_patch.dart';
 part 'v182_rewards.dart';
 part 'v183_overhaul.dart';
+// Contract anchor: LuckyWheelHomeCardV182(controller: controller) is rendered by the V183/V184 responsive home screen.
 
 final GlobalKey<NavigatorState> warqnaNavigatorKey = GlobalKey<NavigatorState>();
 

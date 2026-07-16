@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 const bool warqnaProductionMode = bool.fromEnvironment('WARQNA_PRODUCTION_MODE', defaultValue: false);
-const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.3.2');
-const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 183);
+const String warqnaAppVersion = String.fromEnvironment('WARQNA_APP_VERSION', defaultValue: '0.3.3');
+const int warqnaAppBuild = int.fromEnvironment('WARQNA_APP_BUILD', defaultValue: 184);
 
 class WarqnaApiClient {
   WarqnaApiClient({String? baseUrl})

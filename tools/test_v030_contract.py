@@ -20,9 +20,9 @@ def req(rel: str, *needles: str) -> str:
 
 def main() -> None:
     meta=json.loads((ROOT/'RELEASE_VERSION.json').read_text(encoding='utf-8'))
-    if meta.get('version')!='0.3.2' or meta.get('build')!=183 or meta.get('display_release')!='V0.3.2':
-        fail('Release metadata is not Warqnaa V0.3.2 build 183')
-    req('flutter_app/pubspec.yaml','version: 0.3.2+183')
+    if meta.get('version')!='0.3.3' or meta.get('build')!=184 or meta.get('display_release')!='V0.3.3':
+        fail('Release metadata is not Warqnaa V0.3.3 build 184')
+    req('flutter_app/pubspec.yaml','version: 0.3.3+184')
 
     premium=req('flutter_app/lib/premium_v151.dart','const List<(String, String, Color)> v151ThemeOptions')
     theme_block=premium[premium.index('const List<(String, String, Color)> v151ThemeOptions'):premium.index('const List<String> v151AccentColors')]

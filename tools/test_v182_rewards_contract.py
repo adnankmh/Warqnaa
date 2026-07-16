@@ -51,7 +51,7 @@ def main()->None:
         'updateClubIdentityV182',
         'ClubManagementPageV182',
     )
-    if rewards.count("'key':") < 6: fail('wheel must contain at least six segments')
+    if rewards.count("'key':") < 10: fail('wheel must contain at least ten segments')
     text('flutter_app/lib/v166_polish.dart','الخروج من اللعبة','exitActiveGameV182','BoxFit.contain')
     designer=text('flutter_app/lib/v173_global.dart',
         'controller.isPrimaryAdmin',

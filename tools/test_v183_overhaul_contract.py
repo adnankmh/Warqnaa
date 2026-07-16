@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Warqnaa V0.3.2 build 183 responsive web, store, boosters and engines contract."""
+"""Warqnaa V0.3.3 build 184 responsive web, store, boosters and engines contract."""
 from __future__ import annotations
 import json
 from pathlib import Path
@@ -15,8 +15,8 @@ def text(rel:str,*needles:str)->str:
 
 def main():
  meta=json.loads((ROOT/'RELEASE_VERSION.json').read_text())
- if meta.get('full')!='0.3.2+183': fail('release must be 0.3.2+183')
- text('flutter_app/pubspec.yaml','version: 0.3.2+183','assets/images/boosters/v183/')
+ if meta.get('full')!='0.3.3+184': fail('release must be 0.3.3+184')
+ text('flutter_app/pubspec.yaml','version: 0.3.3+184','assets/images/boosters/v183/')
  overhaul=text('flutter_app/lib/v183_overhaul.dart','DesktopShellNavigationV183','AdaptiveTablePreviewV183','CompetitionTicketPreviewV183','BoosterPreviewV183','DesignerQuickControlsV183','HomeDashboardV183','raisedStorePriceV183')
  main=text('flutter_app/lib/main.dart',"part 'v183_overhaul.dart';",'isDesktopWebV183(MediaQuery.sizeOf(context).width)','table_reference_','BoosterPreviewV183','CompetitionTicketPreviewV183')
  if "collection: 'reference_1'" in main or "collection: 'reference_2'" in main:
