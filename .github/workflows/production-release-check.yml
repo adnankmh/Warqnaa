@@ -29,6 +29,7 @@ jobs:
           python3 tools/test_v182_rewards_contract.py
           python3 tools/test_v183_overhaul_contract.py
           python3 tools/test_v184_flutter_quality_contract.py
+          python3 tools/test_v184_official_game_rules_contract.py
           python3 tools/test_v174_offline_progression_navigation_contract.py
           python3 tools/test_v175_xp_challenges_pasha_designer_contract.py
           python3 tools/test_v176_daily_pack_inventory_contract.py
@@ -38,6 +39,12 @@ jobs:
 
       - name: Run standalone V183 engine regressions
         run: php backend-laravel/tools/test-v183-engine-overhaul.php
+      - name: Run classic game-rule regressions
+        run: php backend-laravel/tools/test-v142-rule-cores.php
+      - name: Run V184 official game-rule audit
+        run: php backend-laravel/tools/test-v184-official-rules-audit.php
+      - name: Stress all registered game engines
+        run: php backend-laravel/tools/test-v184-engine-stress.php
 
       - name: Run source preflight
         run: python3 tools/validate_release.py

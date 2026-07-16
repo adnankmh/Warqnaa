@@ -38,7 +38,7 @@ class Tarneeb400Engine extends GlobalCardEngineCore
             'slug'=>'tarneeb-400',
             'title_ar'=>'طرنيب 400',
             'emoji'=>'♥️',
-            'description'=>'محرك طرنيب 400/أربعمية بنظام شراكة، عقود، طرنيب، وحساب نقاط مناسب للوصول إلى 400.',
+            'description'=>'محرك طرنيب 400/أربعمية بنظام شراكة، طلب مستقل لكل لاعب، كبة ثابتة، وحساب نقاط رسمي مع شرط فوز الفريق عند 41.',
             'version'=>'final-v1',
             'players'=>[4],
             'partnership'=>true,

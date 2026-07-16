@@ -104,6 +104,10 @@ def check_required_files() -> None:
         "tools/test_v174_offline_progression_navigation_contract.py",
         "tools/test_v175_xp_challenges_pasha_designer_contract.py",
         "tools/test_v176_daily_pack_inventory_contract.py",
+        "tools/test_v184_flutter_quality_contract.py",
+        "tools/test_v184_official_game_rules_contract.py",
+        "backend-laravel/tools/test-v184-official-rules-audit.php",
+        "backend-laravel/tools/test-v184-engine-stress.php",
         "tools/test_v02_daily_prize_boxes_contract.py",
         "flutter_app/lib/v176_release.dart",
         "flutter_app/lib/v02_release.dart",
@@ -1324,6 +1328,20 @@ def check_v176_daily_pack_inventory_contract() -> None:
     print("[OK] v176 analyzer fixes, animated pack reveal, server inventory and timed expiry")
 
 
+
+def check_v184_official_game_rules_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tools/test_v184_official_game_rules_contract.py")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        fail("Warqna v184 official-game-rules contract failed: " + result.stdout.strip())
+    print(result.stdout.strip())
+    print("[OK] v184 clean-root, HD table assets and official-game-rules contract")
+
 def check_v02_daily_prize_boxes_contract() -> None:
     result = subprocess.run(
         [sys.executable, str(ROOT / "tools/test_v02_daily_prize_boxes_contract.py")],
@@ -1381,6 +1399,7 @@ def main() -> None:
     check_v161_voice_social_progression()
     check_v162_account_cancellation_and_analyzer()
     check_v163_ci_regressions()
+    check_v02_daily_prize_boxes_contract()
     check_v164_android_startup_safety()
     check_v165_android_workmanager_boot_guard()
     check_v166_global_polish()
@@ -1392,7 +1411,7 @@ def main() -> None:
     check_v174_offline_progression_navigation_contract()
     check_v175_xp_challenges_pasha_designer_contract()
     check_v176_daily_pack_inventory_contract()
-    check_v02_daily_prize_boxes_contract()
+    check_v184_official_game_rules_contract()
     check_secrets()
     check_dart_structure()
     print(f"[PASS] Warqna v{EXPECTED_BUILD} source-package preflight completed successfully")
