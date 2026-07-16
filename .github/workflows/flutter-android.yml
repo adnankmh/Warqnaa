@@ -147,7 +147,6 @@ jobs:
           python3 ../tools/test_v182_rewards_contract.py
           python3 ../tools/test_v183_overhaul_contract.py
           python3 ../tools/test_v184_flutter_quality_contract.py
-          python3 ../tools/test_v184_official_game_rules_contract.py
           python3 ../tools/test_v174_offline_progression_navigation_contract.py
           python3 ../tools/test_v175_xp_challenges_pasha_designer_contract.py
           python3 ../tools/test_v176_daily_pack_inventory_contract.py

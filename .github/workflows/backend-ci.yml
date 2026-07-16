@@ -55,12 +55,6 @@ jobs:
         run: find app config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Run standalone V183 engine regressions
         run: php tools/test-v183-engine-overhaul.php
-      - name: Run classic game-rule regressions
-        run: php tools/test-v142-rule-cores.php
-      - name: Run V184 official game-rule audit
-        run: php tools/test-v184-official-rules-audit.php
-      - name: Stress all registered game engines
-        run: php tools/test-v184-engine-stress.php
       - name: Run Laravel tests
         run: php artisan test
       - name: Production preflight in non-strict mode

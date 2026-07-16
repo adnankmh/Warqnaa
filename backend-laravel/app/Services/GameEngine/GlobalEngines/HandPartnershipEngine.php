@@ -20,8 +20,6 @@ class HandPartnershipEngine extends GlobalCardEngineCore
             'starterExtraCard' => true,
             'starterMustDiscard' => true,
             'opening' => 51,
-            'teamOpening' => true,
-            'openingEscalates' => true,
             'targetScore' => 41,
             'targetOptions' => [],
             'minBid' => 7,

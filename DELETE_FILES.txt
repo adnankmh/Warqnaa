@@ -1,0 +1,2 @@
+MANIFEST_SHA256.txt
+tools/__pycache__/validate_release.cpython-313.pyc

@@ -34,8 +34,6 @@ class GlobalCardEngineCore
         $foundation = [];
         $discard = [];
         $mode = $cfg['mode'];
-        $dealerIndex = max(0, min(count($players) - 1, (int)($options['dealerIndex'] ?? $cfg['dealerIndex'] ?? (count($players) - 1))));
-        $revealedCard = null;
 
         foreach ($players as $i => $p) {
             $pid = (string)($p['id'] ?? ('p'.($i+1)));
@@ -44,20 +42,13 @@ class GlobalCardEngineCore
             $foundation[$pid] = [];
         }
 
-        if (in_array($mode, ['trick','trick400','syrian41','trix','trix-complex'], true)) {
+        if (in_array($mode, ['trick','trick400','trix','trix-complex'], true)) {
             $cardsEach = intdiv(count($deck), count($players));
             for ($r=0; $r<$cardsEach; $r++) {
                 foreach ($players as $p) $hands[(string)$p['id']][] = array_shift($deck);
             }
             foreach ($hands as $pid => $h) $hands[$pid] = $this->sortCards($h);
-            if ($mode === 'syrian41') {
-                $dealerId = (string)($players[$dealerIndex]['id'] ?? '');
-                $dealerHand = array_values($hands[$dealerId] ?? []);
-                $revealedCard = $dealerHand ? $dealerHand[count($dealerHand) - 1] : null;
-                $cfg['fixedTrump'] = $this->oppositeSameColorSuit($this->suit((string)$revealedCard));
-                $cfg['revealedCard'] = $revealedCard;
-            }
-            $phase = in_array($mode, ['trick','trick400','syrian41'], true) ? 'bidding' : 'contract';
+            $phase = in_array($mode, ['trick','trick400'], true) ? 'bidding' : 'contract';
         } elseif ($mode === 'baloot') {
             for ($r=0; $r<8; $r++) foreach ($players as $p) $hands[(string)$p['id']][] = array_shift($deck);
             foreach ($hands as $pid => $h) $hands[$pid] = $this->sortCards($h);
@@ -113,20 +104,17 @@ class GlobalCardEngineCore
             ], $players, array_keys($players))),
             'phase'=>$phase,
             'currentIndex'=>0,
-            'dealerIndex'=>$dealerIndex,
+            'dealerIndex'=>0,
             'hands'=>$hands,
             'deck'=>$deck,
             'discard'=>$discard,
             'melds'=>[],
-            'teamOpeningThresholds'=>[0=>(int)($cfg['opening'] ?? 51),1=>(int)($cfg['opening'] ?? 51)],
-            'teamOpened'=>[0=>false,1=>false],
             'tableau'=>$tableau,
             'foundation'=>$foundation,
             'bids'=>[],
             'highestBid'=>null,
             'bidWinner'=>null,
-            'trump'=>$mode === 'syrian41' ? ($cfg['fixedTrump'] ?? null) : null,
-            'revealedCard'=>$revealedCard,
+            'trump'=>null,
             'contract'=>null,
             'contractsUsed'=>[],
             'kingdomOwnerIndex'=>0,
@@ -220,9 +208,9 @@ class GlobalCardEngineCore
                 $actions[] = ['type'=>'choose_contract','contract'=>'hokm'];
                 return $actions;
             }
-            if ($mode === 'trick400' || $mode === 'syrian41') {
-                // 400 and Syrian 41 use one independent declaration per player.
-                $min = $mode === 'syrian41' ? 2 : $this->tarneeb400MinimumBid($state, $playerId);
+            if ($mode === 'trick400') {
+                // 400 uses one independent declaration per player, not an ascending auction.
+                $min = $this->tarneeb400MinimumBid($state, $playerId);
                 for ($b=$min; $b<=13; $b++) $actions[] = ['type'=>'bid','amount'=>$b];
                 return $actions;
             }
@@ -249,7 +237,7 @@ class GlobalCardEngineCore
             if(!$legal) $actions[]=['type'=>'pass_trix'];
             return $actions;
         }
-        if (in_array($mode, ['trick','trick400','syrian41','trix','trix-complex','baloot'], true)) {
+        if (in_array($mode, ['trick','trick400','trix','trix-complex','baloot'], true)) {
             foreach ($this->legalCards($state, $playerId) as $card) $actions[] = ['type'=>'play_card','card'=>$card];
             return $actions;
         }
@@ -273,8 +261,8 @@ class GlobalCardEngineCore
             foreach (($state['hands'][$playerId] ?? []) as $card) $actions[] = ['type'=>'discard','card'=>$card];
             return $actions;
         }
-        foreach ($this->suggestMelds($state['hands'][$playerId] ?? [], $this->rummyOpeningRequirement($state,$playerId)) as $meld) $actions[] = ['type'=>'meld','cards'=>$meld['cards']];
-        if ($this->hasRummyOpened($state,$playerId)) {
+        foreach ($this->suggestMelds($state['hands'][$playerId] ?? [], (int)($state['config']['opening'] ?? 51)) as $meld) $actions[] = ['type'=>'meld','cards'=>$meld['cards']];
+        if (!empty($state['melds'][$playerId])) {
             foreach (($state['melds'] ?? []) as $targetPlayer=>$meldList) {
                 $sameSide = $targetPlayer === $playerId || (!empty($state['config']['partnership']) && $this->teamOf($state, (string)$targetPlayer) === $this->teamOf($state, $playerId));
                 if (!$sameSide) continue;
@@ -287,7 +275,7 @@ class GlobalCardEngineCore
                 }
             }
         }
-        $suggested=$this->suggestMelds($state['hands'][$playerId] ?? [], $this->rummyOpeningRequirement($state,$playerId));
+        $suggested=$this->suggestMelds($state['hands'][$playerId] ?? [], (int)($state['config']['opening'] ?? 51));
         if(count($suggested)>=2) $actions[]=['type'=>'meld_many','groups'=>array_values(array_map(fn($m)=>$m['cards'],array_slice($suggested,0,3)))];
         foreach (($state['hands'][$playerId] ?? []) as $card) $actions[] = ['type'=>'discard','card'=>$card];
         return $actions;
@@ -325,7 +313,7 @@ class GlobalCardEngineCore
     protected function pass(array $state, string $playerId): array
     {
         if ($state['phase'] !== 'bidding') throw new GameEngineException('لا يوجد طلب الآن.');
-        if (in_array(($state['config']['mode'] ?? ''), ['trick400','syrian41'], true)) throw new GameEngineException('يجب على كل لاعب إعلان طلب مستقل من 2 إلى 13.');
+        if (($state['config']['mode'] ?? '') === 'trick400') throw new GameEngineException('في طرنيب 400 يجب على كل لاعب إعلان طلب من 2 إلى 13.');
         $state['bids'][] = ['player'=>$playerId, 'amount'=>null];
         $state = $this->record($state, 'bid.pass', compact('playerId'));
         if (count($state['bids']) >= count($state['players'])) {
@@ -344,10 +332,9 @@ class GlobalCardEngineCore
     protected function bid(array $state, string $playerId, int $amount): array
     {
         if ($state['phase'] !== 'bidding') throw new GameEngineException('مرحلة الطلب غير فعالة.');
-        if (in_array(($state['config']['mode'] ?? ''), ['trick400','syrian41'], true)) {
-            $independentMode = (string)$state['config']['mode'];
-            $min = $independentMode === 'syrian41' ? 2 : $this->tarneeb400MinimumBid($state, $playerId);
-            if ($amount < $min || $amount > 13) throw new GameEngineException('الطلب المستقل غير مسموح.');
+        if (($state['config']['mode'] ?? '') === 'trick400') {
+            $min = $this->tarneeb400MinimumBid($state, $playerId);
+            if ($amount < $min || $amount > 13) throw new GameEngineException('طلب طرنيب 400 غير مسموح.');
             foreach ($state['bids'] as $bid) if (($bid['player'] ?? null) === $playerId) throw new GameEngineException('تم تسجيل طلبك لهذه الجولة.');
             $state['bids'][] = ['player'=>$playerId, 'amount'=>$amount];
             if (!$state['highestBid'] || $amount > (int)($state['highestBid']['amount'] ?? 0)) {
@@ -356,10 +343,10 @@ class GlobalCardEngineCore
             }
             $state = $this->record($state, 'bid.made', compact('playerId','amount'));
             if (count($state['bids']) >= count($state['players'])) {
-                $minimumTotal = $independentMode === 'syrian41' ? 11 : $this->tarneeb400MinimumTotal($state);
+                $minimumTotal = $this->tarneeb400MinimumTotal($state);
                 $total = array_sum(array_map(fn($b)=>(int)($b['amount'] ?? 0), $state['bids']));
                 if ($total < $minimumTotal) {
-                    $state = $this->record($state, 'round.redeal', ['reason'=>$independentMode.'_low_total','total'=>$total,'minimum'=>$minimumTotal]);
+                    $state = $this->record($state, 'round.redeal', ['reason'=>'tarneeb400_low_total','total'=>$total,'minimum'=>$minimumTotal]);
                     $new = $this->newGame($state['players'], $state['config']);
                     $new['scores'] = $state['scores'];
                     $new['events'] = $state['events'];
@@ -433,7 +420,7 @@ class GlobalCardEngineCore
 
     protected function playCard(array $state, string $playerId, string $card): array
     {
-        if (!in_array($state['config']['mode'], ['trick','trick400','syrian41','trix','trix-complex','baloot'], true)) throw new GameEngineException('هذه الحركة ليست لهذه اللعبة.');
+        if (!in_array($state['config']['mode'], ['trick','trick400','trix','trix-complex','baloot'], true)) throw new GameEngineException('هذه الحركة ليست لهذه اللعبة.');
         if (!in_array($card, $state['hands'][$playerId] ?? [], true)) throw new GameEngineException('الورقة ليست في يد اللاعب.');
         if (!in_array($card, $this->legalCards($state,$playerId), true)) throw new GameEngineException('يجب اتباع نوع الورقة إذا كان موجودًا.');
         $state['hands'][$playerId] = $this->removeOneCard($state['hands'][$playerId], $card);
@@ -442,7 +429,7 @@ class GlobalCardEngineCore
         if (count($state['trick']) >= count($state['players'])) {
             $winner = $this->trickWinner($state);
             $team = $this->teamOf($state, $winner);
-            $trickKey = in_array(($state['config']['mode'] ?? ''), ['trick400','syrian41'], true) ? $winner : $team;
+            $trickKey = (($state['config']['mode'] ?? '') === 'trick400') ? $winner : $team;
             $state['tricksWon'][$trickKey] = ($state['tricksWon'][$trickKey] ?? 0) + 1;
             $state = $this->record($state, 'trick.won', ['winner'=>$winner,'team'=>$team,'score_key'=>$trickKey,'cards'=>$state['trick']]);
             $state['trick'] = [];
@@ -542,25 +529,7 @@ class GlobalCardEngineCore
             $state=$this->record($state,'round.scored',['scores'=>$state['scores'],'tricks'=>$state['tricksWon']]);
             return $this->completeTrixContract($state);
         }
-        if($mode==='syrian41'){
-            foreach ($state['bids'] as $bid) {
-                $pid = (string)($bid['player'] ?? '');
-                $declared = (int)($bid['amount'] ?? 0);
-                if ($pid === '' || $declared < 2) continue;
-                $won = (int)($state['tricksWon'][$pid] ?? 0);
-                $state['scores'][$pid] = (int)($state['scores'][$pid] ?? 0) + ($won >= $declared ? $declared : -$declared);
-            }
-            $target=(int)($state['config']['targetScore'] ?? 41);
-            foreach ([0,1] as $team) {
-                $members=array_values(array_filter($state['players'],fn($p)=>(int)($p['team'] ?? -1)===$team));
-                if(count($members)!==2) continue;
-                $a=(string)$members[0]['id']; $b=(string)$members[1]['id'];
-                if(((int)($state['scores'][$a] ?? 0)>=$target && (int)($state['scores'][$b] ?? 0)>0) ||
-                   ((int)($state['scores'][$b] ?? 0)>=$target && (int)($state['scores'][$a] ?? 0)>0)) {
-                    $state['gameOver']=true; $state['winner']=$team;
-                }
-            }
-        } elseif($mode==='trick400'){
+        if($mode==='trick400'){
             foreach ($state['bids'] as $bid) {
                 $pid = (string)($bid['player'] ?? '');
                 $declared = (int)($bid['amount'] ?? 0);
@@ -591,7 +560,7 @@ class GlobalCardEngineCore
             }
         }
         $state = $this->record($state, 'round.scored', ['scores'=>$state['scores'], 'tricks'=>$state['tricksWon']]);
-        if (!in_array($mode, ['trick400','syrian41'], true)) {
+        if ($mode !== 'trick400') {
             foreach ($state['scores'] as $key=>$score) {
                 if ($score >= (int)($state['config']['targetScore'] ?? 41)) { $state['gameOver']=true; $state['winner']=$key; }
             }
@@ -668,9 +637,7 @@ class GlobalCardEngineCore
     protected function newRoundFromState(array $old): array
     {
         $players = $old['players'];
-        $options = $old['config'];
-        $options['dealerIndex'] = ((int)($old['dealerIndex'] ?? (count($players)-1)) + 1) % max(1,count($players));
-        $new = $this->newGame($players, $options);
+        $new = $this->newGame($players, $old['config']);
         $new['scores'] = $old['scores'];
         $new['round'] = ($old['round'] ?? 1) + 1;
         $new['events'] = $old['events'];
@@ -727,10 +694,9 @@ class GlobalCardEngineCore
         if (!$this->containsCards($state['hands'][$playerId] ?? [], $cards)) throw new GameEngineException('إحدى الأوراق المختارة غير موجودة بالعدد المطلوب في اليد.');
         if (!$this->isValidMeld($cards)) throw new GameEngineException('المجموعة/السلسلة غير صحيحة.');
         $value = $this->meldValue($cards);
-        if (!$this->hasRummyOpened($state,$playerId) && $value < $this->rummyOpeningRequirement($state,$playerId)) throw new GameEngineException('قيمة الافتتاح أقل من المطلوب.');
+        if (empty($state['melds'][$playerId]) && $value < (int)($state['config']['opening'] ?? 51)) throw new GameEngineException('قيمة الافتتاح أقل من المطلوب.');
         foreach ($cards as $c) $state['hands'][$playerId] = $this->removeOneCard($state['hands'][$playerId], $c);
         $state['melds'][$playerId][] = ['cards'=>$cards, 'value'=>$value];
-        $state = $this->recordRummyOpening($state,$playerId,$value);
         $state = $this->record($state, 'rummy.meld', compact('playerId','cards','value'));
         if (empty($state['hands'][$playerId])) $state = $this->scoreRummyRound($state, $playerId, true);
         return $this->finalizeState($state);
@@ -748,10 +714,9 @@ class GlobalCardEngineCore
             $normalized[]=$cards;$all=array_merge($all,$cards);$total+=$this->meldValue($cards);
         }
         if(!$this->containsCards($state['hands'][$playerId] ?? [],$all)) throw new GameEngineException('الأوراق المختارة غير موجودة بالعدد المطلوب.');
-        if(!$this->hasRummyOpened($state,$playerId) && $total<$this->rummyOpeningRequirement($state,$playerId)) throw new GameEngineException('مجموع افتتاحك أقل من المطلوب.');
+        if(empty($state['melds'][$playerId]) && $total<(int)($state['config']['opening'] ?? 51)) throw new GameEngineException('مجموع افتتاحك أقل من المطلوب.');
         foreach($all as $card) $state['hands'][$playerId]=$this->removeOneCard($state['hands'][$playerId],$card);
         foreach($normalized as $cards) $state['melds'][$playerId][]=['cards'=>$cards,'value'=>$this->meldValue($cards)];
-        $state=$this->recordRummyOpening($state,$playerId,$total);
         $state=$this->record($state,'rummy.meld_many',['playerId'=>$playerId,'groups'=>$normalized,'value'=>$total]);
         if(empty($state['hands'][$playerId])) $state=$this->scoreRummyRound($state,$playerId,true);
         return $this->finalizeState($state);
@@ -764,7 +729,7 @@ class GlobalCardEngineCore
         $cards = array_values(array_map('strval', $cards));
         if (!$cards) throw new GameEngineException('اختر ورقة واحدة على الأقل للتركيب.');
         if (!$this->containsCards($state['hands'][$playerId] ?? [], $cards)) throw new GameEngineException('إحدى أوراق التركيب غير موجودة بالعدد المطلوب في اليد.');
-        if (!$this->hasRummyOpened($state,$playerId)) throw new GameEngineException('يجب أن يفتح اللاعب أو فريقه قبل التركيب.');
+        if (empty($state['melds'][$playerId])) throw new GameEngineException('يجب أن تنزل مجموعتك الأولى قبل التركيب.');
         if (!isset($state['melds'][$targetPlayer][$meldIndex])) throw new GameEngineException('المجموعة الهدف غير موجودة.');
         if (!empty($state['config']['partnership']) && $this->teamOf($state, $targetPlayer) !== $this->teamOf($state, $playerId)) throw new GameEngineException('يمكن التركيب على مجموعاتك أو مجموعات شريكك فقط.');
         if (empty($state['config']['partnership']) && $targetPlayer !== $playerId) throw new GameEngineException('يمكن التركيب على مجموعاتك فقط في اللعب الفردي.');
@@ -816,41 +781,6 @@ class GlobalCardEngineCore
             if ($gaps <= $wildCount && (max($vals)-min($vals)+1+$wildCount) <= 13) return true;
         }
         return false;
-    }
-
-    protected function hasRummyOpened(array $state,string $playerId): bool
-    {
-        if (!empty($state['config']['teamOpening'])) {
-            $team=(int)$this->teamOf($state,$playerId);
-            return (bool)($state['teamOpened'][$team] ?? false);
-        }
-        return !empty($state['melds'][$playerId]);
-    }
-
-    protected function rummyOpeningRequirement(array $state,string $playerId): int
-    {
-        if (!empty($state['config']['teamOpening'])) {
-            $team=(int)$this->teamOf($state,$playerId);
-            return (int)($state['teamOpeningThresholds'][$team] ?? ($state['config']['opening'] ?? 51));
-        }
-        return (int)($state['config']['opening'] ?? 51);
-    }
-
-    protected function recordRummyOpening(array $state,string $playerId,int $value): array
-    {
-        if (!empty($state['config']['teamOpening'])) {
-            $team=(int)$this->teamOf($state,$playerId);
-            if (empty($state['teamOpened'][$team])) {
-                $state['teamOpened'][$team]=true;
-                if (!empty($state['config']['openingEscalates'])) {
-                    $other=$team===0?1:0;
-                    if (empty($state['teamOpened'][$other])) {
-                        $state['teamOpeningThresholds'][$other]=max((int)($state['teamOpeningThresholds'][$other] ?? 51),$value+1);
-                    }
-                }
-            }
-        }
-        return $state;
     }
 
     protected function meldValue(array $cards): int
@@ -1065,10 +995,6 @@ class GlobalCardEngineCore
     protected function playerIndex(array $state, string $pid): int { foreach($state['players'] as $i=>$p) if($p['id']===$pid) return $i; throw new GameEngineException('اللاعب غير موجود.'); }
     protected function teamOf(array $state, string $pid): string|int { foreach($state['players'] as $p) if($p['id']===$pid) return $p['team']; return $pid; }
     protected function allHandsEmpty(array $state): bool { foreach($state['hands'] as $h) if(count($h)>0) return false; return true; }
-    protected function oppositeSameColorSuit(string $suit): string
-    {
-        return match($suit){ 'C'=>'S', 'S'=>'C', 'D'=>'H', 'H'=>'D', default=>'H' };
-    }
     protected function rank(string $card): string { return explode('_',$card)[0] ?? $card; }
     protected function suit(string $card): string { return explode('_',$card)[1] ?? ''; }
     protected function rankValue(string $card, ?string $mode=null, ?string $trump=null): int

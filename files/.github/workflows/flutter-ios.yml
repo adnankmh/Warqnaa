@@ -1,0 +1,114 @@
+name: Build iOS unsigned
+
+on:
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Load release metadata
+        id: release
+        run: python3 tools/release_metadata.py --github-output >> "$GITHUB_OUTPUT"
+
+      - name: Validate source package and reject merge markers
+        run: python3 tools/validate_release.py
+
+      - name: Install pinned Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+
+      - name: Create clean iOS platform
+        working-directory: flutter_app
+        run: |
+          rm -rf ios
+          flutter create . --platforms=ios --project-name warqna_mobile --org com.warqna --no-pub
+          if [ -f test/widget_test.dart ] && grep -q "MyApp" test/widget_test.dart; then rm test/widget_test.dart; fi
+
+      - name: Configure microphone permission and WebRTC build settings
+        working-directory: flutter_app
+        run: |
+          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string Warqna uses the microphone only when you enter a voice game." ios/Runner/Info.plist 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :NSMicrophoneUsageDescription Warqna uses the microphone only when you enter a voice game." ios/Runner/Info.plist
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          podfile = Path('ios/Podfile')
+          text = podfile.read_text(encoding='utf-8')
+          marker = "post_install do |installer|"
+          if marker in text and "ONLY_ACTIVE_ARCH" not in text:
+              text = text.replace(
+                  "flutter_additional_ios_build_settings(target)",
+                  "flutter_additional_ios_build_settings(target)\n"
+                  "      target.build_configurations.each do |config|\n"
+                  "        config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'\n"
+                  "      end",
+              )
+          podfile.write_text(text, encoding='utf-8')
+          PYCODE
+
+      - name: Resolve Flutter packages
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Configure AdMob iOS application ID
+        working-directory: flutter_app
+        run: |
+          APP_ID="${{ vars.ADMOB_IOS_APP_ID }}"
+          if [ -z "$APP_ID" ]; then APP_ID="ca-app-pub-3940256099942544~1458002511"; fi
+          /usr/libexec/PlistBuddy -c "Add :GADApplicationIdentifier string $APP_ID" ios/Runner/Info.plist 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :GADApplicationIdentifier $APP_ID" ios/Runner/Info.plist
+
+      - name: Analyze, test, and build unsigned iOS
+        working-directory: flutter_app
+        env:
+          API_URL: ${{ vars.WARQNA_API_URL }}
+          REWARDED_ID: ${{ vars.ADMOB_REWARDED_IOS_ID }}
+          WARQNA_APP_VERSION: ${{ steps.release.outputs.version }}
+          WARQNA_APP_BUILD: ${{ steps.release.outputs.build }}
+        run: |
+          EXTRA_ARGS=("--dart-define=WARQNA_APP_VERSION=$WARQNA_APP_VERSION" "--dart-define=WARQNA_APP_BUILD=$WARQNA_APP_BUILD")
+          if [ -n "$API_URL" ]; then
+            EXTRA_ARGS+=("--dart-define=WARQNA_API_URL=$API_URL" "--dart-define=WARQNA_PRODUCTION_MODE=true")
+          else
+            EXTRA_ARGS+=("--dart-define=WARQNA_PRODUCTION_MODE=false")
+          fi
+          if [ -z "$REWARDED_ID" ]; then REWARDED_ID="ca-app-pub-3940256099942544/1712485313"; fi
+          EXTRA_ARGS+=("--dart-define=ADMOB_REWARDED_IOS_ID=$REWARDED_ID")
+          python3 ../tools/test_flutter_ci_contract.py
+          python3 ../tools/test_v170_contract.py
+          python3 ../tools/test_v171_controller_references.py
+          python3 ../tools/test_v172_brand_table_contract.py
+          python3 ../tools/test_v173_online_engagement_contract.py
+          python3 ../tools/test_v181_ci_regression_contract.py
+          python3 ../tools/test_v182_rewards_contract.py
+          python3 ../tools/test_v183_overhaul_contract.py
+          python3 ../tools/test_v184_flutter_quality_contract.py
+          python3 ../tools/test_v184_official_game_rules_contract.py
+          python3 ../tools/test_v174_offline_progression_navigation_contract.py
+          python3 ../tools/test_v175_xp_challenges_pasha_designer_contract.py
+          python3 ../tools/test_v176_daily_pack_inventory_contract.py
+          python3 ../tools/test_v030_contract.py
+          python3 ../tools/validate_v030_static.py
+          python3 ../tools/test_v02_daily_prize_boxes_contract.py
+          bash ../tools/flutter_analyze_ci.sh
+          flutter test
+          flutter build ios --release --no-codesign "${EXTRA_ARGS[@]}"
+
+      - name: Upload unsigned iOS app
+        uses: actions/upload-artifact@v6
+        with:
+          name: warqna-v${{ steps.release.outputs.build }}-ios-unsigned
+          if-no-files-found: error
+          retention-days: 14
+          path: flutter_app/build/ios/iphoneos/Runner.app

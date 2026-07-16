@@ -1,0 +1,91 @@
+name: Backend CI and Security Foundation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'backend-laravel/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'backend-laravel/**'
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  laravel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend-laravel
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, pdo_sqlite, sqlite3, pdo_pgsql, bcmath
+          coverage: none
+          tools: composer:v2
+      - name: Validate Composer definition
+        run: composer validate --no-check-lock --strict
+      - name: Install backend dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          touch database/database.sqlite
+          php artisan migrate:fresh --seed --force
+      - name: Verify PHPUnit test suites
+        run: |
+          test -d tests/Feature
+          test -d tests/Unit
+          test -f tests/Unit/EnvironmentSanityTest.php
+          test -f tests/Unit/ControllerFoundationTest.php
+      - name: Verify HTTP controller foundation
+        run: php tools/verify_http_foundation.php
+      - name: PHP syntax audit
+        run: find app config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Run standalone V183 engine regressions
+        run: php tools/test-v183-engine-overhaul.php
+      - name: Run classic game-rule regressions
+        run: php tools/test-v142-rule-cores.php
+      - name: Run V184 official game-rule audit
+        run: php tools/test-v184-official-rules-audit.php
+      - name: Stress all registered game engines
+        run: php tools/test-v184-engine-stress.php
+      - name: Run Laravel tests
+        run: php artisan test
+      - name: Production preflight in non-strict mode
+        run: php artisan warqna:production-check
+
+  docker-definition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Prepare temporary Compose environment
+        working-directory: backend-laravel
+        run: |
+          cp .env.production.example .env
+          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=ci-placeholder/' .env
+          sed -i 's/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=ci-placeholder/' .env
+          sed -i 's/^VOICE_TURN_USERNAME=.*/VOICE_TURN_USERNAME=ci-placeholder/' .env
+          sed -i 's/^VOICE_TURN_CREDENTIAL=.*/VOICE_TURN_CREDENTIAL=ci-placeholder/' .env
+      - name: Validate production Compose
+        working-directory: backend-laravel
+        run: docker compose -f docker-compose.production.yml config >/dev/null
+      - name: Build production image
+        working-directory: backend-laravel
+        run: docker build -t warqna-api:ci .
+      - name: Remove temporary Compose environment
+        if: always()
+        working-directory: backend-laravel
+        run: rm -f .env
