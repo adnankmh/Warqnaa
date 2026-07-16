@@ -121,4 +121,21 @@ api_text = (ROOT / 'flutter_app/lib/services/api_client.dart').read_text(encodin
 if "patch('/admin/games/$gameId'" not in api_text:
     fail('mobile admin game visibility API is missing')
 
+
+# Hand-family regression: the starter receives one extra card and must discard
+# before the normal draw/meld/discard cycle begins.
+engine_test = (ROOT / 'flutter_app/test/local_game_engine_test.dart').read_text(encoding='utf-8')
+for needle in (
+    "Hand family starts with 15 cards, discards once, then draws normally",
+    "expect((initial['hand'] as List).length, 15",
+    "expect(initial['phase'], 'discard'",
+    "expect((afterStarterDiscard['hand'] as List).length, 14",
+    "expect(afterStarterDiscard['phase'], 'draw'",
+    "Banakil starts with 19 cards, discards once, then returns with 18",
+):
+    if needle not in engine_test:
+        fail(f'missing Hand/Banakil regression assertion: {needle}')
+if "Hand family deals 14 cards and requires a draw" in engine_test:
+    fail('obsolete Hand opening test is still present')
+
 print('[PASS] V184 Flutter analyzer, dependency-free image validation, room participants, full level selector and admin game visibility contract')

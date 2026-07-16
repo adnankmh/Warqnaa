@@ -11,11 +11,34 @@ void main() {
     expect((state['available_actions'] as List).isNotEmpty, isTrue);
   });
 
-  test('Hand family deals 14 cards and requires a draw', () {
-    final game = LocalGameSession(gameId: 'hand', humanName: 'Adnan', seed: 11);
-    final state = Map<String, dynamic>.from(game.room()['state'] as Map);
-    expect((state['hand'] as List).length, 14);
-    expect(state['phase'], 'draw');
+  test('Hand family starts with 15 cards, discards once, then draws normally', () {
+    for (final id in <String>['hand', 'hand_partner', 'saudi_hand']) {
+      final game = LocalGameSession(gameId: id, humanName: 'Adnan', seed: 11);
+      final initial = Map<String, dynamic>.from(game.room()['state'] as Map);
+      expect((initial['hand'] as List).length, 15, reason: id);
+      expect(initial['phase'], 'discard', reason: id);
+      final initialActions = initial['available_actions'] as List;
+      expect(
+        initialActions.any((action) => action is Map && action['type'] == 'discard'),
+        isTrue,
+        reason: id,
+      );
+
+      final afterStarterDiscard = Map<String, dynamic>.from(game.timeout()['state'] as Map);
+      expect((afterStarterDiscard['hand'] as List).length, 14, reason: id);
+      expect(afterStarterDiscard['phase'], 'draw', reason: id);
+    }
+  });
+
+  test('Banakil starts with 19 cards, discards once, then returns with 18', () {
+    final game = LocalGameSession(gameId: 'banakil', humanName: 'Adnan', seed: 12);
+    final initial = Map<String, dynamic>.from(game.room()['state'] as Map);
+    expect((initial['hand'] as List).length, 19);
+    expect(initial['phase'], 'discard');
+
+    final afterStarterDiscard = Map<String, dynamic>.from(game.timeout()['state'] as Map);
+    expect((afterStarterDiscard['hand'] as List).length, 18);
+    expect(afterStarterDiscard['phase'], 'draw');
   });
 
   test('Basra deals four cards to the player and four to table', () {
