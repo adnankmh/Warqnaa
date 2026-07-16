@@ -537,9 +537,8 @@ Future<void> showPublicPlayerProfileV170(BuildContext context, AppController con
 }
 
 List<int> v170MinLevelOptions(int currentLevel) {
-  final values = <int>{1, 5, 10, 20, 30, 50, currentLevel}.where((value) => value <= currentLevel).toList();
-  values.sort();
-  return values;
+  final ceiling = currentLevel.clamp(1, 100).toInt();
+  return List<int>.generate(ceiling, (index) => index + 1, growable: false);
 }
 
 List<int> v170AllowedPlayerCounts(String gameId) {
@@ -547,6 +546,12 @@ List<int> v170AllowedPlayerCounts(String gameId) {
     case 'pinochle':
     case 'banakil':
       return const [2, 4];
+    case 'backgammon':
+      return const [2];
+    case 'domino':
+      return const [2, 4];
+    case 'solitaire_multiplayer':
+      return const [2, 3, 4];
     case 'hand':
     case 'saudi_hand':
       return const [2, 3, 4];

@@ -1,0 +1,16 @@
+Warqnaa V0.3.3+184 Final CI & Platform Quality Update
+
+PASS: dependency-free WebP dimension validation
+PASS: clean root policy
+PASS: V170–V184 source contracts
+PASS: JSON/YAML/XML/Dart structural validation
+PASS: PHP syntax checks
+PASS: official-rules audit
+PASS: 360 randomized engine startup/first-legal-action scenarios
+PASS: 18-game Flutter catalog contract (Chess hidden)
+PASS: full level selector 1..creator level
+PASS: room participant selection and bot-count contract
+PASS: admin game visibility API contract
+
+Environment limitation:
+Flutter SDK and Composer vendor were not installed in the packaging container; GitHub Actions remains authoritative for flutter analyze, flutter test, and php artisan test.

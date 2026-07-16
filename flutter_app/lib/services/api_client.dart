@@ -194,6 +194,8 @@ class WarqnaApiClient {
       patch('/games/session/$code/voice/controls', {'muted': muted, 'deafened': deafened});
   Future<Map<String, dynamic>> voiceLeave(String code) => post('/games/session/$code/voice/leave', const {});
   Future<Map<String, dynamic>> adminDashboard() => get('/admin/dashboard');
+  Future<Map<String, dynamic>> adminUpdateGame(int gameId, {required bool active}) =>
+      patch('/admin/games/$gameId', <String, dynamic>{'active': active});
   Future<Map<String, dynamic>> adminUserAction(int userId, String action, {String? amount}) =>
       post('/admin/users/$userId/action', {
         'action': action,

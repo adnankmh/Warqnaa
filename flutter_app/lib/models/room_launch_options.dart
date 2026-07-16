@@ -8,6 +8,8 @@ class RoomLaunchOptions {
   final int minLevel;
   final bool allowOwnerKick;
   final int playerCount;
+  final int botCount;
+  final List<int> inviteeIds;
 
   const RoomLaunchOptions({
     this.roomName = 'غرفة ورقنا',
@@ -19,6 +21,8 @@ class RoomLaunchOptions {
     this.minLevel = 1,
     this.allowOwnerKick = true,
     this.playerCount = 4,
+    this.botCount = 3,
+    this.inviteeIds = const <int>[],
   });
 
   bool get joiningExisting => roomCode != null && roomCode!.trim().isNotEmpty;
@@ -33,6 +37,8 @@ class RoomLaunchOptions {
     int? minLevel,
     bool? allowOwnerKick,
     int? playerCount,
+    int? botCount,
+    List<int>? inviteeIds,
   }) {
     return RoomLaunchOptions(
       roomName: roomName ?? this.roomName,
@@ -44,6 +50,8 @@ class RoomLaunchOptions {
       minLevel: minLevel ?? this.minLevel,
       allowOwnerKick: allowOwnerKick ?? this.allowOwnerKick,
       playerCount: playerCount ?? this.playerCount,
+      botCount: botCount ?? this.botCount,
+      inviteeIds: inviteeIds ?? this.inviteeIds,
     );
   }
 }

@@ -2480,6 +2480,8 @@ class L {
       'joinClub': 'انضمام',
       'domino': 'دومينو',
       'tarneeb': 'طرنيب',
+      'tarneeb_41': 'طرنيب 41',
+      'tarneeb_61': 'طرنيب 61',
       'trix': 'تركس',
       'hand': 'هاند',
       'banakil': 'بناكل',
@@ -2580,6 +2582,8 @@ class L {
       'joinClub': 'Join',
       'domino': 'Domino',
       'tarneeb': 'Tarneeb',
+      'tarneeb_41': 'Tarneeb 41',
+      'tarneeb_61': 'Tarneeb 61',
       'trix': 'Trix',
       'hand': 'Hand',
       'banakil': 'Banakil',
@@ -3065,8 +3069,9 @@ class GameInfo {
   final String icon;
   final int players;
   final Color color;
+  final bool serverOnly;
 
-  const GameInfo(this.id, this.icon, this.players, this.color);
+  const GameInfo(this.id, this.icon, this.players, this.color, {this.serverOnly = false});
 }
 
 const gamesCatalog = [
@@ -3082,6 +3087,12 @@ const gamesCatalog = [
   GameInfo('saudi_hand', '🇸🇦', 5791, Color(0xff1c654c)),
   GameInfo('hand_partner', '🤝', 4882, Color(0xff5f4327)),
   GameInfo('trix_partner', '👥', 5140, Color(0xff583a70)),
+  GameInfo('tarneeb_41', '4️⃣', 4760, Color(0xff315f8c), serverOnly: true),
+  GameInfo('tarneeb_61', '6️⃣', 3220, Color(0xff24496e), serverOnly: true),
+  GameInfo('pinochle', '🂿', 4380, Color(0xff72531f), serverOnly: true),
+  GameInfo('solitaire_multiplayer', '🂠', 2910, Color(0xff315b52), serverOnly: true),
+  GameInfo('domino', '🁬', 6120, Color(0xff3f4858), serverOnly: true),
+  GameInfo('backgammon', '🎲', 5570, Color(0xff7a4728), serverOnly: true),
 ];
 
 class StoreProduct {
@@ -4529,6 +4540,7 @@ class GameCard extends StatelessWidget {
           children: [
             ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.asset(gameArtAsset(game.id), fit: BoxFit.contain, errorBuilder: (_, __, ___) => Center(child: Text(game.icon, style: const TextStyle(fontSize: 46))))),
             DecoratedBox(decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), gradient: const LinearGradient(begin: Alignment.topCenter,end: Alignment.bottomCenter,colors:[Colors.transparent,Color(0x22000000),Color(0xee03070c)]))),
+            if (game.serverOnly) Positioned(top:6,right:6,child:Container(padding:const EdgeInsets.symmetric(horizontal:7,vertical:4),decoration:BoxDecoration(gradient:const LinearGradient(colors:[Color(0xfff7d37a),Color(0xff9a5f0b)]),borderRadius:BorderRadius.circular(10),boxShadow:const [BoxShadow(color:Colors.black45,blurRadius:8)]),child:const Row(mainAxisSize:MainAxisSize.min,children:[Icon(Icons.cloud_rounded,size:12,color:Color(0xff261706)),SizedBox(width:3),Text('ONLINE',style:TextStyle(fontSize:8,color:Color(0xff261706),fontWeight:FontWeight.w900))]))),
             Positioned(left:8,right:8,bottom:8,child:Column(mainAxisSize:MainAxisSize.min,children:[Text(L.t(lang,game.id),textAlign:TextAlign.center,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:13,shadows:[Shadow(color:Colors.black,blurRadius:7)])),const SizedBox(height:3),Text('${formatNumber(game.players)} لاعب',style:const TextStyle(color:Colors.white70,fontSize:9,fontWeight:FontWeight.w700))])),
           ],
         ),
@@ -5443,7 +5455,7 @@ class _LuxuryTable extends StatelessWidget {
         children: [
           if (assetImage == null && customBytes == null)
             Positioned.fill(child: CustomPaint(painter: _TablePatternPainter(color: c2))),
-          const Positioned.fill(child: AmbientTableFX(density: 9, subtle: true)),
+          if (controller?.tableAmbientEffects ?? true) const Positioned.fill(child: AmbientTableFX(density: 9, subtle: true)),
           if (assetImage == null && customBytes == null)
             Center(
             child: Column(
@@ -5645,7 +5657,7 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
           ? await widget.controller.api.joinGame(widget.options.roomCode!.trim().toUpperCase(), password: widget.options.password)
           : await widget.controller.api.createGame(
               game: widget.game.id,
-              bots: _playersFor(widget.game.id) - 1,
+              bots: widget.options.botCount.clamp(0, _playersFor(widget.game.id) - 1).toInt(),
               visibility: widget.options.visibility,
               turnSeconds: widget.options.turnSeconds,
               voiceEnabled: widget.options.voiceEnabled,
@@ -5657,6 +5669,18 @@ class _ServerEngineRoomPageState extends State<ServerEngineRoomPage> with Widget
             );
       if (!mounted) return;
       final updatedRoom = Map<String, dynamic>.from(data['room'] as Map);
+      if (!widget.options.joiningExisting && widget.options.inviteeIds.isNotEmpty) {
+        final createdCode = updatedRoom['code']?.toString() ?? '';
+        if (createdCode.isNotEmpty) {
+          for (final userId in widget.options.inviteeIds) {
+            try {
+              await widget.controller.api.inviteFriendToRoom(userId, createdCode);
+            } catch (_) {
+              // A failed invitation must never invalidate the room creation.
+            }
+          }
+        }
+      }
       _consumeProgressionPopupV174(updatedRoom);
       setState(() {
         room = updatedRoom;
@@ -8049,6 +8073,10 @@ void showCompetitions(BuildContext context, AppController controller) {
 }
 
 void showGameLobby(BuildContext context, AppController controller, GameInfo game) {
+  if (game.serverOnly && !controller.serverConnected) {
+    showToast(context, 'هذه اللعبة تستخدم محرك الخادم الكامل. اربط التطبيق بخادم Laravel للعبها بصورة صحيحة.');
+    return;
+  }
   showPremiumSheet(
     context,
     child: Column(
@@ -8298,6 +8326,8 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
   var minLevel = 1;
   var allowOwnerKick = true;
   var playerCount = v170AllowedPlayerCounts(game.id).first;
+  var botCount = (playerCount - 1).clamp(0, 7).toInt();
+  final selectedInviteeIds = <int>{};
   showPremiumSheet(
     context,
     child: StatefulBuilder(
@@ -8357,7 +8387,67 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
             initialValue: playerCount,
             decoration: const InputDecoration(labelText: 'عدد اللاعبين', prefixIcon: Icon(Icons.groups_rounded)),
             items: v170AllowedPlayerCounts(game.id).map((count) => DropdownMenuItem(value: count, child: Text('$count لاعبين'))).toList(),
-            onChanged: (value) => setLocalState(() => playerCount = value ?? playerCount),
+            onChanged: (value) => setLocalState(() {
+              playerCount = value ?? playerCount;
+              final availableSeats = (playerCount - 1).clamp(0, 7).toInt();
+              while (selectedInviteeIds.length > availableSeats) {
+                selectedInviteeIds.remove(selectedInviteeIds.last);
+              }
+              botCount = botCount.clamp(0, availableSeats - selectedInviteeIds.length).toInt();
+            }),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [Colors.white.withValues(alpha: .055), Theme.of(context).colorScheme.primary.withValues(alpha: .08)]),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: .22)),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const Row(children: [
+                Icon(Icons.group_add_rounded, color: Colors.amberAccent),
+                SizedBox(width: 8),
+                Expanded(child: Text('اختيار المشاركين قبل إنشاء الغرفة', style: TextStyle(fontWeight: FontWeight.w900))),
+              ]),
+              const SizedBox(height: 7),
+              const Text('اختر لاعبين حقيقيين لإرسال الدعوة إليهم، وحدد عدد لاعبي البوت. تبقى المقاعد غير المحجوزة مفتوحة للاعبين الآخرين.', style: TextStyle(fontSize: 10.5, height: 1.45, color: Colors.white60)),
+              if (controller.friends.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: controller.friends.map((friend) {
+                    final selected = selectedInviteeIds.contains(friend.id);
+                    final full = selectedInviteeIds.length + botCount >= playerCount - 1;
+                    return FilterChip(
+                      selected: selected,
+                      avatar: CircleAvatar(child: Text(friend.name.isEmpty ? '👤' : friend.name.substring(0, 1))),
+                      label: Text(friend.name),
+                      onSelected: !selected && full ? null : (value) => setLocalState(() {
+                        if (value) {
+                          selectedInviteeIds.add(friend.id);
+                        } else {
+                          selectedInviteeIds.remove(friend.id);
+                        }
+                        botCount = botCount.clamp(0, (playerCount - 1) - selectedInviteeIds.length).toInt();
+                      }),
+                    );
+                  }).toList(),
+                ),
+              ],
+              const SizedBox(height: 10),
+              DropdownButtonFormField<int>(
+                initialValue: botCount,
+                decoration: const InputDecoration(labelText: 'عدد لاعبي البوت', prefixIcon: Icon(Icons.smart_toy_rounded)),
+                items: List<int>.generate(((playerCount - 1) - selectedInviteeIds.length).clamp(0, 7).toInt() + 1, (index) => index)
+                    .map((count) => DropdownMenuItem(value: count, child: Text(count == 0 ? 'بدون بوتات' : '$count بوت')))
+                    .toList(),
+                onChanged: (value) => setLocalState(() => botCount = value ?? 0),
+              ),
+              const SizedBox(height: 6),
+              Text('المحدد: ${selectedInviteeIds.length} لاعب حقيقي • $botCount بوت • ${(playerCount - 1 - selectedInviteeIds.length - botCount).clamp(0, 7)} مقاعد مفتوحة', style: const TextStyle(fontSize: 10, color: Colors.white70)),
+            ]),
           ),
           const SizedBox(height: 10),
           DropdownButtonFormField<int>(
@@ -8395,6 +8485,8 @@ void showCreateRoom(BuildContext context, AppController controller, GameInfo gam
                 minLevel: minLevel,
                 allowOwnerKick: allowOwnerKick,
                 playerCount: playerCount,
+                botCount: botCount,
+                inviteeIds: selectedInviteeIds.toList(growable: false),
               );
               final navigationContext = warqnaNavigatorKey.currentContext;
               Navigator.pop(context);
@@ -9187,14 +9279,64 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
     );
   }
 
-  Widget _games() => ListView(
-    padding: const EdgeInsets.all(12),
-    children: [
-      const _AdminInfo(text:'كل الألعاب في V173 تعمل عبر الإنترنت فقط، ويقوم Laravel بالتحقق السلطوي من الجلسات والحركات والتوكنز والمنافسات.'),
-      const SizedBox(height: 10),
-      ...gamesCatalog.map((game) => Padding(padding: const EdgeInsets.only(bottom: 8), child: PremiumListTile(icon:game.icon,title:L.t(widget.controller.localeCode,game.id),subtitle:'محرك فعال • لعب مجاني • تحقق من الحركات',action:Switch(value:true,onChanged:(_)=>showToast(context,'يتم حفظ التفعيل من API الإدارة عند الاتصال.'))))),
-    ],
-  );
+  Widget _games() {
+    final serverGames = (serverData?['games'] is List ? serverData!['games'] as List : const <dynamic>[])
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+    final fallbackGames = gamesCatalog.map((game) => <String, dynamic>{
+      'id': null,
+      'key': game.id,
+      'active': true,
+      'name': <String, dynamic>{'ar': L.t('ar', game.id), 'en': L.t('en', game.id)},
+    }).toList();
+    final rows = serverGames.isNotEmpty ? serverGames : fallbackGames;
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        const _AdminInfo(text:'يمكن لحساب الإدارة إظهار أو إخفاء أي لعبة فوراً من الكتالوج العام. اللعب المتصل يبقى خاضعاً لمحرك Laravel والتحقق السلطوي من الحركات والنتائج.'),
+        const SizedBox(height: 10),
+        ...rows.map((game) {
+          final key = game['key']?.toString() ?? '';
+          final id = int.tryParse(game['id']?.toString() ?? '');
+          final name = game['name'];
+          final localizedName = name is Map
+              ? (name[widget.controller.localeCode]?.toString() ?? name['ar']?.toString() ?? key)
+              : L.t(widget.controller.localeCode, key);
+          final localInfo = gamesCatalog.where((item) => item.id == key).firstOrNull;
+          final active = game['active'] != false && game['active']?.toString() != '0';
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 9),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [Colors.white.withValues(alpha: .055), (active ? Colors.greenAccent : Colors.redAccent).withValues(alpha: .055)]),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: (active ? Colors.greenAccent : Colors.redAccent).withValues(alpha: .22)),
+              ),
+              child: PremiumListTile(
+                icon: localInfo?.icon ?? '🎮',
+                title: localizedName,
+                subtitle: active ? 'ظاهر للاعبين • المحرك متاح' : 'مخفي من الكتالوج • لا يمكن إنشاء غرف جديدة',
+                action: Switch.adaptive(
+                  value: active,
+                  onChanged: id == null || !widget.controller.serverConnected ? null : (value) async {
+                    try {
+                      await widget.controller.api.adminUpdateGame(id, active: value);
+                      game['active'] = value;
+                      if (mounted) setState(() {});
+                      if (mounted) showToast(context, value ? 'تم إظهار اللعبة.' : 'تم إخفاء اللعبة.');
+                    } catch (error) {
+                      if (mounted) showToast(context, error.toString());
+                    }
+                  },
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
 
   Widget _store() => AdminStoreStudioV151(controller: widget.controller);
 

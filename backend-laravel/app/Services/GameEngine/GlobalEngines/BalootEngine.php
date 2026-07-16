@@ -36,7 +36,7 @@ class BalootEngine extends GlobalCardEngineCore
             'slug'=>'baloot',
             'title_ar'=>'بلوت',
             'emoji'=>'🪙',
-            'description'=>'محرك بلوت 4 لاعبين شراكة: توزيع 32 ورقة، صكة، حكم/صن، اتباع النوع، حساب فائز الأكلة ونقاط تقريبية قابلة للتطوير.',
+            'description'=>'محرك بلوت 4 لاعبين شراكة: 32 ورقة، صن أو حكم، ترتيب أوراق مختلف لكل عقد، اتباع النوع وحساب نقاط اللمّات وآخر أكلة.',
             'version'=>'final-v1',
             'players'=>[4],
             'partnership'=>true,

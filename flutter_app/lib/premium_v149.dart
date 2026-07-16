@@ -724,6 +724,7 @@ class _FloatingReactionState extends State<FloatingReaction> with SingleTickerPr
   late final Animation<double> scale;
   late final Animation<double> fade;
   late final Animation<Offset> slide;
+  late final Animation<double> rotation;
 
   @override
   void initState() {
@@ -740,6 +741,11 @@ class _FloatingReactionState extends State<FloatingReaction> with SingleTickerPr
       TweenSequenceItem(tween: Tween(begin: 1, end: 0), weight: 25),
     ]).animate(controller);
     slide = Tween(begin: const Offset(0, .20), end: const Offset(0, -.38)).animate(CurvedAnimation(parent: controller, curve: Curves.easeOutCubic));
+    rotation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: -.12, end: .10).chain(CurveTween(curve: Curves.easeOutBack)), weight: 45),
+      TweenSequenceItem(tween: Tween(begin: .10, end: -.04), weight: 25),
+      TweenSequenceItem(tween: Tween(begin: -.04, end: 0), weight: 30),
+    ]).animate(controller);
     controller.forward().whenComplete(() => widget.onCompleted?.call());
   }
 
@@ -756,15 +762,33 @@ class _FloatingReactionState extends State<FloatingReaction> with SingleTickerPr
           position: slide,
           child: ScaleTransition(
             scale: scale,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-              decoration: BoxDecoration(
-                color: const Color(0xff07111c).withValues(alpha: .84),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withValues(alpha: .12)),
-                boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 20, offset: Offset(0, 8))],
+            child: AnimatedBuilder(
+              animation: controller,
+              builder: (context, child) => Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, .0014)
+                  ..rotateY(rotation.value)
+                  ..rotateZ(rotation.value * .42),
+                child: child,
               ),
-              child: Text(widget.reaction.emoji, style: const TextStyle(fontSize: 56)),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xee20364d), Color(0xee07111c), Color(0xee341d4d)]),
+                  borderRadius: BorderRadius.circular(26),
+                  border: Border.all(color: const Color(0xffffd166).withValues(alpha: .55), width: 1.5),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x99000000), blurRadius: 26, offset: Offset(0, 12)),
+                    BoxShadow(color: Color(0x555de7ff), blurRadius: 24, spreadRadius: 1),
+                    BoxShadow(color: Color(0x44ffd166), blurRadius: 18, spreadRadius: 1),
+                  ],
+                ),
+                child: Stack(alignment: Alignment.center, children: [
+                  Text(widget.reaction.emoji, style: TextStyle(fontSize: 70, foreground: Paint()..color = const Color(0x22ffffff))),
+                  Text(widget.reaction.emoji, style: const TextStyle(fontSize: 58, shadows: [Shadow(color: Color(0xaa000000), blurRadius: 9, offset: Offset(0, 5)), Shadow(color: Color(0x88ffffff), blurRadius: 10)])),
+                ]),
+              ),
             ),
           ),
         ),

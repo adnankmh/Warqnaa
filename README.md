@@ -1,7 +1,21 @@
 # Warqnaa — ورقنا
 
-الإصدار الحالي: **V0.3.3 / Build 184**
+الإصدار الحالي: **0.3.3+184**
 
-تطبيق ألعاب ورق متعدد المنصات مبني بـFlutter وLaravel، ويشمل Web مكتبيًا متجاوبًا، Android، iOS، PWA، غرفًا عامة وخاصة، متجرًا ومخزونًا، نوادي ومنافسات، دردشة وصوتًا، مكافآت ودولاب حظ من 10 خانات، ولوحة إدارة ومصممًا شاملًا لحساب Adnan.
+ابدأ من: `START_HERE_AR.md`
 
-ابدأ من `START_HERE_AR.md` ثم شغّل فحص الإصدار قبل البناء. لا تنشر النسخة قبل نجاح جميع GitHub Actions.
+المشروع منظم إلى:
+- `flutter_app/`: تطبيق Web وAndroid وiOS وPWA.
+- `backend-laravel/`: الخادم، الحسابات، الغرف، الاقتصاد ومحركات اللعب.
+- `assets/`: أصول النشر والمتاجر.
+- `docs/`: أدلة التشغيل، سجل الإصدارات، تقارير الجودة والمرجعيات.
+- `tools/`: فحوص CI والتحقق من المصدر.
+- `scripts/`: أدوات Windows وLinux/macOS.
+- `.github/workflows/`: بناء Web وAndroid وiOS وBackend وبوابة الإصدار.
+
+قبل النشر شغّل GitHub Actions وانتظر نجاح:
+- Build and deploy Flutter Web
+- Build Android APK & AAB
+- Flutter iOS
+- Backend CI
+- Production Release Gate
