@@ -1,0 +1,9 @@
+{
+  "image_count": 280,
+  "total_image_bytes": 75611073,
+  "total_image_mb": 72.11,
+  "corrupt_images": [],
+  "booster_main_dimensions": "960x960",
+  "booster_thumbnail_dimensions": "360x360",
+  "quality_profile": "balanced medium-high for web, Android and iOS"
+}

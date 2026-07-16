@@ -665,7 +665,13 @@ class LocalGameSession {
   }
 
   void _playTrickCard(int seat, String card) {
-    if (_isTrix && phase == 'trix_playing') return currentSeat == seat ? _legalTrixCards(seat) : <String>[];
+    if (_isTrix && phase == 'trix_playing') {
+      if (currentSeat != seat) {
+        throw StateError('ليس دور هذا اللاعب.');
+      }
+      _playTrixCard(seat, card);
+      return;
+    }
     if (phase != 'playing' || currentSeat != seat) {
       throw StateError('ليس دور هذا اللاعب.');
     }
@@ -890,7 +896,11 @@ class LocalGameSession {
     _messages.add('${_seatName(seat)} ركّب ${_prettyCard(card)}');
     if (_hands[seat].isEmpty && !_trixFinishOrder.contains(seat)) _trixFinishOrder.add(seat);
     if (_trixFinishOrder.length >= playerCount - 1) {
-      for (var i = 0; i < playerCount; i++) if (!_trixFinishOrder.contains(i)) _trixFinishOrder.add(i);
+      for (var i = 0; i < playerCount; i++) {
+        if (!_trixFinishOrder.contains(i)) {
+          _trixFinishOrder.add(i);
+        }
+      }
       const awards = <int>[200, 150, 100, 50];
       for (var i = 0; i < _trixFinishOrder.length; i++) {
         final target = _trixFinishOrder[i];
@@ -944,9 +954,13 @@ class LocalGameSession {
       ..clear()
       ..addAll(List<List<String>>.generate(4, (_) => <String>[]));
     for (var card = 0; card < 13; card++) {
-      for (var seat = 0; seat < 4; seat++) _hands[seat].add(_deck.removeLast());
+      for (var seat = 0; seat < 4; seat++) {
+        _hands[seat].add(_deck.removeLast());
+      }
     }
-    for (final hand in _hands) _sortHand(hand);
+    for (final hand in _hands) {
+      _sortHand(hand);
+    }
     _trick.clear();
     _tricksWon.updateAll((_, __) => 0);
     _trixFinishOrder.clear();
@@ -1087,7 +1101,9 @@ class LocalGameSession {
       final total = groups.fold<int>(0, (sum, group) => sum + _rummyPoints(group));
       final openingRequired = gameId == 'banakil' ? 0 : 51;
       if (!_openedRummySeats.contains(0) && total < openingRequired) throw StateError('مجموع النزول الأول يجب أن يبلغ $openingRequired نقطة على الأقل.');
-      for (final card in all) _hands[0].remove(card);
+      for (final card in all) {
+        _hands[0].remove(card);
+      }
       for (final group in groups) { _melds.add(group); _meldOwners.add(0); }
       _openedRummySeats.add(0);
       _messages.add('$humanName نزّل ${groups.length} مجموعات بقيمة إجمالية $total.');
@@ -1102,7 +1118,9 @@ class LocalGameSession {
       final sameSide = owner == 0 || (_isHandPartner || gameId == 'banakil') && owner.isEven;
       final combined = <String>[..._melds[index], ...cards];
       if (!sameSide || !_isValidMeld(combined)) throw StateError('لا يمكن تركيب هذه الأوراق على المجموعة المختارة.');
-      for (final card in cards) _hands[0].remove(card);
+      for (final card in cards) {
+        _hands[0].remove(card);
+      }
       _melds[index] = combined;
       _messages.add('$humanName ركّب ${cards.length} ورقة على مجموعة موجودة.');
       if (_hands[0].isEmpty) _finishRummy(0);

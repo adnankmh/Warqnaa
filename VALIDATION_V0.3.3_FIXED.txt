@@ -1,0 +1,13 @@
+Warqnaa V0.3.3+184 FIXED validation
+
+PASS: V184 Flutter local-engine analyzer regression contract
+PASS: V182 rewards/lucky wheel contract
+PASS: V183 responsive web/store/boosters/engines contract
+PASS: static JSON/YAML/XML/Dart source validation
+PASS: clean-root policy
+PASS: PHP engine adapter initialization (18 engines)
+PASS: V183 engine-overhaul tests
+PASS: 280 image files verified; zero corrupt files
+PASS: balanced medium-high image profile (approximately 72 MB image assets)
+
+The build environment used to prepare this archive does not include the Flutter SDK or Composer vendor directory. Therefore the exact GitHub Actions runs of flutter analyze, flutter test and php artisan test must still complete in GitHub CI after upload.
